@@ -1,0 +1,839 @@
+{
+  "mage": {
+    "id": "mage",
+    "name": "Mago",
+    "role": "Daño a distancia y control",
+    "icon": "class_mage",
+    "hp": 520,
+    "speed": 6.5,
+    "abilities": [
+      {
+        "id": "fireball",
+        "name": "Bola de fuego",
+        "icon": "fireball",
+        "desc": "Bola de fuego instantánea contra tu objetivo (necesita objetivo y línea de visión). No es un auto-ataque.",
+        "cd": 600,
+        "cast": 0,
+        "range": 18,
+        "dmg": 30,
+        "projSpeed": 34,
+        "projR": 0.35
+      },
+      {
+        "id": "pyro",
+        "name": "Piroexplosión",
+        "icon": "pyro",
+        "desc": "Lanzamiento de 1,4 s: una bola enorme que pega fuerte. Moverte cancela.",
+        "cd": 6000,
+        "cast": 1400,
+        "range": 22,
+        "dmg": 64,
+        "projSpeed": 30,
+        "projR": 0.55
+      },
+      {
+        "id": "nova",
+        "name": "Nova de escarcha",
+        "icon": "nova",
+        "desc": "Congela los pies de los enemigos cercanos: los enraíza 2 s.",
+        "cd": 14000,
+        "cast": 0,
+        "range": 0,
+        "aoe": 4.5,
+        "dmg": 10,
+        "ccMs": 2000
+      },
+      {
+        "id": "poly",
+        "name": "Polimorfia",
+        "icon": "poly",
+        "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 4 s. Se rompe con daño.",
+        "cd": 16000,
+        "cast": 1300,
+        "range": 18,
+        "ccMs": 4000,
+        "targeted": true
+      },
+      {
+        "id": "blink",
+        "name": "Traslación",
+        "icon": "blink",
+        "desc": "Te teletransportás 8 m. Rompe raíces.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 8,
+        "dist": 8
+      },
+      {
+        "id": "counter",
+        "name": "Contrahechizo",
+        "icon": "counter",
+        "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 18,
+        "ccMs": 2500,
+        "targeted": true
+      },
+      {
+        "id": "meteor",
+        "name": "Lluvia de meteoros",
+        "icon": "meteor",
+        "desc": "DEFINITIVA: tres meteoros caen en la zona, aturden 1 s y queman.",
+        "cd": 0,
+        "cast": 0,
+        "range": 16,
+        "aoe": 3,
+        "dmg": 32,
+        "ccMs": 1000,
+        "ult": true
+      }
+    ],
+    "tags": [
+      "Daño",
+      "Control"
+    ],
+    "stats": {
+      "hp": 2,
+      "mobility": 3,
+      "damage": 5,
+      "control": 4,
+      "difficulty": 4
+    },
+    "tagline": "Explosión a distancia y control del campo.",
+    "default_spec": "fire",
+    "specs": {
+      "fire": {
+        "name": "Fuego",
+        "icon": "spec_fire",
+        "color": "#ff6a1a",
+        "role": "Daño explosivo",
+        "desc": "Pega muy fuerte y deja a los enemigos ardiendo. Frágil: si te interrumpen, perdés tu daño.",
+        "stats": {
+          "hp": 2,
+          "mobility": 3,
+          "damage": 5,
+          "control": 3,
+          "difficulty": 4
+        },
+        "abilities": {
+          "0": {
+            "id": "fireball",
+            "name": "Bola de fuego",
+            "icon": "fireball",
+            "desc": "Bola de fuego instantánea contra tu objetivo: pega fuerte y lo deja ardiendo 3 s. Necesita objetivo y línea de visión.",
+            "cd": 700,
+            "cast": 0,
+            "range": 18,
+            "dmg": 26,
+            "projSpeed": 34,
+            "projR": 0.35,
+            "burnDps": 6,
+            "burnMs": 3000
+          },
+          "1": {
+            "id": "pyro",
+            "name": "Piroexplosión",
+            "icon": "pyro",
+            "desc": "Lanzamiento largo de 1,8 s con un golpe devastador. Cualquier daño te interrumpe, así que usala cuando estés a salvo o el enemigo esté controlado.",
+            "cd": 7000,
+            "cast": 1800,
+            "range": 22,
+            "dmg": 75,
+            "projSpeed": 30,
+            "projR": 0.55
+          },
+          "2": {
+            "id": "dragonbreath",
+            "name": "Aliento de dragón",
+            "icon": "dragonbreath",
+            "desc": "Cono de fuego corto frente a vos: desorienta 2,5 s a los enemigos que alcanza (el daño rompe el efecto).",
+            "cd": 13000,
+            "cast": 0,
+            "range": 7,
+            "cone": 50,
+            "dmg": 10,
+            "ccMs": 2500
+          },
+          "3": {
+            "id": "poly",
+            "name": "Polimorfia",
+            "icon": "poly",
+            "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 4 s. Se rompe con daño.",
+            "cd": 16000,
+            "cast": 1300,
+            "range": 18,
+            "ccMs": 4000,
+            "targeted": true
+          },
+          "4": {
+            "id": "blink",
+            "name": "Traslación",
+            "icon": "blink",
+            "desc": "Te teletransportás 8 m. Rompe raíces.",
+            "cd": 12000,
+            "cast": 0,
+            "range": 8,
+            "dist": 8
+          },
+          "5": {
+            "id": "counter",
+            "name": "Contrahechizo",
+            "icon": "counter",
+            "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+            "cd": 20000,
+            "cast": 0,
+            "range": 18,
+            "ccMs": 2500,
+            "targeted": true
+          },
+          "6": {
+            "id": "meteor",
+            "name": "Lluvia de meteoros",
+            "icon": "meteor",
+            "desc": "DEFINITIVA: tres meteoros caen en la zona, aturden 1 s y queman.",
+            "cd": 0,
+            "cast": 0,
+            "range": 16,
+            "aoe": 3,
+            "dmg": 32,
+            "ccMs": 1000,
+            "ult": true
+          }
+        }
+      },
+      "frost": {
+        "name": "Escarcha",
+        "icon": "spec_frost",
+        "color": "#5fc8ff",
+        "role": "Control y desgaste",
+        "desc": "Pega un poco menos pero ralentiza y enraíza: combiná la nova con la lanza de hielo para astillar.",
+        "stats": {
+          "hp": 3,
+          "mobility": 3,
+          "damage": 3,
+          "control": 5,
+          "difficulty": 3
+        },
+        "abilities": {
+          "0": {
+            "id": "frostbolt",
+            "name": "Descarga de escarcha",
+            "icon": "frostbolt",
+            "desc": "Lanzamiento de 1,5 s: daño moderado y ralentiza al objetivo un 40% durante 3 s.",
+            "cd": 300,
+            "cast": 1300,
+            "range": 20,
+            "dmg": 45,
+            "projSpeed": 30,
+            "projR": 0.4,
+            "slowPct": 0.4,
+            "ccMs": 3000
+          },
+          "1": {
+            "id": "icelance",
+            "name": "Lanza de hielo",
+            "icon": "icelance",
+            "desc": "Proyectil instantáneo de poco daño. Contra un objetivo enraizado o congelado pega 2,5 veces más (astillado).",
+            "cd": 2000,
+            "cast": 0,
+            "range": 20,
+            "dmg": 24,
+            "projSpeed": 55,
+            "projR": 0.24,
+            "shatter": 2.5
+          },
+          "2": {
+            "id": "nova",
+            "name": "Nova de escarcha",
+            "icon": "nova",
+            "desc": "Congela los pies de los enemigos cercanos: los enraíza 2 s.",
+            "cd": 10000,
+            "cast": 0,
+            "range": 0,
+            "aoe": 4.5,
+            "dmg": 18,
+            "ccMs": 2000
+          },
+          "3": {
+            "id": "poly",
+            "name": "Polimorfia",
+            "icon": "poly",
+            "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 4 s. Se rompe con daño.",
+            "cd": 16000,
+            "cast": 1300,
+            "range": 18,
+            "ccMs": 4000,
+            "targeted": true
+          },
+          "4": {
+            "id": "blink",
+            "name": "Traslación",
+            "icon": "blink",
+            "desc": "Te teletransportás 8 m. Rompe raíces.",
+            "cd": 12000,
+            "cast": 0,
+            "range": 8,
+            "dist": 8
+          },
+          "5": {
+            "id": "counter",
+            "name": "Contrahechizo",
+            "icon": "counter",
+            "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+            "cd": 20000,
+            "cast": 0,
+            "range": 18,
+            "ccMs": 2500,
+            "targeted": true
+          },
+          "6": {
+            "id": "blizzard",
+            "name": "Ventisca",
+            "icon": "blizzard",
+            "desc": "DEFINITIVA: una tormenta de hielo cubre una zona durante 5 s: daño continuo y ralentización fuerte (60%) a todos los enemigos dentro.",
+            "cd": 0,
+            "cast": 0,
+            "range": 16,
+            "aoe": 5,
+            "dmg": 18,
+            "tickMs": 500,
+            "durationMs": 5000,
+            "slowPct": 0.6,
+            "ccMs": 1000,
+            "ult": true
+          }
+        }
+      }
+    }
+  },
+  "warlock": {
+    "id": "warlock",
+    "name": "Brujo",
+    "role": "Maldiciones y desgaste",
+    "icon": "class_warlock",
+    "hp": 540,
+    "speed": 6.3,
+    "tags": [
+      "Desgaste",
+      "Control"
+    ],
+    "stats": {
+      "hp": 3,
+      "mobility": 1,
+      "damage": 4,
+      "control": 4,
+      "difficulty": 4
+    },
+    "tagline": "Maldice, aterroriza y roba la vida de sus enemigos.",
+    "abilities": [
+      {
+        "id": "shadowbolt",
+        "name": "Descarga de las sombras",
+        "icon": "shadowbolt",
+        "desc": "Lanzamiento de 1,2 s: proyectil de 34 de daño. Moverte cancela; no es auto-ataque.",
+        "cd": 300,
+        "cast": 1200,
+        "range": 22,
+        "dmg": 28,
+        "projSpeed": 30,
+        "projR": 0.35
+      },
+      {
+        "id": "corruption",
+        "name": "Corrupción",
+        "icon": "corruption",
+        "desc": "Maldice al objetivo: 9 de daño por segundo durante 8 s. Refrescar no acumula daño. Disipable.",
+        "cd": 2500,
+        "cast": 0,
+        "range": 20,
+        "targeted": true,
+        "dotDps": 7,
+        "durationMs": 8000
+      },
+      {
+        "id": "agony",
+        "name": "Agonía",
+        "icon": "agony",
+        "desc": "Otra maldición: 7 de daño por segundo durante 10 s. Coexiste con Corrupción; refrescar no acumula. Disipable.",
+        "cd": 6000,
+        "cast": 0,
+        "range": 20,
+        "targeted": true,
+        "dotDps": 5,
+        "durationMs": 10000
+      },
+      {
+        "id": "fear",
+        "name": "Miedo",
+        "icon": "fear",
+        "desc": "Lanzamiento de 1,2 s: el enemigo huye 3 s. Se rompe al recibir más de 40 de daño, incluidas maldiciones. Comparte rendimiento decreciente con Alarido.",
+        "cd": 18000,
+        "cast": 1200,
+        "range": 18,
+        "targeted": true,
+        "ccMs": 3000
+      },
+      {
+        "id": "darkpact",
+        "name": "Pacto oscuro",
+        "icon": "darkpact",
+        "desc": "Sacrificás 15% de tu vida actual (no letal) para absorber 80 de daño durante 6 s. No te libera del control.",
+        "cd": 28000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 80,
+        "durationMs": 6000
+      },
+      {
+        "id": "drainlife",
+        "name": "Drenar vida",
+        "icon": "drainlife",
+        "desc": "Lanzamiento de 1,5 s: roba hasta 42 de vida. Cura sólo la vida realmente quitada; escudos y amortiguación reducen el drenaje. Moverte cancela.",
+        "cd": 8000,
+        "cast": 1500,
+        "range": 18,
+        "targeted": true,
+        "dmg": 32
+      },
+      {
+        "id": "soulrot",
+        "name": "Putrefacción del alma",
+        "icon": "soulrot",
+        "desc": "DEFINITIVA: 25 de daño y una tercera maldición de 16 por segundo durante 6 s. Disipable; no consume las otras maldiciones.",
+        "cd": 0,
+        "cast": 0,
+        "range": 20,
+        "targeted": true,
+        "ult": true,
+        "dmg": 25,
+        "dotDps": 12,
+        "durationMs": 6000
+      }
+    ]
+  },
+  "hunter": {
+    "id": "hunter",
+    "name": "Cazador",
+    "role": "Daño sostenido y trampas",
+    "icon": "class_hunter",
+    "hp": 600,
+    "speed": 7.2,
+    "abilities": [
+      {
+        "id": "shot",
+        "name": "Disparo",
+        "icon": "shot",
+        "desc": "Auto-ataque: dispara solo contra tu objetivo mientras esté a tiro y de frente (clic derecho sobre el enemigo o tecla 1).",
+        "cd": 450,
+        "cast": 0,
+        "range": 22,
+        "dmg": 25,
+        "projSpeed": 50,
+        "projR": 0.22,
+        "physical": true,
+        "auto": true
+      },
+      {
+        "id": "aimed",
+        "name": "Disparo apuntado",
+        "icon": "aimed",
+        "desc": "Lanzamiento de 1,1 s: flecha devastadora. Moverte cancela.",
+        "cd": 7000,
+        "cast": 1100,
+        "range": 26,
+        "dmg": 64,
+        "projSpeed": 66,
+        "projR": 0.26
+      },
+      {
+        "id": "trap",
+        "name": "Trampa congelante",
+        "icon": "trap",
+        "desc": "Arrojás una trampa invisible: congela 3 s al primer enemigo que la pisa. Se rompe con daño.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 7,
+        "ccMs": 3000
+      },
+      {
+        "id": "conc",
+        "name": "Disparo de conmoción",
+        "icon": "conc",
+        "desc": "Flecha que ralentiza un 50% durante 4 s.",
+        "cd": 8000,
+        "cast": 0,
+        "range": 22,
+        "dmg": 8,
+        "projSpeed": 46,
+        "projR": 0.24,
+        "slowPct": 0.5,
+        "ccMs": 4000
+      },
+      {
+        "id": "disengage",
+        "name": "Retirada",
+        "icon": "disengage",
+        "desc": "Saltás 7 m hacia atrás.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 0,
+        "dist": 7
+      },
+      {
+        "id": "silence",
+        "name": "Disparo silenciador",
+        "icon": "silence",
+        "desc": "Flecha que interrumpe y silencia 2,5 s.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 22,
+        "dmg": 6,
+        "projSpeed": 58,
+        "projR": 0.24,
+        "ccMs": 2500
+      },
+      {
+        "id": "volley",
+        "name": "Andanada",
+        "icon": "volley",
+        "desc": "DEFINITIVA: abanico de 9 flechas ardientes que empujan.",
+        "cd": 0,
+        "cast": 0,
+        "range": 14,
+        "dmg": 12,
+        "projSpeed": 40,
+        "projR": 0.24,
+        "ult": true
+      }
+    ],
+    "tags": [
+      "Daño",
+      "Trampas"
+    ],
+    "stats": {
+      "hp": 3,
+      "mobility": 4,
+      "damage": 4,
+      "control": 3,
+      "difficulty": 3
+    },
+    "tagline": "Presión sostenida y dominio del terreno."
+  },
+  "warrior": {
+    "id": "warrior",
+    "name": "Guerrero",
+    "role": "Cuerpo a cuerpo resistente",
+    "icon": "class_warrior",
+    "hp": 440,
+    "speed": 6.8,
+    "abilities": [
+      {
+        "id": "strike",
+        "name": "Golpe",
+        "icon": "strike",
+        "desc": "Auto-ataque cuerpo a cuerpo contra tu objetivo (clic derecho sobre el enemigo o tecla 1).",
+        "cd": 900,
+        "cast": 0,
+        "range": 3.2,
+        "dmg": 12,
+        "melee": true,
+        "physical": true,
+        "auto": true
+      },
+      {
+        "id": "mortal",
+        "name": "Golpe mortal",
+        "icon": "mortal",
+        "desc": "Golpe brutal: el objetivo recibe 50% menos de curación durante 8 s.",
+        "cd": 6000,
+        "cast": 0,
+        "range": 3.2,
+        "dmg": 20,
+        "melee": true,
+        "physical": true
+      },
+      {
+        "id": "charge",
+        "name": "Carga",
+        "icon": "charge",
+        "desc": "Corrés hasta el enemigo y lo aturdís 1,2 s.",
+        "cd": 18000,
+        "cast": 0,
+        "range": 24,
+        "ccMs": 1200,
+        "targeted": true,
+        "physical": true
+      },
+      {
+        "id": "hamstring",
+        "name": "Seccionar",
+        "icon": "hamstring",
+        "desc": "Corte que ralentiza un 50% durante 6 s.",
+        "cd": 6000,
+        "cast": 0,
+        "range": 3.2,
+        "dmg": 8,
+        "melee": true,
+        "slowPct": 0.5,
+        "ccMs": 6000,
+        "physical": true
+      },
+      {
+        "id": "shieldwall",
+        "name": "Muro de escudo",
+        "icon": "shieldwall",
+        "desc": "Recibís 60% menos de daño durante 6 s.",
+        "cd": 30000,
+        "cast": 0,
+        "range": 0,
+        "ccMs": 6000,
+        "physical": true
+      },
+      {
+        "id": "pummel",
+        "name": "Zurrar",
+        "icon": "pummel",
+        "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+        "cd": 15000,
+        "cast": 0,
+        "range": 3.4,
+        "ccMs": 2500,
+        "melee": true,
+        "physical": true
+      },
+      {
+        "id": "bladestorm",
+        "name": "Filotormenta",
+        "icon": "bladestorm",
+        "desc": "DEFINITIVA: girás 4 s golpeando a todos los cercanos. Inmune al control.",
+        "cd": 0,
+        "cast": 0,
+        "range": 4.2,
+        "dmg": 11,
+        "ccMs": 4000,
+        "ult": true,
+        "physical": true
+      }
+    ],
+    "tags": [
+      "Tanque",
+      "Cuerpo a cuerpo"
+    ],
+    "stats": {
+      "hp": 5,
+      "mobility": 3,
+      "damage": 3,
+      "control": 3,
+      "difficulty": 2
+    },
+    "tagline": "Aguanta, embiste y rompe formaciones."
+  },
+  "priest": {
+    "id": "priest",
+    "name": "Sacerdote",
+    "role": "Sanador y control",
+    "icon": "class_priest",
+    "hp": 430,
+    "speed": 6.4,
+    "abilities": [
+      {
+        "id": "smite",
+        "name": "Castigo",
+        "icon": "smite",
+        "desc": "Rayo sagrado instantáneo contra tu objetivo. No es un auto-ataque.",
+        "cd": 800,
+        "cast": 0,
+        "range": 20,
+        "dmg": 12,
+        "projSpeed": 40,
+        "projR": 0.3
+      },
+      {
+        "id": "heal",
+        "name": "Sanación",
+        "icon": "heal",
+        "desc": "Lanzamiento de 1,5 s: cura 72 al aliado elegido (F1-F3) o al más herido.",
+        "cd": 1000,
+        "cast": 1500,
+        "range": 24,
+        "heal": 40,
+        "friendly": true
+      },
+      {
+        "id": "pwshield",
+        "name": "Escudo divino",
+        "icon": "pwshield",
+        "desc": "Escudo que absorbe 77 de daño durante 10 s.",
+        "cd": 10000,
+        "cast": 0,
+        "range": 24,
+        "heal": 42,
+        "friendly": true
+      },
+      {
+        "id": "scream",
+        "name": "Alarido psíquico",
+        "icon": "scream",
+        "desc": "Los enemigos a 6 m huyen aterrorizados 3 s (se rompe con daño).",
+        "cd": 25000,
+        "cast": 0,
+        "range": 0,
+        "aoe": 6,
+        "ccMs": 3000
+      },
+      {
+        "id": "renew",
+        "name": "Renovar",
+        "icon": "renew",
+        "desc": "Cura 11 por segundo durante 6 s.",
+        "cd": 5000,
+        "cast": 0,
+        "range": 24,
+        "heal": 8,
+        "friendly": true
+      },
+      {
+        "id": "dispel",
+        "name": "Disipar",
+        "icon": "dispel",
+        "desc": "Quita aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 24,
+        "friendly": true
+      },
+      {
+        "id": "hymn",
+        "name": "Himno divino",
+        "icon": "hymn",
+        "desc": "DEFINITIVA: cura 125 a todos los aliados cercanos.",
+        "cd": 0,
+        "cast": 0,
+        "range": 0,
+        "aoe": 18,
+        "heal": 70,
+        "ult": true
+      }
+    ],
+    "tags": [
+      "Sanador",
+      "Control"
+    ],
+    "stats": {
+      "hp": 2,
+      "mobility": 2,
+      "damage": 2,
+      "control": 4,
+      "difficulty": 4
+    },
+    "tagline": "El equipo vive mientras él se mantenga en pie."
+  },
+  "rogue": {
+    "id": "rogue",
+    "name": "Asesino",
+    "role": "Cuerpo a cuerpo y sigilo",
+    "icon": "class_rogue",
+    "hp": 500,
+    "speed": 7.4,
+    "abilities": [
+      {
+        "id": "stab",
+        "name": "Puñalada",
+        "icon": "stab",
+        "desc": "Auto-ataque rápido cuerpo a cuerpo contra tu objetivo (clic derecho sobre el enemigo o tecla 1).",
+        "cd": 650,
+        "cast": 0,
+        "range": 3,
+        "dmg": 14,
+        "melee": true,
+        "physical": true,
+        "auto": true
+      },
+      {
+        "id": "eviscerate",
+        "name": "Eviscerar",
+        "icon": "eviscerate",
+        "desc": "Golpe letal de mucho daño (+30% desde el sigilo).",
+        "cd": 7000,
+        "cast": 0,
+        "range": 3,
+        "dmg": 48,
+        "melee": true,
+        "physical": true
+      },
+      {
+        "id": "cheapshot",
+        "name": "Golpe bajo",
+        "icon": "cheapshot",
+        "desc": "Aturde al enemigo 2,5 s (4 s si venís del sigilo).",
+        "cd": 20000,
+        "cast": 0,
+        "range": 3,
+        "ccMs": 2500,
+        "melee": true,
+        "physical": true
+      },
+      {
+        "id": "blind",
+        "name": "Ceguera",
+        "icon": "blind",
+        "desc": "Ciega a un enemigo a 12 m: incapacitado 4 s (se rompe con daño).",
+        "cd": 25000,
+        "cast": 0,
+        "range": 12,
+        "ccMs": 4000,
+        "targeted": true,
+        "physical": true
+      },
+      {
+        "id": "vanish",
+        "name": "Desvanecer",
+        "icon": "vanish",
+        "desc": "Te volvés invisible 8 s, te sacás raíces y ralentizaciones y corrés +50% durante 4 s.",
+        "cd": 25000,
+        "cast": 0,
+        "range": 0,
+        "ccMs": 8000,
+        "physical": true
+      },
+      {
+        "id": "kick",
+        "name": "Patada",
+        "icon": "kick",
+        "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+        "cd": 15000,
+        "cast": 0,
+        "range": 3.4,
+        "ccMs": 2500,
+        "melee": true,
+        "physical": true
+      },
+      {
+        "id": "deathmark",
+        "name": "Marca de muerte",
+        "icon": "deathmark",
+        "desc": "DEFINITIVA: aparecés detrás del objetivo y recibe 40% más de daño durante 6 s.",
+        "cd": 0,
+        "cast": 0,
+        "range": 20,
+        "ccMs": 6000,
+        "targeted": true,
+        "ult": true,
+        "physical": true
+      }
+    ],
+    "tags": [
+      "Asesino",
+      "Sigilo"
+    ],
+    "stats": {
+      "hp": 3,
+      "mobility": 5,
+      "damage": 5,
+      "control": 3,
+      "difficulty": 5
+    },
+    "tagline": "Desaparece, elige a su presa y remata."
+  }
+}

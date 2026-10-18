@@ -1,0 +1,5 @@
+KayKit : Adventurers Character Pack (1.0) by Kay Lousberg (www.kaylousberg.com)
+Source: https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0  (also https://kaylousberg.itch.io/kaykit-adventurers)
+License: Creative Commons Zero (CC0 1.0), see LICENSE.txt (copied verbatim from the repository).
+Files used: Characters/gltf/{Mage,Knight,Rogue,Rogue_Hooded}.glb, unmodified.
+Downloaded 2026-10-17.

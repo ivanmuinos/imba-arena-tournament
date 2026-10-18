@@ -1,0 +1,46 @@
+{
+  "bridge": {
+    "id": "bridge",
+    "name": "Puente de Magma",
+    "icon": "ui_map_random",
+    "desc": "Dos mesetas unidas por un puente sobre un abismo de lava",
+    "pool": {
+      "name": "lava",
+      "dps": 15,
+      "hps": 0
+    }
+  },
+  "pillars": {
+    "id": "pillars",
+    "name": "Cuatro Pilares",
+    "icon": "ui_map_random",
+    "desc": "Arena redonda con cuatro pilares: a esquivar la línea de visión",
+    "pool": {
+      "name": "",
+      "dps": 0,
+      "hps": 0
+    }
+  },
+  "tomb": {
+    "id": "tomb",
+    "name": "Tumba del Titán",
+    "icon": "ui_map_random",
+    "desc": "Una estatua colosal en el centro y lápidas junto a las salas",
+    "pool": {
+      "name": "",
+      "dps": 0,
+      "hps": 0
+    }
+  },
+  "living": {
+    "id": "living",
+    "name": "Pilares Vivos",
+    "icon": "ui_map_random",
+    "desc": "Pilares que emergen y se hunden del suelo cada pocos segundos",
+    "pool": {
+      "name": "",
+      "dps": 0,
+      "hps": 0
+    }
+  }
+}

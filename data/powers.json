@@ -1,0 +1,42 @@
+{
+  "crit": {
+    "kind": "crit",
+    "name": "Furia",
+    "icon": "power_crit",
+    "desc": "100% de golpes críticos",
+    "ms": 8000,
+    "color": 16756736
+  },
+  "stealth": {
+    "kind": "stealth",
+    "name": "Velo de humo",
+    "icon": "power_stealth",
+    "desc": "Invisible hasta que ataques o te peguen",
+    "ms": 15000,
+    "color": 11766015
+  },
+  "shield": {
+    "kind": "shield",
+    "name": "Escudo de obsidiana",
+    "icon": "power_shield",
+    "desc": "Inmune a daño y control",
+    "ms": 4000,
+    "color": 8379391
+  },
+  "haste": {
+    "kind": "haste",
+    "name": "Pies de fuego",
+    "icon": "power_haste",
+    "desc": "+50% de velocidad",
+    "ms": 8000,
+    "color": 6094730
+  },
+  "heal": {
+    "kind": "heal",
+    "name": "Esencia",
+    "icon": "power_heal",
+    "desc": "Cura 35% de la vida",
+    "ms": 0,
+    "color": 16731501
+  }
+}

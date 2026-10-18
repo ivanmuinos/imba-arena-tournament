@@ -1,0 +1,13 @@
+Kenney RPG Audio + Impact Sounds, CC0. Downloaded 2026-10-17.
+https://kenney.nl/assets/rpg-audio
+https://kenney.nl/assets/impact-sounds
+
+Original archives (SHA-256):
+kenney_rpg-audio.zip: 6dbeaf8544da958d8f2adcb4a4a4b76c1ade34a05f8ab9edccd327da7375f38b
+kenney_impact-sounds.zip: 029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8
+
+Selected original Ogg files, unmodified. No footstep assets included.
+The game varies pitch/gain: cloth and creaks for movement/fire/shadow,
+metal and knife swishes for weapons, glass for frost/arcane, bells for holy.
+These are Foley-based interpretations of spells, not recordings of magic.
+Original licenses are included alongside the samples.

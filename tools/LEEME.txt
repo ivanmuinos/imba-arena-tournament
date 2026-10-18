@@ -1,0 +1,22 @@
+IMBA ARENA TOURNAMENT
+=====================
+
+Cómo abrir
+----------
+Windows: descomprimí el zip y abrí ImbaArenaTournament.exe.
+  Si Windows muestra "SmartScreen protegió su PC": tocá "Más información" y después "Ejecutar de todas formas".
+  Si pide permiso de firewall, aceptá (es para jugar online).
+
+Mac: descomprimí el zip y arrastrá "ImbaArenaTournament" a Aplicaciones (o dejala donde quieras).
+  La primera vez: clic derecho sobre la app -> "Abrir" -> "Abrir".
+  Si dice que está dañada o no se abre, abrí la Terminal y pegá:
+      xattr -dr com.apple.quarantine /ruta/a/ImbaArenaTournament.app
+  (podés arrastrar la app a la Terminal para que escriba la ruta).
+
+Jugar online con amigos
+-----------------------
+1. Uno crea la partida ("CREAR PARTIDA (SOY ANFITRIÓN)").
+2. Los demás ponen la IP de esa persona y el puerto (7777 por defecto) y tocan "UNIRME".
+3. Todos tienen que tener la MISMA versión del juego.
+Para que funcione por internet hace falta una VPN virtual (Tailscale / ZeroTier / Radmin VPN),
+abrir el puerto UDP 7777 en el router, o un túnel UDP (playit.gg). Ver README.md del proyecto.

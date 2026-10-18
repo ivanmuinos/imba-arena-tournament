@@ -1,0 +1,17 @@
+Downloaded 2026-10-17 from OpenGameArt.org (license shown on each page: CC0). Built by tools/audio/build_sfx.py.
+
+pack / page                                              uploader        clips
+https://opengameart.org/content/80-cc0-rpg-sfx           NoirPhantom89   fire_cast_*, fire_big_*, fire_hit_*, blade_*, metal_*, chain_1, stone_*, wood_1, death_1
+https://opengameart.org/content/magic-spell-sfx          Arcanorum       arc_1 .. arc_7
+https://opengameart.org/content/ice-spells              pyf             frost_cast, frost_crack_1
+https://opengameart.org/content/freeze-spell-0           StarNinjas      frost_crack_2, frost_big
+https://opengameart.org/content/cure-magic               (CC0 page)      holy_*, heal_*
+https://opengameart.org/content/3-dark-magic-spells      (CC0 page)      shadow_1 .. shadow_3, shadow_low
+https://opengameart.org/content/swishes-sound-pack       qubodup         swish_1 .. swish_4
+https://opengameart.org/content/air-whoosh               (CC0 page)      whoosh_long
+https://opengameart.org/content/catching-fire            frances         fire_whoosh
+https://opengameart.org/content/earth-element-magic-spell (CC0 page)     earth_big
+
+Rejected on purpose: https://opengameart.org/content/energy-drain (page says CC0 but the bundled license.txt is CC-BY-SA 3.0),
+the "37 hits and punches" pack (re-upload of third-party material), the "Spell sounds" page (mixed OGA-BY / CC0 files),
+the "Weird whooshes" page (CC-BY).

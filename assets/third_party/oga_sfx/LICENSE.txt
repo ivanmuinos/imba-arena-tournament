@@ -1,0 +1,8 @@
+All source recordings used to build these clips are published on OpenGameArt.org under the
+Creative Commons Zero 1.0 Universal public domain dedication (CC0 1.0), as stated in the "License(s): CC0" field
+of every page listed in SOURCE.txt (checked 2026-10-17). CC0 allows copying, modification, redistribution and commercial
+use without attribution: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+The clips here are derived works (trimmed, band-limited, faded, level-normalised, mono WAV) produced by
+tools/audio/build_sfx.py. The derivatives are released under the same CC0 terms.
+Credit (optional, given as a courtesy): NoirPhantom89, Arcanorum, qubodup, pyf, StarNinjas, frances and the uploaders named below.
