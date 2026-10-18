@@ -9,32 +9,52 @@ const GAME_TAG := "imba-arena-tournament"
 const MSG_CHANNEL := 7
 const SEND_UNRELIABLE := 0
 const SEND_RELIABLE := 8
+const DISTANCE_WORLDWIDE := 3
 
+## Print every Steam callback and a message count (`--log` / `--steam-log`): the real integration is debugged from these lines.
+var verbose := false
 var _steam = null
 var _ok := false
 var _status := "La extensión de Steam no está instalada"
 var _pending_lobby := 0
+var _sent := 0
+var _received := 0
 
 
-func _init() -> void:
+func _init(p_verbose := false) -> void:
+	verbose = p_verbose
 	if not Engine.has_singleton("Steam"):
+		_log("la extensión GodotSteam no está cargada")
 		return
 	_steam = Engine.get_singleton("Steam")
 	var r: Dictionary = _steam.steamInitEx(APP_ID, false)
+	_log("steamInitEx(%d) -> %s" % [APP_ID, r])
 	if int(r.get("status", 1)) != 0:  # 0 = STEAM_API_INIT_RESULT_OK
 		_status = "Abrí el cliente de Steam e iniciá sesión para usar las salas de Steam"
 		return
 	_ok = true
 	_status = "Conectado a Steam como %s" % persona_name()
+	_log("%s (SteamID %d)" % [_status, my_id()])
 	_steam.lobby_created.connect(_on_lobby_created)
 	_steam.lobby_match_list.connect(_on_match_list)
 	_steam.lobby_joined.connect(_on_lobby_joined)
 	_steam.lobby_chat_update.connect(_on_chat_update)
-	_steam.join_requested.connect(func(lobby_id: int, _friend: int): join_requested.emit(lobby_id))
-	_steam.network_messages_session_request.connect(func(remote: int): _steam.acceptSessionWithUser(remote))
-	_steam.network_messages_session_failed.connect(func(_reason, remote: int, _state, _dbg): session_failed.emit(remote))
+	_steam.join_requested.connect(func(lobby_id: int, friend: int):
+		_log("invitación aceptada: sala %d (de %d)" % [lobby_id, friend])
+		join_requested.emit(lobby_id))
+	_steam.network_messages_session_request.connect(func(remote: int):
+		_log("pedido de sesión de %d: aceptado" % remote)
+		_steam.acceptSessionWithUser(remote))
+	_steam.network_messages_session_failed.connect(func(reason, remote: int, state, dbg):
+		_log("sesión con %d falló: motivo=%s estado=%s %s" % [remote, reason, state, dbg])
+		session_failed.emit(remote))
 	if _steam.has_method("initRelayNetworkAccess"):
 		_steam.initRelayNetworkAccess()
+
+
+func _log(text: String) -> void:
+	if verbose:
+		print("[steam] ", text)
 
 
 func available() -> bool:
@@ -60,16 +80,20 @@ func run_callbacks() -> void:
 
 func create_lobby(friends_only: bool, max_members: int) -> void:
 	# LOBBY_TYPE_FRIENDS_ONLY = 1, LOBBY_TYPE_PUBLIC = 2
+	_log("creando sala (%s, %d lugares)" % ["sólo amigos" if friends_only else "pública", max_members])
 	_steam.createLobby(1 if friends_only else 2, max_members)
 
 
 func request_lobby_list(version: String) -> void:
 	_steam.addRequestLobbyListStringFilter("game", GAME_TAG, 0)  # 0 = equal
 	_steam.addRequestLobbyListStringFilter("version", version, 0)
+	_steam.addRequestLobbyListDistanceFilter(DISTANCE_WORLDWIDE)  # the default only lists nearby regions
+	_log("buscando salas (versión %s)" % version)
 	_steam.requestLobbyList()
 
 
 func join_lobby(lobby_id: int) -> void:
+	_log("entrando a la sala %d" % lobby_id)
 	_steam.joinLobby(lobby_id)
 
 
@@ -97,7 +121,10 @@ func invite_dialog(lobby_id: int) -> void:
 
 
 func send(to: int, data: PackedByteArray, reliable: bool) -> void:
-	_steam.sendMessageToUser(to, data, SEND_RELIABLE if reliable else SEND_UNRELIABLE, MSG_CHANNEL)
+	var r := int(_steam.sendMessageToUser(to, data, SEND_RELIABLE if reliable else SEND_UNRELIABLE, MSG_CHANNEL))
+	_sent += 1
+	if verbose and (_sent <= 5 or _sent % 500 == 0 or r != 1):  # 1 = k_EResultOK
+		_log("enviado #%d a %d (%d bytes, %s) -> %d" % [_sent, to, data.size(), "fiable" if reliable else "no fiable", r])
 
 
 func poll_messages() -> Array:
@@ -107,6 +134,9 @@ func poll_messages() -> Array:
 	for m in _steam.receiveMessagesOnChannel(MSG_CHANNEL, 64):
 		var from := int(m.get("identity", m.get("remote_steam_id", 0)))
 		out.append({"from": from, "data": m.get("payload", PackedByteArray())})
+		_received += 1
+		if verbose and (_received <= 5 or _received % 500 == 0):
+			_log("recibido #%d de %d (claves %s)" % [_received, from, m.keys()])
 	return out
 
 
@@ -115,11 +145,13 @@ func accept_session(from: int) -> void:
 
 
 func close_session(steam_id: int) -> void:
+	_log("cerrando sesión con %d" % steam_id)
 	_steam.closeSessionWithUser(steam_id)
 
 
 func _on_lobby_created(connect: int, lobby_id: int) -> void:
 	var ok := connect == 1
+	_log("sala creada: resultado=%d id=%d" % [connect, lobby_id])
 	if ok:
 		_steam.setLobbyData(lobby_id, "game", GAME_TAG)
 		_steam.setLobbyJoinable(lobby_id, true)
@@ -127,6 +159,7 @@ func _on_lobby_created(connect: int, lobby_id: int) -> void:
 
 
 func _on_match_list(lobbies: Array) -> void:
+	_log("%d salas encontradas" % lobbies.size())
 	var entries: Array = []
 	for id in lobbies:
 		entries.append({
@@ -138,9 +171,11 @@ func _on_match_list(lobbies: Array) -> void:
 
 
 func _on_lobby_joined(lobby_id: int, _permissions: int, _locked: bool, response: int) -> void:
+	_log("entrada a la sala %d: respuesta=%d dueño=%d" % [lobby_id, response, int(_steam.getLobbyOwner(lobby_id))])
 	lobby_joined.emit(lobby_id, response == 1, int(_steam.getLobbyOwner(lobby_id)))
 
 
 func _on_chat_update(lobby_id: int, changed_id: int, _making_change: int, chat_state: int) -> void:
 	# chat_state bit 1 = entered; 2 = left; 4 = disconnected; 8 = kicked; 16 = banned
+	_log("sala %d: miembro %d estado=%d" % [lobby_id, changed_id, chat_state])
 	member_changed.emit(lobby_id, changed_id, (chat_state & 1) != 0)

@@ -15,6 +15,9 @@ extends Node
 ##   --no-capture       do not grab the mouse
 ##   --time-scale=N     debug: simulate N times faster
 ##   --rounds=N         debug: rounds needed to win the match
+##   --steam-host[=public]   create a Steam lobby on start (friends only unless "public")
+##   --steam-join=LOBBY_ID   join a Steam lobby on start (Steam itself launches us with `+connect_lobby ID` for invites)
+##   --log / --steam-log     print every Steam callback
 
 const DEFAULT_PORT := 7777
 
@@ -190,9 +193,11 @@ func _cfg_from_args() -> Dictionary:
 # ---------------------------------------------------------------- Steam (optional)
 
 func _init_steam() -> void:
-	steam = SteamBackendReal.new()
+	steam = SteamBackendReal.new(args.has("log") or args.has("steam-log"))
 	_menu.set_steam(steam.available(), steam.status_text())
 	if not steam.available():
+		if args.has("steam-host") or args.has("steam-join"):
+			print("[steam] no disponible: ", steam.status_text())
 		return
 	steam_lobbies = SteamLobbies.new(steam)
 	steam_lobbies.hosted.connect(_on_steam_hosted)
@@ -200,6 +205,14 @@ func _init_steam() -> void:
 	steam_lobbies.joined.connect(_on_steam_joined)
 	steam_lobbies.failed.connect(func(text): _browser.set_status(text); _menu.set_status(text); _lobby.flash(text))
 	steam_lobbies.backend.join_requested.connect(func(_id): _browser.visible = false)  # invite accepted from the overlay
+	# An invite accepted while the game was closed: Steam starts us with `+connect_lobby <id>`.
+	var invited := SteamLobbies.lobby_from_cmdline(OS.get_cmdline_args())
+	if args.has("steam-join"):
+		invited = int(str(args["steam-join"]))
+	if invited != 0:
+		(func(): _via_steam = true; steam_lobbies.join(invited)).call_deferred()
+	elif args.has("steam-host"):
+		(func(): _start_steam_host(_cfg_from_args(), str(args["steam-host"]) != "public")).call_deferred()
 
 
 func _steam_name(cfg: Dictionary) -> String:

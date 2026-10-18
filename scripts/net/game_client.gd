@@ -28,9 +28,12 @@ var rtt_ms := -1
 var hello: Dictionary = {}
 ## Overridable in tests; normally the version in project.godot.
 var hello_version := GameServer.game_version()
+## Give up when the server does not answer the hello (a Steam host that never accepts the session, a wrong port...).
+var welcome_timeout_ms := 10000.0
 
 var _ping_timer := 0.0
 var _greeted := false
+var _welcome_wait := -1.0
 
 
 ## `hello`: {name, cls, pref}. Sent as soon as the transport is connected.
@@ -47,6 +50,11 @@ func poll(delta_ms: float) -> void:
 	if transport == null:
 		return
 	transport.poll()
+	if _welcome_wait >= 0.0 and peer_id == 0:
+		_welcome_wait -= delta_ms
+		if _welcome_wait < 0.0:
+			closed.emit("El anfitrión no responde. Revisá que siga en la sala y probá de nuevo.")
+			return
 	if _greeted:
 		_ping_timer -= delta_ms
 		if _ping_timer <= 0.0:
@@ -78,6 +86,7 @@ func _on_lost(_id: int) -> void:
 
 func _on_connected() -> void:
 	_greeted = true
+	_welcome_wait = welcome_timeout_ms
 	var h := hello.duplicate()
 	h["t"] = "hello"
 	h["v"] = GameServer.PROTO
@@ -91,6 +100,7 @@ func _on_message(_from: int, msg: Dictionary) -> void:
 		"welcome":
 			peer_id = int(msg.peer)
 			is_host = bool(msg.host)
+			_welcome_wait = -1.0
 			welcomed.emit()
 		"lobby":
 			lobby = msg

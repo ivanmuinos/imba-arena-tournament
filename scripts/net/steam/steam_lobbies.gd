@@ -36,6 +36,14 @@ func host(friends_only: bool, settings: Dictionary) -> void:
 var _settings := {}
 
 
+## The lobby of an invite accepted while the game was closed: Steam launches it with `+connect_lobby <id>`. 0 if none.
+static func lobby_from_cmdline(list: PackedStringArray) -> int:
+	var i := list.find("+connect_lobby")
+	if i < 0 or i + 1 >= list.size() or not list[i + 1].is_valid_int():
+		return 0
+	return maxi(int(list[i + 1]), 0)
+
+
 func refresh() -> void:
 	backend.request_lobby_list(GameServer.game_version())
 

@@ -257,3 +257,47 @@ func test_steam_client_with_other_game_version_gets_the_clear_error() -> void:
 	_pump([host_b, guest_b], server, [gc], 300.0)
 	check(errs.size() == 1 and errs[0].contains("Versión distinta"), "mismo mensaje claro que en ENet (%s)" % str(errs))
 	server.shutdown()
+
+
+func test_invite_accepted_with_the_game_closed_comes_as_connect_lobby() -> void:
+	eq(SteamLobbies.lobby_from_cmdline(PackedStringArray(["--path", ".", "+connect_lobby", "109775241234567890"])), 109775241234567890, "lee el id")
+	eq(SteamLobbies.lobby_from_cmdline(PackedStringArray(["--path", "."])), 0, "sin invitación")
+	eq(SteamLobbies.lobby_from_cmdline(PackedStringArray(["+connect_lobby"])), 0, "sin id")
+	eq(SteamLobbies.lobby_from_cmdline(PackedStringArray(["+connect_lobby", "abc"])), 0, "id inválido")
+
+
+func test_client_gives_up_when_the_host_never_answers() -> void:
+	var net := FakeSteam.new()
+	var host := net.user(76561198000000001, "Anfitrión")
+	var guest := net.user(76561198000000002, "Invitado")
+	host.create_lobby(true, 6)
+	host.run_callbacks()
+	var lobby: int = net.lobbies.keys()[0]
+	guest.join_lobby(lobby)
+	# The host never attaches a server: the hello goes nowhere.
+	var c := GameClient.new()
+	c.welcome_timeout_ms = 1000.0
+	var reasons: Array = []
+	c.closed.connect(func(r): reasons.append(r))
+	c.attach(SteamTransport.join(guest, lobby, host.sid), {"name": "Invitado", "cls": "mage", "pref": "any"})
+	_pump([host, guest], null, [c], 900.0)
+	eq(reasons.size(), 0, "todavía espera")
+	_pump([host, guest], null, [c], 300.0)
+	eq(reasons.size(), 1, "se rinde una sola vez")
+	check(str(reasons[0]).contains("no responde"), "explica el motivo (%s)" % str(reasons[0]))
+	_pump([host, guest], null, [c], 2000.0)
+	eq(reasons.size(), 1, "no repite el aviso")
+
+
+func test_welcomed_client_does_not_time_out() -> void:
+	var server := GameServer.new({"mode": 2})
+	var link := LoopbackTransport.pair()
+	server.attach(link[0], true)
+	var c := GameClient.new()
+	c.welcome_timeout_ms = 500.0
+	var reasons: Array = []
+	c.closed.connect(func(r): reasons.append(r))
+	c.attach(link[1], {"name": "Ana", "cls": "mage", "pref": "any"})
+	_pump([], server, [c], 2000.0)
+	check(c.peer_id != 0, "recibió la bienvenida")
+	eq(reasons, [], "no se cierra")
