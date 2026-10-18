@@ -26,8 +26,9 @@ en GDScript.
 
 Requiere Godot 4.7.2 (`godot` en el PATH). La primera vez (o al agregar `class_name`): `godot --headless --path . --import`.
 
-**En Windows**: bajá `Godot_v4.7.2-stable_win64.exe.zip` del release oficial y poné en la PATH un `godot` que apunte a
-`Godot_v4.7.2-stable_win64_console.exe` (el de consola: sin él los scripts no ven la salida). Los `.sh` (tests, smoke, exportación,
+**En Windows**: bajá `Godot_v4.7.2-stable_win64.exe.zip` del release oficial y poné en la PATH de Git Bash un `godot` que apunte a
+`Godot_v4.7.2-stable_win64.exe` (con la salida redirigida imprime igual; el `_console.exe` es un envoltorio que lanza al principal como
+proceso hijo, y al cortarlo por tiempo el smoke dejaba servidores huérfanos ocupando el puerto). Los `.sh` (tests, smoke, exportación,
 plantillas, rcedit) corren en Git Bash; rcedit funciona nativo, así que el `.exe` exportado lleva ícono y versión. El repo fija fin de
 línea LF (`.gitattributes`) porque Godot reescribe los recursos con LF.
 
