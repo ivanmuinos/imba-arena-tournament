@@ -72,7 +72,7 @@ static func kit(cls: String, spec := "") -> Dictionary:
 		k["spec_color"] = s.color
 		k["stats"] = s.stats
 		k["tagline"] = s.desc
-		for key in ["hp", "armor", "crit"]:  # a specialization may be sturdier, tougher or crit-ier than its class
+		for key in ["hp", "armor", "crit", "companion"]:  # a specialization may be sturdier, tougher or crit-ier than its class (or bring its own pet)
 			if s.has(key):
 				k[key] = s[key]
 	return k

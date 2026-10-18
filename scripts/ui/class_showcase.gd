@@ -6,6 +6,8 @@ extends SubViewportContainer
 var _vp := SubViewport.new()
 var _pivot := Node3D.new()
 var _rig: CharacterRig = null
+var _pet: CompanionView = null
+var _pet_key := ""
 var _cls := ""
 var _t := 0.0
 var _next_move := 6.0
@@ -141,7 +143,8 @@ func _tint(c: Color) -> void:
 	_embers.color = c.lightened(0.35)
 
 
-func show_class(cls: String, team := Color("#ffb84d")) -> void:
+func show_class(cls: String, team := Color("#ffb84d"), spec := "") -> void:
+	_show_pet(cls, spec, team)
 	if cls == _cls:
 		return
 	_cls = cls
@@ -159,6 +162,23 @@ func show_class(cls: String, team := Color("#ffb84d")) -> void:
 	_t = 0.0
 	_next_move = 5.0
 	play_select(Time.get_ticks_msec() / 1000.0)
+
+
+## The class companion beside the champion on the pedestal (changes with the specialization: phoenix / frost elemental).
+func _show_pet(cls: String, spec: String, team: Color) -> void:
+	var def := CompanionView.def_for(cls, spec) if CompanionView.enabled() else {}
+	var key := str(def)
+	if key == _pet_key:
+		return
+	_pet_key = key
+	if _pet != null:
+		_pet.queue_free()
+		_pet = null
+	if def.is_empty():
+		return
+	_pet = CompanionView.new()
+	_pet.setup(def, team, null)
+	_pivot.add_child(_pet)
 
 
 ## Short cast/attack on selection (the model "answers" the click).
@@ -183,3 +203,7 @@ func _process(dt: float) -> void:
 		_next_move = _t + 6.0
 		_rig.once("attack" if _cls in ["warrior", "rogue"] and randf() < 0.5 else "cast", now, 1.0)
 	_rig.drive(now, true, false, false, 0.0, false, 1.0)
+	if _pet != null:
+		_pet.track(dt, _t, Vector3.ZERO, 0.0, Vector2.ZERO, true, true, 0.0)
+		_pet.position = Vector3(0.95, _pet.position.y * 0.85, 0.35)  # on the pedestal, a little in front of the champion
+		_pet.rotation.y = deg_to_rad(float(_pet.def.get("yaw", 0.0))) + 0.35

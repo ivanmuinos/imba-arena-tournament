@@ -17,6 +17,7 @@ var _slider_labels := {}
 var _gfx: Segmented
 var _full: Segmented
 var _invert: Segmented
+var _pets: Segmented
 var _name: LineEdit
 var _sliders := {}
 var _gfx_info: Label
@@ -89,6 +90,9 @@ func _ready() -> void:
 	_name.add_theme_font_size_override("font_size", 19)
 	_name.text_changed.connect(func(t): menu.st.set_value("name", t); menu.settings_changed("name"))
 	_row(j, "Nombre", "Es el que ven los demás jugadores (hasta 16 caracteres).", _name)
+	_pets = Segmented.new().setup([["on", "Mostrar"], ["off", "Ocultar"]], "on")
+	_row(j, "Compañeros", "La mascota de cada clase (lobo, puma, hada...). Es sólo visual; se aplica en la próxima partida.", _pets)
+	_pets.changed.connect(func(v): menu.st.set_value("companions", v == "on"); menu.settings_changed("companions"))
 	var reset := MButton.new("Restablecer valores", "secondary")
 	reset.custom_minimum_size = Vector2(260, 44)
 	reset.pressed.connect(_reset)
@@ -167,7 +171,7 @@ func select_tab(id: String) -> void:
 	for k in _pages:
 		_pages[k].visible = k == id
 	if _holder != null:
-		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 330.0, "audio": 200.0, "juego": 220.0}.get(id, 300.0)
+		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 330.0, "audio": 200.0, "juego": 300.0}.get(id, 300.0)
 		_panel.reset_size()
 	_tabs.select(id, false)
 
@@ -178,6 +182,7 @@ func menu_enter() -> void:
 	_full.select("on" if st.get_value("fullscreen") else "off", false)
 	_update_gfx_info()
 	_invert.select("on" if st.get_value("invert") else "off", false)
+	_pets.select("on" if st.get_value("companions") else "off", false)
 	_name.text = str(st.get_value("name"))
 	for k in _sliders:
 		(_sliders[k] as HSlider).set_value_no_signal(float(st.get_value(k)))
@@ -187,7 +192,7 @@ func menu_enter() -> void:
 
 func _reset() -> void:
 	var fresh := SettingsStore.new()
-	for k in ["gfx", "fullscreen", "master", "music", "sfx", "sens", "invert"]:
+	for k in ["gfx", "fullscreen", "master", "music", "sfx", "sens", "invert", "companions"]:
 		menu.st.set_value(k, fresh.get_value(k))
 	menu.settings_changed("gfx")
 	menu_enter()

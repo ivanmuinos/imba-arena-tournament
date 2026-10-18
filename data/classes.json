@@ -201,7 +201,8 @@
             "ult": true
           }
         },
-        "hp": 440
+        "hp": 440,
+        "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90}
       },
       "frost": {
         "name": "Escarcha",
@@ -305,10 +306,12 @@
             "ult": true
           }
         },
-        "hp": 480
+        "hp": 480,
+        "companion": {"name": "Elemental de escarcha", "kind": "crystal", "fly": 1.25, "glow": "#7fd8ff"}
       }
     },
-    "identity": "Daño o control a distancia con poca vida. Se sostiene con Traslación y el control; elegí Fuego o Escarcha."
+    "identity": "Daño o control a distancia con poca vida. Se sostiene con Traslación y el control; elegí Fuego o Escarcha.",
+    "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90}
   },
   "warlock": {
     "id": "warlock",
@@ -414,7 +417,8 @@
         "durationMs": 6000
       }
     ],
-    "identity": "Desgaste: maldiciones que dañan solas y Drenar vida para sostenerse. Vida medio-alta, lento y con poca explosión."
+    "identity": "Desgaste: maldiciones que dañan solas y Drenar vida para sostenerse. Vida medio-alta, lento y con poca explosión.",
+    "companion": {"name": "Diablillo vil", "model": "dragon", "len": 0.85, "fly": 0.95, "idle": "Dragon_Flying", "move": "Dragon_Flying", "tint": {"Main": "#3a2048", "Belly": "#5f9e34", "Wings": "#24123a", "Claws": "#cbbf9f", "Eyes": "#7dff4a"}, "glow": "#4fe03a"}
   },
   "hunter": {
     "id": "hunter",
@@ -523,7 +527,8 @@
       "difficulty": 3
     },
     "tagline": "Presión sostenida y dominio del terreno.",
-    "identity": "Daño sostenido a distancia con vida media y movilidad media. Las trampas y el desenganche marcan el ritmo."
+    "identity": "Daño sostenido a distancia con vida media y movilidad media. Las trampas y el desenganche marcan el ritmo.",
+    "companion": {"name": "Lobo", "model": "wolf", "len": 1.55, "idle": "Idle", "move": "Walking", "walk": 1.8, "tint": {"Wolf": "#76695c"}, "yaw": -90}
   },
   "warrior": {
     "id": "warrior",
@@ -634,7 +639,8 @@
     },
     "tagline": "Aguanta, embiste y rompe formaciones.",
     "armor": 0.18,
-    "identity": "Tanque: la mayor vida y 18% de armadura contra daño físico. Aguanta mucho, pega poco y controla con Carga, Tajo y Golpe de escudo. Cuesta matarlo y también matar a los demás."
+    "identity": "Tanque: la mayor vida y 18% de armadura contra daño físico. Aguanta mucho, pega poco y controla con Carga, Tajo y Golpe de escudo. Cuesta matarlo y también matar a los demás.",
+    "companion": {"name": "Puma", "model": "cat", "len": 1.35, "idle": "Idle", "move": "Walking", "walk": 1.6, "tint": {"Grey": "#b8884c", "White": "#e3d2b0", "Pink": "#8a4e40"}, "yaw": -90}
   },
   "priest": {
     "id": "priest",
@@ -735,7 +741,8 @@
       "difficulty": 4
     },
     "tagline": "El equipo vive mientras él se mantenga en pie.",
-    "identity": "Poco daño y mucha curación. Vida media y buenas defensivas (escudo, disipar, grito): el equipo vive mientras él se mantenga en pie."
+    "identity": "Poco daño y mucha curación. Vida media y buenas defensivas (escudo, disipar, grito): el equipo vive mientras él se mantenga en pie.",
+    "companion": {"name": "Hada", "kind": "fairy", "fly": 1.3, "glow": "#ffe9a8"}
   },
   "rogue": {
     "id": "rogue",
@@ -844,6 +851,7 @@
     },
     "tagline": "Desaparece, elige a su presa y remata.",
     "crit": 0.1,
-    "identity": "Cañón de cristal: el mayor golpe inicial desde el sigilo y mucho crítico, pero la menor vida. Si cae en una trampa, muere en segundos; si engancha a un mago, lo liquida."
+    "identity": "Cañón de cristal: el mayor golpe inicial desde el sigilo y mucho crítico, pero la menor vida. Si cae en una trampa, muere en segundos; si engancha a un mago, lo liquida.",
+    "companion": {"name": "Gato negro", "model": "cat", "len": 0.6, "idle": "Idle", "move": "Walking", "walk": 1.1, "tint": {"Grey": "#232129"}, "yaw": -90}
   }
 }

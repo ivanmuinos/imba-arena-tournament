@@ -16,6 +16,7 @@ var values := {
 	"name": "", "cls": "mage", "spec": "fire", "specs": {}, "mode": 2, "map": "random", "diff": "normal", "pref": "any",
 	"addr": "127.0.0.1", "port": 7777, "gfx": "auto", "fullscreen": false,
 	"tutorial_seen": false, "master": 0.8, "music": 0.5, "sfx": 0.9, "sens": 1.0, "invert": false, "steam_friends": true,
+	"companions": true,
 }
 
 
@@ -75,6 +76,8 @@ func set_value(key: String, v: Variant) -> Variant:
 			values.gfx = str(v) if GFX.has(str(v)) else "auto"
 		"fullscreen", "invert", "steam_friends", "tutorial_seen":
 			values[key] = bool(v) if typeof(v) == TYPE_BOOL else false
+		"companions":
+			values.companions = bool(v) if typeof(v) == TYPE_BOOL else true
 		"master", "music", "sfx":
 			values[key] = clampf(float(v), 0.0, 1.0) if typeof(v) in [TYPE_INT, TYPE_FLOAT] else values[key]
 		"sens":

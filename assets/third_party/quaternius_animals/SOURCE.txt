@@ -1,0 +1,12 @@
+Animal Pack Vol.2 and Animated Monster Pack by Quaternius (quaternius.com)
+Source: https://opengameart.org/content/animated-animales-low-poly
+Download: https://opengameart.org/sites/default/files/Animal%20Pack%20Vol.2%20by%20%40Quaternius.zip
+sha256 of the zip: 6d8f6789d65dbdb352ebad98a4209f26b41b384e87d81bc05e9ca76139db1248
+License: Creative Commons Zero (CC0 1.0), see LICENSE.txt.
+Files used: Blends/{Wolf,Cat,Eagle}.blend converted to {wolf,cat,eagle}.glb with tools/blender/convert_quaternius.py (geometry and animations unchanged).
+
+Animated Monster Pack: https://opengameart.org/content/lowpoly-animated-monsters
+Download: https://opengameart.org/sites/default/files/Animated%20Monster%20Pack%20by%20%40Quaternius.zip
+sha256 of the zip: acab2bddc5939f9b1b92c930507d73e0fd80037a39631cf2049bb6cfcaec1acd
+License: CC0 1.0. File used: Blend/Dragon.blend -> dragon.glb (same tool, unchanged).
+Downloaded 2026-10-18.

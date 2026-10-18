@@ -215,7 +215,7 @@ func select(id: String, from_user := false) -> void:
 		slot.queue_redraw()
 	(_panel.find_child("RoleLine", true, false) as Label).text = str(GameData.classes[id].specs[sid].role) if sid != "" else str(spec.role)
 	_tip.hush()
-	_show.show_class(id)
+	_show.show_class(id, Color("#ffb84d"), sid)
 	if changed and from_user:
 		UiSound.play(CLASS_SOUND.get(id, "uiSelect"))
 		_show.play_select(Time.get_ticks_msec() / 1000.0)

@@ -27,6 +27,7 @@ var _world: ArenaWorld
 var _body := Node3D.new()
 var _model: Dictionary
 var _rig: CharacterRig = null
+var _companion: CompanionView = null
 var _sheep: Node3D
 var _ice: MeshInstance3D
 var _stars := Node3D.new()
@@ -81,6 +82,12 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 		_body.scale = Vector3.ONE * 0.92 * VS
 		_collect_parts(_model.root)
 	add_child(_body)
+	var pet := CompanionView.def_for(entry.cls, str(entry.get("spec", ""))) if CompanionView.enabled() and not entry.has("dummy") else {}
+	if not pet.is_empty():
+		_companion = CompanionView.new()
+		_companion.setup(pet, team, _world)
+		_world.add_child(_companion)  # beside the unit, not under it: it walks on its own
+		tree_exiting.connect(func(): if is_instance_valid(_companion): _companion.queue_free())
 	_flash_mat = StandardMaterial3D.new()
 	_flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_flash_mat.albedo_color = Color(1.0, 0.82, 0.74, 0.7)  # white-hot flash on being hit
@@ -356,6 +363,9 @@ func is_alive() -> bool:
 # ---------------------------------------------------------------- per frame
 
 func update(dt: float, now_s: float) -> void:
+	if _companion != null:
+		var face: float = facing_override if not is_nan(facing_override) else _target_rot
+		_companion.track(dt, now_s, position, face, _vel, shown and not snap.is_empty(), snap.is_empty() or bool(snap.alive), maxf(_fade, 0.0))
 	if not shown or snap.is_empty():
 		return
 	var s := snap
