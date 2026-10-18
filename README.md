@@ -19,6 +19,7 @@ en GDScript.
 | 4d | v0.3.1: sin círculo de magma (amortiguación), cursores propios, personajes más chicos, tooltips, modo espíritu, audio Foley CC0, rendimiento Retina, feeling de combate, barra de lanzamiento | listo |
 | 4e | v0.4.0: especializaciones (Mago: Fuego/Escarcha), sacerdote bot que acompaña al equipo | listo |
 | 4f | v0.5.0: sexta clase, Brujo (Aflicción): maldiciones independientes, miedo real, drenar vida, pacto oscuro | listo |
+| 4g | v0.6.0: tutorial interactivo, página Cómo jugar, Arena de práctica con medidor de daño y identidades de clase asimétricas | listo |
 | 5 | Steam (GodotSteam GDExtension): salas de amigos/públicas, invitaciones, nombres de Steam | **implementado, sin probar contra Steam real** |
 
 ## Cómo jugar
@@ -228,3 +229,25 @@ Los kits viven en `data/classes.json` (`specs` de cada clase: nombre, ícono, co
 ## Brujo (0.5.0)
 
 Sexta clase, sin mascota: Descarga de sombras, Corrupción y Agonía (maldiciones independientes que se refrescan sin acumular y se pueden disipar), Aterrorizar (huida real, comparte rendimientos decrecientes con el grito del sacerdote y se rompe con más de 40 de daño), Pacto oscuro (sacrifica 15% de vida actual por un escudo propio), Drenar vida (canalizado, cura sólo el daño realmente hecho) y Putrefacción del alma (definitiva). Modelo: KayKit Mage con capucha cornuda, ojos y báculo con calavera en llama vil, capa de sombra y grimorio (piezas propias, sin assets nuevos). Los efectos tienen ícono y descripción en los marcos de objetivo. El protocolo y el juego subieron a 0.5.0.
+
+
+## Cómo jugar y tutorial (0.6.0)
+
+- **Menú principal > Cómo jugar**: referencia estática (Controles, Reglas, Campeones con vida, velocidad, armadura e identidad de cada clase, generada desde `data/classes.json` por `HowToContent`) y el botón **Empezar el tutorial**.
+- **Tutorial interactivo**: corre dentro de la Arena de práctica con tu campeón y su especialización. Cada paso (`TutorialFlow`, lógica pura con tests) sólo avanza cuando hacés la acción: moverte y saltar, cámara (clic derecho, clic izquierdo, rueda), elegir objetivo (clic y Tab), ataque básico y auto-ataque, tus habilidades con sus teclas y descripciones reales, barra de lanzamiento (quedarte quieto y cancelar moviéndote), hechizos de zona, línea de visión (esconderte del muñeco hechicero), interrumpir o controlar, debuffs y tooltips, la definitiva, y cómo es una partida (sala de inicio, puertas, al mejor de 3, amortiguación). Resalta las teclas, marca con una flecha el elemento del HUD o el muñeco, deja saltear un paso o salir, y al final ofrece Arena de práctica, Contra bots o Menú. Se ofrece una sola vez en el primer arranque (`tutorial_seen` en la configuración) y siempre se puede repetir.
+- Prueba con entradas reales: `tools/playtest.sh tutorial`.
+
+## Arena de práctica (0.6.0)
+
+- **Jugar > Arena de práctica**: mapa propio (`yard`, sólo sin conexión), sin rondas, temporizador ni amortiguación; si morís reaparecés al instante. Corre en el mismo servidor autoritativo que el resto del juego (anfitrión local).
+- **Muñecos** (`core/practice_yard.gd`): tres fijos a cuerpo a cuerpo, 15 m y 25 m, uno móvil que patrulla una línea (skillshots y kiteo), un hechicero que lanza un hechizo largo cada pocos segundos (para practicar interrupciones; nunca hace daño), uno tras un pilar (línea de visión) y un aliado herido que pierde vida solo (para sanadores). Tienen 50 000 de vida, nunca mueren, se pueden aturdir, aterrorizar o ralentizar y muestran debuffs y números de daño.
+- **Panel**: medidor de daño (total, DPS de los últimos 10 s y desde el primer golpe, curación hecha, tabla por habilidad con daño, porcentaje, lanzamientos y críticos; `PracticeMeter`, calculado en el servidor), Reiniciar (medidor, muñecos, cooldowns y proyectiles en vuelo), Sin cooldowns, Definitiva lista, cambio de campeón y especialización sin salir, y Volver al menú.
+- Prueba con entradas reales: `tools/playtest.sh practice`.
+
+## Identidades de clase (0.6.0)
+
+Cada clase tiene números muy distintos (vida, daño, crítico y armadura, todo en `data/classes.json`): Asesino cañón de cristal (380 de vida, crítico +10%, mayor golpe), Guerrero tanque (640 y 18% de armadura contra daño físico), Mago Fuego frágil y explosivo, Mago Escarcha de control, Cazador de daño sostenido, Sacerdote de curación, Brujo de desgaste. Detalle y matriz de enfrentamientos en `docs/balance.md`. Herramientas: `tools/balance_run.sh` y `tools/duel_run.sh`.
+
+## Créditos de audio de 0.5.0
+
+Los sonidos de habilidades son capas de grabaciones reales CC0 de OpenGameArt en `assets/third_party/oga_sfx/` (licencia y fuentes en `LICENSE.txt` y `SOURCE.txt` de esa carpeta; `tools/audio/build_sfx.py` las recorta y normaliza).
