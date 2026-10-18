@@ -17,7 +17,7 @@ const KAYKIT := {
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Raise", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"warrior": {"file": "Knight", "show": ["1H_Sword", "Round_Shield"], "scale": 0.84,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Block", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
-	"rogue": {"file": "Rogue", "show": ["Knife", "Knife_Offhand"], "scale": 0.86, "recolor": {"hue": 0.42, "sat": -0.15, "val": -0.45},
+	"rogue": {"file": "Rogue", "show": ["Knife", "Knife_Offhand"], "extras": "rogue", "scale": 0.86, "recolor": {"hue": 0.42, "sat": -0.3, "val": -0.6},
 		"clips": {"idle": "Idle", "run": "Running_B", "cast": "Throw", "attack": "Dualwield_Melee_Attack_Slice", "hit": "Hit_B", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"hunter": {"file": "Rogue_Hooded", "show": ["2H_Crossbow"], "scale": 0.86,
 		"clips": {"idle": "2H_Ranged_Aiming", "run": "Running_A", "cast": "2H_Ranged_Aiming", "attack": "2H_Ranged_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
@@ -128,6 +128,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 			m.set_surface_override_material(0, sm)
 	if def.get("extras", "") == "priest":
 		_priest_extras(inner)
+	if def.get("extras", "") == "rogue":
+		_rogue_extras(inner)
 	if cls == "warlock":
 		_warlock_extras(inner)
 	for logical in _clips:
@@ -228,6 +230,75 @@ func _warlock_extras(inner: Node3D) -> void:
 		_add_mesh(hand, MeshBuilder.sphere(0.08, 6, 4), fel, Vector3(0.0, 0.05, 0.0))   # fel glow in the grip
 	if hand_l != null:
 		_add_mesh(hand_l, MeshBuilder.sphere(0.09, 6, 4), fel, Vector3(0, 0.0, 0.0))
+
+
+## Shadow assassin on the KayKit rogue body: a black cowl over the head, a cloth mask over nose and mouth (only the eyes
+## show), a violet headband with two tails, a scarf, wrapped shoulders, violet-glowing daggers and shadow wisps rising
+## from the feet. The rogue model has no head attachment, so one is bound to the "head" bone here.
+func _rogue_extras(inner: Node3D) -> void:
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var head: Node3D = null
+	if sk.find_bone("head") >= 0:
+		var ba := BoneAttachment3D.new()
+		ba.bone_name = "head"
+		sk.add_child(ba)
+		head = ba
+	var chest := sk.get_node_or_null("chest") as Node3D
+	var cloth := UnitModels.std(Color("#17131d"), Color.BLACK, 0.0, 0.0, 0.85)
+	var wrap := UnitModels.std(Color("#26202e"), Color.BLACK, 0.0, 0.0, 0.8)
+	var violet := UnitModels.std(Color("#6a2bb0"), Color("#a24dff"), 0.6, 0.0, 0.6)
+	var edge := UnitModels.std(Color("#c48aff"), Color("#a24dff"), 2.6)
+	if head != null:
+		# cowl over the top and back of the head, open in front so the face and eyes show
+		_add_mesh(head, MeshBuilder.sphere(0.62, 14, 8), cloth, Vector3(0, 0.56, -0.26), Vector3.ZERO, Vector3(1.12, 1.04, 1.0))
+		# brow cloth and temple wraps: hide the hair so only the strip of the eyes shows
+		_add_mesh(head, MeshBuilder.sphere(0.5, 14, 8), cloth, Vector3(0, 0.66, 0.14), Vector3.ZERO, Vector3(1.04, 0.32, 0.76))
+		for side in [-1.0, 1.0]:
+			_add_mesh(head, MeshBuilder.sphere(0.3, 10, 6), cloth, Vector3(side * 0.42, 0.44, 0.1), Vector3.ZERO, Vector3(0.5, 1.1, 0.9))
+		# cloth mask over nose and mouth only
+		_add_mesh(head, MeshBuilder.sphere(0.5, 14, 8), wrap, Vector3(0, 0.24, 0.2), Vector3.ZERO, Vector3(1.02, 0.34, 0.72))
+		# violet headband across the forehead, its two tails hanging from the back
+		_add_mesh(head, MeshBuilder.torus(0.6, 0.045, 28, 6), violet, Vector3(0, 0.66, -0.1), Vector3(-10, 0, 0))
+		for side in [-1.0, 1.0]:
+			_add_mesh(head, MeshBuilder.box(Vector3(0.1, 0.62, 0.025)), violet, Vector3(side * 0.1, 0.36, -0.92), Vector3(24, side * 12, side * 10))
+	if chest != null:
+		_add_mesh(chest, MeshBuilder.torus(0.32, 0.07, 20, 6), wrap, Vector3(0, 0.42, 0.02))  # scarf
+		_add_mesh(chest, MeshBuilder.box(Vector3(0.2, 0.75, 0.05)), wrap, Vector3(0.12, 0.05, -0.42), Vector3(12, 0, 8))  # scarf tail
+		for side in [-1.0, 1.0]:
+			_add_mesh(chest, MeshBuilder.sphere(0.2, 10, 6), cloth, Vector3(side * 0.48, 0.2, 0.0), Vector3.ZERO, Vector3(1.0, 0.45, 0.9))
+	# both daggers glow violet (their materials were set up, recoloured, in _setup_kaykit)
+	for knife in inner.find_children("Knife*", "MeshInstance3D", true, false):
+		var km := (knife as MeshInstance3D).get_surface_override_material(0) as StandardMaterial3D
+		if km != null:
+			km.emission_enabled = true
+			km.emission = edge.emission
+			km.emission_energy_multiplier = 0.9
+	if UnitView.live_params:
+		var smoke := CPUParticles3D.new()
+		smoke.amount = 14
+		smoke.lifetime = 1.2
+		smoke.local_coords = false
+		smoke.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		smoke.emission_sphere_radius = 0.35
+		smoke.direction = Vector3.UP
+		smoke.spread = 25.0
+		smoke.initial_velocity_min = 0.2
+		smoke.initial_velocity_max = 0.5
+		smoke.gravity = Vector3(0, 0.3, 0)
+		smoke.scale_amount_min = 0.6
+		smoke.scale_amount_max = 1.2
+		var curve := Curve.new()
+		curve.add_point(Vector2(0, 0.2))
+		curve.add_point(Vector2(0.3, 1))
+		curve.add_point(Vector2(1, 0))
+		smoke.scale_amount_curve = curve
+		smoke.mesh = MeshBuilder.sphere(0.12, 6, 4)
+		var sm := UnitModels.std(Color(0.18, 0.08, 0.3, 0.55), Color("#5a1f9a"), 0.5)
+		sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		smoke.material_override = sm
+		smoke.position.y = 0.15
+		inner.add_child(smoke)
 
 
 func _holy_mat(gold: bool) -> StandardMaterial3D:
