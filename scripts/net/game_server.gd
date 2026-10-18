@@ -25,7 +25,7 @@ const BASE_TIME := 1_000_000.0  # sim clock start; keeps "ms since" fields away 
 
 ## mode 2|3, diff, map, dedicated (no local host), autopilot (bots drive human units: demos),
 ## auto_start_ms (dedicated: wait this long after the first player, 0 = never).
-var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0}
+var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0, "practice": false}
 var state := "lobby"  # lobby | match
 var game: ArenaMatch = null
 ## peer -> {name, cls, pref}
@@ -52,7 +52,7 @@ func _init(p_cfg := {}) -> void:
 	var n := MatchConfig.normalize(cfg)
 	cfg.mode = n.mode
 	cfg.diff = n.diff
-	cfg.map = n.map
+	cfg.map = GameMap.PRACTICE_ID if bool(cfg.get("practice", false)) else n.map
 	_step_ms = 1000.0 / GameData.C.SIM_HZ
 
 
@@ -167,7 +167,7 @@ func _on_message(from: int, msg: Dictionary) -> void:
 					if from == host_peer and state == "lobby":
 						start_match()
 				"leave": _on_peer_disconnected(from)
-				"input", "cast", "target", "jump", "auto", "stopcast":
+				"input", "cast", "target", "jump", "auto", "stopcast", "practice":
 					_on_game_message(from, msg)
 
 
@@ -248,6 +248,10 @@ func _on_game_message(from: int, msg: Dictionary) -> void:
 			game.jump(u, sim_now)
 		"stopcast":
 			game.cancel_cast(u)
+		"practice":
+			var c := Wire.clean_practice(msg)
+			if not c.is_empty():
+				game.practice_command(u, c.cmd, c.on, sim_now)
 		"auto":
 			if bool(msg.get("on", false)) and typeof(msg.get("id")) in [TYPE_INT, TYPE_FLOAT]:
 				game.start_auto(u, int(msg.id))
@@ -288,7 +292,14 @@ func start_match() -> bool:
 	if map_id == "random":
 		map_id = GameMap.pick_id(int(cfg.get("seed", randi())))
 	resolved_map = map_id
-	game = ArenaMatch.new(int(cfg.mode), lobby_entries(), sim_now, cfg.diff, map_id)
+	if bool(cfg.get("practice", false)):
+		map_id = GameMap.PRACTICE_ID
+		resolved_map = map_id
+		var peer: int = players.keys()[0]
+		var p: Dictionary = players[peer]
+		game = ArenaMatch.new(2, PracticeYard.entries(p.name, p.cls, p.get("spec", ""), peer), sim_now, cfg.diff, map_id)
+	else:
+		game = ArenaMatch.new(int(cfg.mode), lobby_entries(), sim_now, cfg.diff, map_id)
 	if cfg.autopilot:
 		for u in game.units:
 			if u.peer != 0 and u.brain == null:

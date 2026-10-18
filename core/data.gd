@@ -9,6 +9,12 @@ static var maps: Dictionary = {}
 static var C: Dictionary = {}
 
 
+## Maximum health of a roster entry: training dummies carry their own huge value, everyone else the class's.
+static func entry_max_hp(entry: Dictionary) -> float:
+	ensure_loaded()
+	return float(entry.hp) if entry.has("hp") else float(classes[entry.cls].hp)
+
+
 static func ensure_loaded() -> void:
 	if not classes.is_empty():
 		return

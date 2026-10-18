@@ -11,6 +11,8 @@ extends RefCounted
 ## living pillars change, so every rule (collision, LoS, blink...) just reads `obstacles`.
 
 const IDS := ["bridge", "pillars", "tomb", "living"]
+## Offline-only training ground ("Arena de práctica"): not part of the random pool or the lobby catalog.
+const PRACTICE_ID := "yard"
 const W := 26.0
 const A := 22.0
 const R := 33.0
@@ -54,6 +56,7 @@ static func create(map_id: String) -> GameMap:
 		"pillars": m._build_pillars()
 		"tomb": m._build_tomb()
 		"living": m._build_living()
+		"yard": m._build_yard()
 		_:
 			m.id = "test"
 			m._build_test()
@@ -161,6 +164,17 @@ func _build_living() -> void:
 			dyn_pillars.append({"x": g[0] * sgn, "z": g[1] * sgn, "r": 2.6, "start": g[2], "group": g[3]})
 	dyn_pillars.append({"x": 0.0, "z": 0.0, "r": 2.4, "start": 18.0, "group": 2})
 	_powers([[0, 13], [0, -13], [17, 0], [-17, 0]])
+
+
+## Training yard: one open field (no start rooms, no gates), a pillar for line-of-sight practice and a second one to hide behind.
+func _build_yard() -> void:
+	half_x = W
+	half_z = A
+	for sz in [1.0, -1.0]:
+		statics.append(box(0.0, sz * A, W, 0.7, 0.0, {"wall": true}))
+	statics.append(circle(-7.5, 7.0, 2.2))
+	statics.append(circle(9.0, -11.0, 1.8))
+	spawns = {"red": [{"x": 0.0, "z": 17.5}, {"x": -3.0, "z": 17.5}, {"x": 3.0, "z": 17.5}], "blue": [{"x": 0.0, "z": -17.0}]}
 
 
 ## Hidden open field (bush + no gates) used by the unit tests; not part of the catalog.

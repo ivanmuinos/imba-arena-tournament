@@ -15,6 +15,11 @@ var team: String
 ## Network peer that controls this unit (0 = bot).
 var peer := 0
 var brain: BotBrain = null
+## Practice arena only: dummy kind ("" for real fighters), its home position and the next scripted action (ms).
+var dummy := ""
+var home := Vector2.ZERO
+var dummy_next := 0.0
+var patrol_dir := 1.0
 
 var x := 0.0
 var z := 0.0

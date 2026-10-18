@@ -30,6 +30,11 @@ var fight_start := 0.0
 var round_n := 1
 var score := {"red": 0, "blue": 0}
 var done := false
+## Practice arena ("Arena de práctica", offline): one endless fight against training dummies, no rounds, no dampening, instant respawn.
+var practice := false
+## Practice: skip every cooldown of the human players ("modo sin cooldowns").
+var nocd := false
+var meters := {}  # unit id -> PracticeMeter
 
 ## Outgoing events for everyone in the match (drained by the network layer).
 var fx: Array = []
@@ -52,6 +57,7 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 	mode = p_mode
 	diff = p_diff
 	map = GameMap.create(map_id)
+	practice = map.id == GameMap.PRACTICE_ID
 	for e in entries:
 		var u := ArenaUnit.new()
 		u.id = _next_id
@@ -61,9 +67,14 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 		u.spec_id = GameData.normalize_spec(u.cls, str(e.get("spec", "")))
 		u.team = e.team
 		u.peer = e.get("peer", 0)
-		if u.peer == 0:
+		u.dummy = str(e.get("dummy", ""))
+		if u.peer == 0 and u.dummy == "":
 			u.brain = BotBrain.new(diff)
-		u.max_hp = GameData.classes[u.cls].hp
+		u.max_hp = float(e.get("hp", GameData.classes[u.cls].hp)) if u.dummy != "" else float(GameData.classes[u.cls].hp)
+		if u.dummy != "":
+			u.home = Vector2(float(e.x), float(e.z))
+		if practice and u.peer != 0:
+			meters[u.id] = PracticeMeter.new()
 		u.hp = u.max_hp
 		u.ult = C.ULT_START
 		u.cds.resize(int(C.SLOT_COUNT))
@@ -73,7 +84,12 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 
 
 func roster() -> Array:
-	return units.map(func(u): return {"id": u.id, "name": u.name, "cls": u.cls, "spec": u.spec_id, "team": u.team, "bot": u.is_bot()})
+	return units.map(func(u):
+		var r := {"id": u.id, "name": u.name, "cls": u.cls, "spec": u.spec_id, "team": u.team, "bot": u.is_bot()}
+		if u.dummy != "":
+			r["dummy"] = u.dummy
+			r["hp"] = u.max_hp
+		return r)
 
 
 func unit_for_peer(peer: int) -> ArenaUnit:
@@ -109,6 +125,9 @@ func _reset_round(now: float) -> void:
 		for u in units:
 			if u.team != team:
 				continue
+			if u.dummy != "":
+				_reset_dummy(u, now)
+				continue
 			var s: Dictionary = spawns[i % spawns.size()]
 			i += 1
 			u.reset_effects()
@@ -123,6 +142,13 @@ func _reset_round(now: float) -> void:
 			u.aim_x = 0.0
 			u.aim_z = 0.0
 			u.cds.fill(0.0)
+	if practice:
+		phase = "fight"  # no start room, no countdown: the yard is always live
+		phase_ends_at = 0.0
+		fight_start = now
+		_first_round = false
+		map.apply_state(true, 0.0)
+		return
 	phase = "prep"
 	phase_ends_at = now + (FIRST_PREP_MS if _first_round else ROUND_PREP_MS)
 	_first_round = false
@@ -363,7 +389,7 @@ func _find_target(u: ArenaUnit, ax: float, az: float, range_m: float, now: float
 
 
 func team_can_see(team: String, t: ArenaUnit, now: float) -> bool:
-	if t.team == team:
+	if t.team == team or (practice and t.dummy != ""):
 		return true
 	if now < t.stealth_until:
 		# Stealthed: only noticed when an enemy is practically on top of you.
@@ -382,6 +408,8 @@ func team_can_see(team: String, t: ArenaUnit, now: float) -> bool:
 
 func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now: float, lock_id := -1) -> void:
 	var spec := u.ability(slot)
+	if practice and u.peer != 0:
+		meter_for(u).record_cast(spec.id, now)
 	if spec.get("ult", false):
 		u.ult = 0.0
 	else:
@@ -639,7 +667,12 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 		t.last_hit_at = now
 		t.revealed_until = maxf(t.revealed_until, now + 1000)
 		fx.append({"k": "hit", "id": t.id, "amt": roundi(amount), "x": t.x, "z": t.z, "crit": crit, "by": src.id, "ability": ability, "dot": _dot_tick})
+		if practice and src.peer != 0 and t.dummy != "" and t.team != src.team:
+			meter_for(src).record_damage(ability, amount, crit, now)
 	if t.hp <= 0:
+		if practice:
+			_practice_down(t, now)
+			return
 		_die(t, now)
 
 
@@ -647,12 +680,14 @@ func _heal(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, quiet := fal
 	if not t.alive or phase != "fight":
 		return
 	if now < t.mortal_until: amount *= 0.5  # Mortal Strike
-	amount *= 1.0 - Rules.dampening(now - fight_start)
+	amount *= 1.0 - _damp(now)
 	var real := minf(t.max_hp - t.hp, amount)
 	if real <= 0:
 		return
 	t.hp += real
 	src.healed += real
+	if practice and src.peer != 0:
+		meter_for(src).record_heal(real, now)
 	src.ult = minf(100, src.ult + real * C.ULT_PER_DAMAGE * 0.5)
 	if not quiet: fx.append({"k": "heal", "id": t.id, "amt": roundi(real)})
 
@@ -720,6 +755,8 @@ func _cc(t: ArenaUnit, cat: String, base_ms: float, now: float, incap_kind := "p
 func _interrupt(t: ArenaUnit, now: float) -> void:
 	if t.cast.is_empty():
 		return
+	if t.dummy == "caster":
+		t.dummy_next = now + PracticeYard.INTERRUPT_GAP_MS
 	t.cds[t.cast.slot] = maxf(t.cds[t.cast.slot], now + INTERRUPT_LOCK_MS)
 	t.cast = {}
 	_label(t, "INTERRUMPIDO", "#ff6b6b")
@@ -762,6 +799,8 @@ func tick(now: float) -> void:
 	for u in units:
 		if u.brain != null:
 			u.brain.think(self, u, now)
+	if practice:
+		_practice_pre(now)
 	if phase == "prep" and now >= phase_ends_at:
 		phase = "fight"
 		fight_start = now
@@ -781,8 +820,8 @@ func tick(now: float) -> void:
 			continue
 		if fighting:
 			u.ult = minf(100, u.ult + C.ULT_PER_SECOND * dt)
-			if not u.cast.is_empty(): _progress_cast(u, now)
-			if u.brain == null: _auto_attack(u, now)
+			if not u.cast.is_empty() and u.dummy == "": _progress_cast(u, now)
+			if u.brain == null and u.dummy == "": _auto_attack(u, now)
 		var frozen := now < u.stun_until or now < u.incap_until
 		var feared := now < u.fear_until
 		var can_move := (fighting or phase == "prep") and not frozen and now >= u.root_until and (u.cast.is_empty() or feared)
@@ -802,7 +841,7 @@ func tick(now: float) -> void:
 	for u in alive_units:
 		Rules.collide(u, map)
 
-	if fighting and now - fight_start > float(C.ROUND_LIMIT_MS):
+	if fighting and not practice and now - fight_start > float(C.ROUND_LIMIT_MS):
 		# Stalled round (someone hiding or unreachable): the team with more health left wins; equal health is a draw.
 		var hp := {"red": 0.0, "blue": 0.0}
 		for u in alive_units:
@@ -1058,6 +1097,130 @@ func _apply_power(u: ArenaUnit, kind: String, now: float) -> void:
 		"haste": u.haste_until = until
 
 
+# ---------------------------------------------------------------- practice arena
+
+## Dampening is a round mechanic: the yard never has it.
+func _damp(now: float) -> float:
+	return 0.0 if practice else Rules.dampening(now - fight_start)
+
+
+func meter_for(u: ArenaUnit) -> PracticeMeter:
+	if not meters.has(u.id):
+		meters[u.id] = PracticeMeter.new()
+	return meters[u.id]
+
+
+func _reset_dummy(u: ArenaUnit, now: float) -> void:
+	u.reset_effects()
+	u.alive = true
+	u.x = u.home.x
+	u.z = u.home.y
+	u.vx = 0.0
+	u.vz = 0.0
+	u.dash_left = 0.0
+	u.hp = u.max_hp * (PracticeYard.ALLY_START if u.dummy == "ally" else 1.0)
+	u.rot = 0.0 if u.team == "red" else PI
+	u.patrol_dir = 1.0
+	u.dummy_next = now + 1500.0
+	u.cds.fill(0.0)
+
+
+## A fighter "reaches 0": dummies refill (they never die), the player gets back up at the start point at once.
+func _practice_down(t: ArenaUnit, now: float) -> void:
+	if t.dummy != "":
+		t.hp = t.max_hp * (PracticeYard.ALLY_START if t.dummy == "ally" else 1.0)
+		return
+	t.reset_effects()
+	t.hp = t.max_hp
+	t.alive = true
+	var s: Dictionary = map.spawns[t.team][0]
+	t.x = s.x
+	t.z = s.z
+	t.vx = 0.0
+	t.vz = 0.0
+	t.dash_left = 0.0
+	t.cds.fill(0.0)
+	_label(t, "REAPARECISTE", "#ffd166")
+
+
+## Scripted behaviour of the dummies (before the physics step): face the player, patrol, cast, drain the ally.
+func _practice_pre(now: float) -> void:
+	var focus: ArenaUnit = null
+	for u in units:
+		if u.peer != 0 and u.dummy == "" and u.alive:
+			focus = u
+			break
+	for u in units:
+		if u.dummy == "":
+			if nocd and u.peer != 0:
+				u.cds.fill(0.0)
+			continue
+		if focus != null:
+			u.aim_x = focus.x
+			u.aim_z = focus.z
+		u.input = Vector2.ZERO
+		match u.dummy:
+			"patrol":
+				var goal := PracticeYard.PATROL_TO if u.patrol_dir > 0.0 else PracticeYard.PATROL_FROM
+				if absf(u.x - goal) < 0.6:
+					u.patrol_dir = -u.patrol_dir
+				u.input = Vector2(goal - u.x, PracticeYard.PATROL_Z - u.z)
+			"caster":
+				_dummy_caster(u, now)
+				_stay_home(u)
+			"ally":
+				u.hp = maxf(u.max_hp * PracticeYard.ALLY_FLOOR, u.hp - u.max_hp * PracticeYard.ALLY_DRAIN_PER_S * _dt) if u.hp > u.max_hp * PracticeYard.ALLY_FLOOR else u.hp
+				_stay_home(u)
+			_:
+				_stay_home(u)
+
+
+func _stay_home(u: ArenaUnit) -> void:
+	var to := u.home - Vector2(u.x, u.z)
+	if to.length() > 0.5:
+		u.input = to
+
+
+func _dummy_caster(u: ArenaUnit, now: float) -> void:
+	var controlled := now < u.stun_until or now < u.incap_until or now < u.fear_until or now < u.silence_until
+	if not u.cast.is_empty():
+		if controlled:
+			u.cast = {}
+			u.dummy_next = now + 2000.0
+		elif now >= u.cast.ends_at:
+			u.cast = {}
+			u.dummy_next = now + PracticeYard.CAST_GAP_MS
+			_label(u, "¡LANZÓ!", "#ff9a5a")
+		return
+	if controlled or now < u.dummy_next or now < u.cds[1]:
+		return
+	u.cast = {"slot": 1, "start_at": now, "ends_at": now + PracticeYard.CAST_MS, "ax": u.aim_x, "az": u.aim_z, "target_id": -1, "lock": -1}
+
+
+## Practice controls: "reset" (meter, dummies, cooldowns), "nocd" (on/off) and "ult" (ultimate ready).
+func practice_command(u: ArenaUnit, cmd: String, on: bool, now: float) -> void:
+	if not practice or not u.alive:
+		return
+	match cmd:
+		"reset":
+			meter_for(u).reset(now)
+			projs.clear()  # a fireball still flying must not land after the reset and refill the meter
+			aoes.clear()
+			traps.clear()
+			for d in units:
+				if d.dummy != "":
+					_reset_dummy(d, now)
+			u.cast = {}
+			u.cds.fill(0.0)
+			u.hp = u.max_hp
+		"nocd":
+			nocd = on
+			if on:
+				u.cds.fill(0.0)
+		"ult":
+			u.ult = 100.0
+
+
 # ---------------------------------------------------------------- snapshots
 
 func _snap_unit(u: ArenaUnit, now: float) -> Dictionary:
@@ -1105,7 +1268,7 @@ func snapshot_for(viewer: ArenaUnit, now: float) -> Dictionary:
 		"phaseLeft": 0.0 if phase == "fight" else maxf(0.0, phase_ends_at - now),
 		"round": round_n,
 		"score": score.duplicate(),
-		"damp": Rules.dampening(now - fight_start) if phase == "fight" else 0.0,
+		"damp": _damp(now) if phase == "fight" else 0.0,
 		"gates": map.gates_open,
 		"ft": (now - fight_start) if phase == "fight" else 0.0,
 		"units": units.filter(func(u): return team_can_see(viewer.team, u, now)).map(func(u): return _snap_unit(u, now)),
@@ -1118,5 +1281,8 @@ func snapshot_for(viewer: ArenaUnit, now: float) -> Dictionary:
 			"ult": floori(viewer.ult),
 			"auto": viewer.auto_on,
 			"inBush": Rules.bush_at(map, viewer.x, viewer.z) >= 0,
+			"practice": practice,
+			"nocd": nocd,
+			"meter": meter_for(viewer).snapshot(now) if practice and meters.has(viewer.id) else {},
 		},
 	}

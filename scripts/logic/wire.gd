@@ -49,3 +49,13 @@ static func clean_cast(m: Dictionary) -> Dictionary:
 		"slot": slot, "target": target,
 		"ax": clampf(float(m.ax), -MAX_ABS_AIM, MAX_ABS_AIM), "az": clampf(float(m.az), -MAX_ABS_AIM, MAX_ABS_AIM),
 	}
+
+
+const PRACTICE_CMDS := ["reset", "nocd", "ult"]
+
+
+## {cmd, on} for the practice arena controls, or {} when malformed.
+static func clean_practice(m: Dictionary) -> Dictionary:
+	if typeof(m.get("cmd")) != TYPE_STRING or not PRACTICE_CMDS.has(m.cmd):
+		return {}
+	return {"cmd": m.cmd, "on": bool(m.get("on", true))}

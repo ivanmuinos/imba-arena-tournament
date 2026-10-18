@@ -151,6 +151,11 @@ func send_stop_cast() -> void:
 	_send({"t": "stopcast"})
 
 
+## Practice arena controls: "reset", "nocd" (on) or "ult".
+func send_practice(cmd: String, on := true) -> void:
+	_send({"t": "practice", "cmd": cmd, "on": on})
+
+
 func send_jump() -> void:
 	_send({"t": "jump"})
 
