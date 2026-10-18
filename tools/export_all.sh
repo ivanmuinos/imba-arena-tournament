@@ -4,6 +4,10 @@
 set -e
 cd "$(dirname "$0")/.."
 TARGETS=${*:-"windows macos"}
+# Git Bash on Windows has no zip: fall back to PowerShell's Compress-Archive (`zip -q -r OUT .` zips the current directory).
+if ! command -v zip >/dev/null; then
+  zip() { powershell -NoProfile -Command "Compress-Archive -Force -Path * -DestinationPath '$(cygpath -w "$3")'"; }
+fi
 rm -rf build && mkdir -p build
 godot --headless --path . --import >/dev/null 2>&1 || true
 # Windows icon/version resources need rcedit (which needs wine outside Windows): enable them only when it is usable.

@@ -3,3 +3,4 @@ build/
 export/
 *.log
 .DS_Store
+tools/bin/

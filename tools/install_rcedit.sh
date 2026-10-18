@@ -12,12 +12,13 @@ F=bin/rcedit-x64.exe
 if [ ! -f "$F" ]; then
   curl -L -o "$F" "https://github.com/electron/rcedit/releases/download/$VER/rcedit-x64.exe"
 fi
-GOT=$(shasum -a 256 "$F" | cut -d' ' -f1)
+GOT=$({ command -v shasum >/dev/null && shasum -a 256 "$F" || sha256sum "$F"; } | cut -d' ' -f1)
 [ "$GOT" = "$SHA" ] || { echo "rcedit: SHA-256 inesperado ($GOT)"; rm -f "$F"; exit 1; }
 echo "rcedit $VER verificado: $(pwd)/$F"
 WINE=$(command -v wine64 || command -v wine || true)
 case "$(uname)" in
   Darwin) SETTINGS="$HOME/Library/Application Support/Godot/editor_settings-4.7.tres" ;;
+  MINGW*|MSYS*|CYGWIN*) SETTINGS="$(cygpath -u "$APPDATA")/Godot/editor_settings-4.7.tres"; WINE=native ;;
   *) SETTINGS="$HOME/.config/godot/editor_settings-4.7.tres" ;;
 esac
 if [ -z "$WINE" ]; then
@@ -26,11 +27,15 @@ if [ -z "$WINE" ]; then
   exit 0
 fi
 [ -f "$SETTINGS" ] || { echo "Abrí el editor de Godot una vez para crear $SETTINGS y repetí."; exit 0; }
-python3 - "$SETTINGS" "$(pwd)/$F" "$WINE" <<'PY'
+RCEDIT="$(pwd)/$F"
+[ "$WINE" = native ] && RCEDIT=$(cygpath -m "$RCEDIT")
+PY=$(for p in python3 python; do "$p" -c "" 2>/dev/null && echo "$p" && break; done)
+"$PY" - "$SETTINGS" "$RCEDIT" "$WINE" <<'PY'
 import sys, re
 path, rcedit, wine = sys.argv[1:4]
 s = open(path).read()
-for key, val in (("export/windows/rcedit", rcedit), ("export/windows/wine", wine)):
+keys = [("export/windows/rcedit", rcedit)] + ([] if wine == "native" else [("export/windows/wine", wine)])
+for key, val in keys:
     line = f'{key} = "{val}"'
     if re.search(r'^' + re.escape(key) + r' = .*$', s, re.M):
         s = re.sub(r'^' + re.escape(key) + r' = .*$', line, s, flags=re.M)

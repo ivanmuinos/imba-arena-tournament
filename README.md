@@ -26,6 +26,11 @@ en GDScript.
 
 Requiere Godot 4.7.2 (`godot` en el PATH). La primera vez (o al agregar `class_name`): `godot --headless --path . --import`.
 
+**En Windows**: bajá `Godot_v4.7.2-stable_win64.exe.zip` del release oficial y poné en la PATH un `godot` que apunte a
+`Godot_v4.7.2-stable_win64_console.exe` (el de consola: sin él los scripts no ven la salida). Los `.sh` (tests, smoke, exportación,
+plantillas, rcedit) corren en Git Bash; rcedit funciona nativo, así que el `.exe` exportado lleva ícono y versión. El repo fija fin de
+línea LF (`.gitattributes`) porque Godot reescribe los recursos con LF.
+
 | Modo | Comando |
 |------|---------|
 | Menú | `godot --path .` (título -> menú principal -> Jugar / Campeones / Configuración) |
@@ -188,7 +193,7 @@ Regenerar arte: `blender -b --python tools/blender/build_characters.py` y `build
 ## Tests
 
 ```sh
-./run_tests.sh              # todos (178); falla ante cualquier test o error de script
+./run_tests.sh              # todos (263); falla ante cualquier test o error de script
 ./run_tests.sh net steam    # sólo las suites cuyo archivo contiene esas palabras; -v imprime cada test
 ./tests/smoke.sh            # humo headless: menú, partida offline, jugador scripteado en 2 mapas, servidor dedicado + cliente ENet
 ```
@@ -212,7 +217,7 @@ Límites: el escenario sigue siendo procedural (sin texturas horneadas ni esculp
 ## Otras diferencias con la web
 
 Sin cola pública ni códigos de sala (se juega por IP, Steam o servidor dedicado); 
-Windows y Linux exportados pero **sólo se probó en ejecución el build de macOS**.
+Se probaron en ejecución los builds de macOS y Windows (Windows 11, Vulkan); el de Linux se exporta pero no se probó.
 
 
 ## Créditos de audio y notas de 0.3.1

@@ -5,6 +5,7 @@ V=$(godot --version | sed 's/\.official.*//')            # e.g. 4.7.2.stable
 BASE=$(echo "$V" | sed 's/\.stable//')-stable            # e.g. 4.7.2-stable
 case "$(uname)" in
   Darwin) DEST="$HOME/Library/Application Support/Godot/export_templates/$V" ;;
+  MINGW*|MSYS*|CYGWIN*) DEST="$(cygpath -u "$APPDATA")/Godot/export_templates/$V" ;;
   *) DEST="$HOME/.local/share/godot/export_templates/$V" ;;
 esac
 if [ -f "$DEST/version.txt" ]; then echo "Plantillas $V ya instaladas en $DEST"; exit 0; fi
