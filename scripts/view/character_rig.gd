@@ -17,7 +17,7 @@ const KAYKIT := {
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Raise", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"warrior": {"file": "Knight", "show": ["1H_Sword", "Round_Shield"], "scale": 0.84,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Block", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
-	"rogue": {"file": "Rogue", "show": ["Knife", "Knife_Offhand"], "extras": "rogue", "scale": 0.86, "recolor": {"hue": 0.42, "sat": -0.15, "val": -0.45},
+	"rogue": {"file": "Rogue", "show": ["Knife", "Knife_Offhand"], "scale": 0.86, "recolor": {"hue": 0.42, "sat": -0.15, "val": -0.45},
 		"clips": {"idle": "Idle", "run": "Running_B", "cast": "Throw", "attack": "Dualwield_Melee_Attack_Slice", "hit": "Hit_B", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"hunter": {"file": "Rogue_Hooded", "show": ["2H_Crossbow"], "scale": 0.86,
 		"clips": {"idle": "2H_Ranged_Aiming", "run": "Running_A", "cast": "2H_Ranged_Aiming", "attack": "2H_Ranged_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
@@ -128,8 +128,6 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 			m.set_surface_override_material(0, sm)
 	if def.get("extras", "") == "priest":
 		_priest_extras(inner)
-	if def.get("extras", "") == "rogue":
-		_rogue_extras(inner)
 	if cls == "warlock":
 		_warlock_extras(inner)
 	for logical in _clips:
@@ -230,23 +228,6 @@ func _warlock_extras(inner: Node3D) -> void:
 		_add_mesh(hand, MeshBuilder.sphere(0.08, 6, 4), fel, Vector3(0.0, 0.05, 0.0))   # fel glow in the grip
 	if hand_l != null:
 		_add_mesh(hand_l, MeshBuilder.sphere(0.09, 6, 4), fel, Vector3(0, 0.0, 0.0))
-
-
-## Rogue: a bandit's neckerchief pulled up over nose and mouth, its point hanging over the chin and the knot behind the
-## head. The rogue model has no head attachment, so one is bound to the "head" bone here.
-func _rogue_extras(inner: Node3D) -> void:
-	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
-	if sk.find_bone("head") < 0:
-		return
-	var head := BoneAttachment3D.new()
-	head.bone_name = "head"
-	sk.add_child(head)
-	var cloth := UnitModels.std(Color("#2b2233"), Color.BLACK, 0.0, 0.0, 0.85)
-	_add_mesh(head, MeshBuilder.sphere(0.5, 16, 8), cloth, Vector3(0, 0.17, 0.1), Vector3.ZERO, Vector3(0.86, 0.46, 0.9))  # band round the lower face, as narrow as the jaw
-	_add_mesh(head, MeshBuilder.cylinder(0.34, 0.0, 0.42, 4), cloth, Vector3(0, -0.06, 0.32), Vector3(-10, 0, 0), Vector3(1.0, 1.0, 0.35))  # point over the chin
-	_add_mesh(head, MeshBuilder.sphere(0.09, 8, 5), cloth, Vector3(0, 0.26, -0.5))  # knot
-	for side in [-1.0, 1.0]:
-		_add_mesh(head, MeshBuilder.box(Vector3(0.09, 0.32, 0.03)), cloth, Vector3(side * 0.07, 0.1, -0.54), Vector3(15, 0, side * 14))
 
 
 func _holy_mat(gold: bool) -> StandardMaterial3D:
