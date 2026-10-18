@@ -11,6 +11,8 @@ const THEMES := {
 		"torch": 0xff9a40, "glow": 0xff6a2a, "ember": 0xffb060, "tint": 0xffffff},
 	"pillars": {"sky_top": 0x2a2a3a, "sky_horizon": 0xc89070, "fog": 0x6a5248, "fog_density": 0.002, "ambient": 0xf0e0d0, "ambient_energy": 0.95, "sun": 0xfff0d8, "sun_energy": 2.0,
 		"torch": 0xffb860, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf0e8e0},
+	"yard": {"sky_top": 0x2a2a3a, "sky_horizon": 0xd8a070, "fog": 0x6a5248, "fog_density": 0.0016, "ambient": 0xf4e6d6, "ambient_energy": 1.05, "sun": 0xfff0d8, "sun_energy": 2.1,
+		"torch": 0xffb860, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf0e8e0},
 	"tomb": {"sky_top": 0x182848, "sky_horizon": 0x5a78b8, "fog": 0x34466a, "fog_density": 0.0024, "ambient": 0xc8d8ff, "ambient_energy": 1.0, "sun": 0xe0ecff, "sun_energy": 1.9,
 		"torch": 0x7ae8ff, "glow": 0x6ad8ff, "ember": 0xaaf8ff, "tint": 0xdce6f4},
 	"living": {"sky_top": 0x2a1428, "sky_horizon": 0xc05068, "fog": 0x5a2c34, "fog_density": 0.0022, "ambient": 0xf0d4d4, "ambient_energy": 0.95, "sun": 0xffd0c0, "sun_energy": 2.0,
@@ -376,6 +378,8 @@ func _build_walls_and_gates() -> void:
 		if y0 < -100.0:
 			pass
 	for sgn in [1.0, -1.0]:
+		if map.gate_shapes.is_empty():
+			break  # open training yard: no gates
 		var g := Node3D.new()
 		g.position = Vector3(0, h(0, sgn * GameMap.A), sgn * GameMap.A)
 		g.rotation.y = 0.0 if sgn > 0 else PI
@@ -406,7 +410,7 @@ func _build_statics() -> void:
 				if n != null:
 					_tint_materials(n)
 				_add_light(Vector3(o.x, y + 9.0, o.z), _col(_theme.glow), 3.0, 26.0, true)
-			elif map.id == "pillars":
+			elif map.id == "pillars" or map.id == "yard":
 				var n := _place_kit("pillar", Vector3(o.x, y - 0.1, o.z), _rand.next() * TAU, Vector3(o.r, 1.25, o.r))
 				if n != null:
 					_tint_materials(n)
@@ -490,6 +494,9 @@ func _build_bridge() -> void:
 
 
 func _build_room_decor() -> void:
+	if map.gate_shapes.is_empty():
+		_build_yard_decor()
+		return
 	for sgn in [1.0, -1.0]:
 		var z0: float = sgn * GameMap.A
 		for pos in [Vector2(-6.8, sgn * (GameMap.A + 3.0)), Vector2(6.8, sgn * (GameMap.A + 3.0)), Vector2(-6.8, sgn * (GameMap.R - 2.5)), Vector2(6.8, sgn * (GameMap.R - 2.5)),
@@ -509,6 +516,25 @@ func _build_room_decor() -> void:
 		add_child(disc)
 		if z0 == 0.0:
 			pass
+
+
+## Training yard: torches along both end walls and a rune ring where the player starts.
+func _build_yard_decor() -> void:
+	for sgn in [1.0, -1.0]:
+		for x in [-20.0, -10.0, 0.0, 10.0, 20.0]:
+			var pos := Vector2(x, sgn * (GameMap.A - 1.6))
+			var y := h(pos.x, pos.y)
+			_place_kit("torch", Vector3(pos.x, y, pos.y), 0.0)
+			_add_light(Vector3(pos.x, y + 2.4, pos.y), _col(_theme.torch), 2.4, 12.0, true)
+	var disc := MeshInstance3D.new()
+	disc.mesh = MeshBuilder.ring(3.2, 3.6, 48)
+	var dm := StandardMaterial3D.new()
+	dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dm.albedo_color = _col(_theme.glow) * 1.8
+	disc.material_override = dm
+	disc.position = Vector3(0, h(0, 17.5) + 0.08, 17.5)
+	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(disc)
 
 
 func _build_outer_decor() -> void:

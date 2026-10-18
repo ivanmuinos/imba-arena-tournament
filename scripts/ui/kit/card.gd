@@ -63,6 +63,12 @@ func _init(icon_id := "", title := "", subtitle := "", accent_: Color = UiKit.LA
 
 
 ## Big icon centred on a soft radial glow in the accent colour.
+## Smaller, wrapping title (rows with five cards).
+func set_title_size(px: int) -> void:
+	_title.add_theme_font_size_override("font_size", px)
+	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+
 func _icon_art(icon_id: String) -> Control:
 	var holder := Control.new()
 	holder.custom_minimum_size = Vector2(0, 170)

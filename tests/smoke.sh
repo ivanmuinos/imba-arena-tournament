@@ -20,6 +20,11 @@ out=$(perl -e 'alarm 90; exec @ARGV' godot --headless --path . --quit-after 2500
 check "jugador con entradas simuladas (priest, tomb, 3v3)" "$out"
 out=$(perl -e 'alarm 90; exec @ARGV' godot --headless --path . --quit-after 2500 -- --offline --drive --cls=rogue --map=living --log 2>&1)
 check "jugador con entradas simuladas (rogue, living, 2v2)" "$out"
+out=$(perl -e 'alarm 90; exec @ARGV' godot --headless --path . --quit-after 2500 -- --practice --drive --cls=mage --log 2>&1)
+check "arena de práctica con entradas simuladas" "$out"
+echo "$out" | grep -q "snapshot #1 " || { echo "✗ la arena de práctica no produjo snapshots"; fail=1; }
+out=$(perl -e 'alarm 90; exec @ARGV' godot --headless --path . --quit-after 2500 -- --practice=tutorial --drive --cls=warrior --log 2>&1)
+check "tutorial con entradas simuladas" "$out"
 (perl -e 'alarm 45; exec @ARGV' godot --headless --path . -- --server --port=7791 --wait=2 --autopilot > /tmp/magma_smoke_server.txt 2>&1 &)
 sleep 3
 out=$(perl -e 'alarm 40; exec @ARGV' godot --headless --path . --quit-after 1200 -- --join=127.0.0.1:7791 --name=Smoke --log 2>&1)

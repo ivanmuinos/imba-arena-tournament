@@ -32,6 +32,9 @@ var score := {"red": 0, "blue": 0}
 var done := false
 ## Practice arena ("Arena de práctica", offline): one endless fight against training dummies, no rounds, no dampening, instant respawn.
 var practice := false
+## Debug (`--god`, used by the real-input playtests): human players take no damage and cannot be crowd controlled,
+## so a scenario about key presses is never ruined by dying or being stunned mid-test.
+var god := false
 ## Practice: skip every cooldown of the human players ("modo sin cooldowns").
 var nocd := false
 var meters := {}  # unit id -> PracticeMeter
@@ -70,7 +73,7 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 		u.dummy = str(e.get("dummy", ""))
 		if u.peer == 0 and u.dummy == "":
 			u.brain = BotBrain.new(diff)
-		u.max_hp = float(e.get("hp", GameData.classes[u.cls].hp)) if u.dummy != "" else float(GameData.classes[u.cls].hp)
+		u.max_hp = float(e.hp) if u.dummy != "" else float(u.spec().hp)
 		if u.dummy != "":
 			u.home = Vector2(float(e.x), float(e.z))
 		if practice and u.peer != 0:
@@ -627,16 +630,26 @@ func _enemies_within(u: ArenaUnit, x: float, z: float, r: float) -> Array[ArenaU
 var _dot_tick := false
 
 
+## Crit chance of a unit: the global base plus its class/spec bonus (assassins crit a lot).
+func crit_chance(u: ArenaUnit) -> float:
+	return float(C.CRIT_CHANCE) + float(u.spec().get("crit", 0.0))
+
+
 func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability := "") -> void:
 	if not t.alive or amount <= 0 or phase != "fight":
+		return
+	if god and t.peer != 0:
 		return
 	if now < t.shield_until:
 		if src != null: fx.append({"k": "absorb", "id": t.id})
 		return
 	var crit := false
 	if src != null:
-		crit = now < src.crit_until or randf() < C.CRIT_CHANCE
+		crit = now < src.crit_until or randf() < crit_chance(src)
 		if crit: amount *= C.CRIT_MULT
+		var armor := float(t.spec().get("armor", 0.0))
+		if armor > 0.0 and SpellSchools.explicit(ability) and SpellSchools.school_of(ability) == "physical":
+			amount *= 1.0 - armor  # armor: physical hits only (not magic, not periodic effects)
 		t.stealth_until = 0.0  # getting hit breaks stealth
 		if now < t.wall_until: amount *= 0.4
 		if now < t.marked_until: amount *= 1.4
@@ -724,7 +737,7 @@ const INCAP_LABEL := {"disorient": ["DESORIENTADO", "#ffb060"], "poly": ["¡OVEJ
 
 
 func _cc(t: ArenaUnit, cat: String, base_ms: float, now: float, incap_kind := "poly") -> void:
-	if not t.alive:
+	if not t.alive or (god and t.peer != 0):
 		return
 	if now < t.shield_until or now < t.storm_until:
 		_label(t, "INMUNE", "#7fdbff")

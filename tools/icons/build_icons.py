@@ -54,6 +54,8 @@ G["sheep"] = circ(48, 62, 20) + circ(66, 54, 22) + circ(84, 64, 18) + circ(60, 7
 G["blink"] = poly(star(80, 48, 30, 9, 4)) + line_s("M16 100 L52 72") + line_s("M10 80 L36 62") + poly(star(36, 100, 12, 4, 4), "a")
 G["counter"] = f'<circle class="o" cx="64" cy="64" r="44" fill="none"/><circle class="s" cx="64" cy="64" r="44"/>' + path("M50 96 V62 C50 56 60 56 60 62 V40 C60 34 70 34 70 40 V62 V46 C70 40 80 40 80 46 V70 C80 88 74 98 62 98 Z") + line_s("M26 26 L102 102")
 G["arrow"] = line_s("M20 108 L96 32") + poly([(104, 24), (104, 62), (84, 44), (66, 24)], "f", 0) + poly([(18, 90), (38, 110), (14, 114)], "a")
+G["dot"] = '<circle class="o" cx="64" cy="64" r="34" fill="none"/><circle class="s" cx="64" cy="64" r="34"/>'
+G["book"] = path("M14 28 C34 20 52 24 64 34 C76 24 94 20 114 28 V102 C94 94 76 98 64 108 C52 98 34 94 14 102 Z") + line_s("M64 34 V108") + line_s("M28 46 C38 44 48 46 54 50 M28 62 C38 60 48 62 54 66 M74 50 C80 46 90 44 100 46 M74 66 C80 62 90 60 100 62")
 G["target"] = '<circle class="o" cx="64" cy="64" r="40" fill="none"/><circle class="s" cx="64" cy="64" r="40"/><circle class="s" cx="64" cy="64" r="18"/>' + line_s("M64 10 V34 M64 94 V118 M10 64 H34 M94 64 H118") + circ(64, 64, 7, "a")
 G["snare"] = '<circle class="o" cx="64" cy="64" r="34" fill="none"/><circle class="s" cx="64" cy="64" r="34"/>' + "".join(poly([(64 - 8, 20), (64 + 8, 20), (64, 46)], "f", a) for a in range(0, 360, 60)) + circ(64, 64, 9, "a")
 G["spiral"] = line_s("M64 64 m0 0 a6 6 0 1 1 12 0 a14 14 0 1 1 -28 0 a22 22 0 1 1 44 0 a30 30 0 1 1 -60 0 a38 38 0 0 1 76 0") + poly([(100, 80), (116, 62), (116, 98)], "a")
@@ -148,7 +150,7 @@ ABILITIES = {  # id -> (glyph, school)
     "fear": ("ghost", "shadow"), "darkpact": ("shieldwall", "shadow"),
     "drainlife": ("drop", "nature"), "soulrot": ("roots", "shadow"),
 }
-UI = ["gear", "door", "play", "back", "user", "close", "check", "volume", "mouse", "keyboard", "monitor", "copy", "signal", "steam", "globe", "people", "edit", "star", "helm",
+UI = ["dot", "book", "target", "gear", "door", "play", "back", "user", "close", "check", "volume", "mouse", "keyboard", "monitor", "copy", "signal", "steam", "globe", "people", "edit", "star", "helm",
       "stat_hp", "stat_speed", "stat_dmg", "stat_cc", "stat_diff", "map_random", "sword", "skull", "plus", "boot"]
 
 

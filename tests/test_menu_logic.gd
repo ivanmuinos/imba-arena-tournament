@@ -295,3 +295,70 @@ func test_tooltip_meta_line_describes_cooldown_and_range() -> void:
 	eq(UiTip.meta_line({"cd": 0, "ult": true, "range": 30}), "Definitiva (una vez por partida) · Alcance 30 m", "definitiva")
 	eq(UiTip.meta_line({"cd": 450, "cast": 1500}), "Recarga 0.5 s · Lanzamiento 1.5 s", "con lanzamiento")
 	eq(UiTip.meta_line({"cd": 0}), "Sin recarga", "sin recarga")
+
+
+# ---------------------------------------------------------------- tutorial and practice arena entries
+
+func test_nav_has_howto_and_arena_flows() -> void:
+	check(MenuNav.SCREENS.has("howto"), "pantalla Cómo jugar")
+	eq(MenuNav.flow_for("arena"), ["champions"], "la arena de práctica sólo pide campeón")
+	var n := MenuNav.new()
+	n.advance_from_splash()
+	n.go("howto")
+	eq(n.current, "howto", "se llega desde el hub")
+	eq(n.back(), "hub", "Esc vuelve al hub")
+
+
+func test_menu_arena_flow_emits_practice_arena_with_the_chosen_champion() -> void:
+	var m := _menu()
+	m._input(_key(KEY_SPACE))
+	var got := []
+	var offline := []
+	m.play_practice.connect(func(cfg): got.append(cfg))
+	m.play_offline.connect(func(cfg): offline.append(cfg))
+	m.go("play")
+	m.start_flow("arena")
+	eq(m.nav.current, "champions", "elige campeón")
+	m.st.set_value("cls", "warlock")
+	m.next_step()
+	eq(got.size(), 1, "lanza la arena de práctica")
+	eq(got[0].cls, "warlock", "con el campeón elegido")
+	eq(offline.size(), 0, "no es una partida contra bots")
+	_drop(m)
+
+
+func test_menu_tutorial_signal_and_first_launch_flag() -> void:
+	var m := _menu()
+	m._input(_key(KEY_SPACE))
+	var got := []
+	m.start_tutorial.connect(func(cfg): got.append(cfg))
+	m.launch_tutorial()
+	eq(got.size(), 1, "arranca el tutorial")
+	check(bool(m.st.get_value("tutorial_seen")), "queda marcado como visto")
+	_drop(m)
+	var st := SettingsStore.new()
+	check(not bool(st.get_value("tutorial_seen")), "por defecto no lo vio")
+	st.set_value("tutorial_seen", true)
+	check(bool(st.get_value("tutorial_seen")), "se guarda")
+	st.set_value("tutorial_seen", "yes")
+	check(not bool(st.get_value("tutorial_seen")), "un valor inválido no cuenta como visto")
+
+
+func test_first_launch_offers_the_tutorial_once_and_it_can_be_skipped() -> void:
+	var m := _menu()
+	m.st.set_value("tutorial_seen", false)
+	m._input(_key(KEY_SPACE))
+	var hub := m._views.hub as MHub
+	check(hub.offer_visible(), "la primera vez el menú ofrece el tutorial")
+	hub.dismiss_offer()
+	check(not hub.offer_visible(), "Ahora no la cierra")
+	check(bool(m.st.get_value("tutorial_seen")), "y no vuelve a aparecer sola")
+	hub.menu_enter()
+	check(not hub.offer_visible(), "al volver al hub tampoco")
+	_drop(m)
+	var m2 := _menu()
+	m2.offer_tutorial = false
+	m2.st.set_value("tutorial_seen", false)
+	m2._input(_key(KEY_SPACE))
+	check(not (m2._views.hub as MHub).offer_visible(), "las ejecuciones con argumentos (capturas, pruebas) no la muestran")
+	_drop(m2)

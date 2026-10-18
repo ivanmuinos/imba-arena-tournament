@@ -14,7 +14,7 @@ func _init() -> void:
 	var only: Array = Array(OS.get_cmdline_user_args())
 	var verbose := only.has("-v")  # print each test name as it starts (finds hangs)
 	only.erase("-v")
-	for path in SUITES + ["res://tests/test_warlock.gd"]:
+	for path in SUITES + ["res://tests/test_warlock.gd", "res://tests/test_practice.gd", "res://tests/test_tutorial.gd"]:
 		if not only.is_empty() and not only.any(func(w): return path.contains(w)):
 			continue
 		var script = load(path)

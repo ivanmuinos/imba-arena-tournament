@@ -12,22 +12,25 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.position = Vector2(72, 200)
 	row.custom_minimum_size = Vector2(1136, 330)
-	row.add_theme_constant_override("separation", 22)
+	row.add_theme_constant_override("separation", 16)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(row)
 	var defs := [
-		["practice", "ui_sword", "Práctica", "Peleá contra bots en cualquier arena. Sin conexión ni cuentas.", UiKit.LAVA],
+		["practice", "ui_sword", "Contra bots", "Peleá contra bots en cualquier arena. Sin conexión ni cuentas.", UiKit.LAVA],
+		["arena", "ui_target", "Arena de práctica", "Muñecos y medidor de daño para practicar rotaciones.", UiKit.GREEN],
 		["host", "ui_people", "Crear partida", "Sos el anfitrión: tus amigos entran con tu IP y puerto.", UiKit.GOLD],
 		["join", "ui_globe", "Unirse", "Entrá a la partida de un amigo con su dirección.", UiKit.BLUE],
 		["steam", "ui_steam", "Steam", "Salas por Steam: invitá o buscá partidas sin abrir puertos.", Color("#66c0f4")],
 	]
 	for d in defs:
 		var c := Card.new(d[1], d[2], d[3], d[4])
-		c.custom_minimum_size = Vector2(262, 330)
+		c.custom_minimum_size = Vector2(210, 330)
+		c.set_title_size(28)
 		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(c)
 		_cards[d[0]] = c
 	_cards.practice.pressed.connect(func(): menu.start_flow("practice"))
+	_cards.arena.pressed.connect(func(): menu.start_flow("arena"))
 	_cards.host.pressed.connect(func(): menu.start_flow("host"))
 	_cards.join.pressed.connect(func(): menu.start_flow("join"))
 	_cards.steam.pressed.connect(_toggle_steam)

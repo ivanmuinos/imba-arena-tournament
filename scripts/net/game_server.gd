@@ -12,7 +12,7 @@ signal match_ended
 signal player_joined(name: String)
 signal player_left(name: String)
 
-const PROTO := 3
+const PROTO := 4
 
 
 ## Game version from project.godot (config/version): client and server must match exactly.
@@ -300,6 +300,7 @@ func start_match() -> bool:
 		game = ArenaMatch.new(2, PracticeYard.entries(p.name, p.cls, p.get("spec", ""), peer), sim_now, cfg.diff, map_id)
 	else:
 		game = ArenaMatch.new(int(cfg.mode), lobby_entries(), sim_now, cfg.diff, map_id)
+	game.god = bool(cfg.get("god", false))
 	if cfg.autopilot:
 		for u in game.units:
 			if u.peer != 0 and u.brain == null:

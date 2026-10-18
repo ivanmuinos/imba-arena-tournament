@@ -4,6 +4,10 @@ extends Node3D
 ## (port of the frame loop / input / event handling in src/main.ts).
 
 signal finished(end_msg: Dictionary, rows: Array)
+## Practice arena / tutorial: the side panel asked to switch champion or to leave; and what the player just did (see TutorialFlow).
+signal practice_switch(cls: String, spec: String)
+signal leave_requested
+signal gameplay_event(name: String)
 
 const PICK_RADIUS := 42.0
 
@@ -31,6 +35,10 @@ var demo_target := false
 ## alta | media | baja | auto (auto starts at alta and drops when fps stays low).
 var gfx_choice := "auto"
 var gfx_level := "alta"
+## Practice arena (the yard) / guided tutorial inside it.
+var practice := false
+var tutorial := false
+var practice_panel: PracticePanel = null
 
 var _roster: Array = []
 var _state_ms := 0.0
@@ -60,6 +68,7 @@ var _drive_cast_at := 0.0
 var _drive_tab_at := 0.0
 var _drive_jump_at := 0.0
 var _spectating := -1
+var _panel_ms := 0.0
 
 
 ## Only allies present in the filtered snapshot are eligible; never exposes hidden enemies.
@@ -110,6 +119,10 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	add_child(hud)
 	hud.setup(_roster, my_id, my_cls, my_team, my_spec)
 	hud.frame_clicked.connect(_on_frame_clicked)
+	practice = str(msg.map) == GameMap.PRACTICE_ID
+	hud.practice = practice
+	if practice and not tutorial:
+		_build_practice_panel()
 	controller.setup(my_cls, my_team, my_spec)
 	controller.ready_at = hud.ready_at
 	predictor.place(mine_spawn().x, mine_spawn().y)
@@ -131,6 +144,16 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	CursorKit.reset()
 	# First frame: camera on the spawn point.
 	cam.chase(predictor.m.x, predictor.m.z, 0.016, world, true)
+
+
+func _build_practice_panel() -> void:
+	practice_panel = PracticePanel.new().setup(my_cls, my_spec)
+	practice_panel.reset_pressed.connect(func(): client.send_practice("reset"))
+	practice_panel.nocd_toggled.connect(func(on): client.send_practice("nocd", on))
+	practice_panel.ult_pressed.connect(func(): client.send_practice("ult"))
+	practice_panel.class_changed.connect(func(c, s): practice_switch.emit(c, s))
+	practice_panel.menu_pressed.connect(func(): leave_requested.emit())
+	hud.add_overlay(practice_panel, 132.0, 12.0, false)
 
 
 func mine_spawn() -> Vector2:
@@ -247,10 +270,15 @@ func _on_state(s: Dictionary) -> void:
 	world.map.apply_state(s.gates, s.ft)
 	world.sync_state(s.gates, s.ft, now / 1000.0)
 	hud.on_state(s, me, now)
+	if practice_panel != null and now - _panel_ms > 180.0:
+		_panel_ms = now
+		practice_panel.update_meter(s.get("you", {}))
 	hud.set_ping(client.rtt_ms if client.rtt_ms >= 0 and client.transport is PeerTransport else -1)
 
 
 func _on_server_error(text: String) -> void:
+	if _active and text.contains("cancelado"):
+		gameplay_event.emit("cast_cancel")
 	if _active:
 		hud.error(text)
 		audio.play("error")
@@ -385,9 +413,15 @@ func _one_fx(f: Dictionary) -> void:
 				hud.float_text(pos + Vector3(0, 3.1 * UnitView.VS, 0), f.text, Color(str(f.color)), true)
 			if f.text == "INTERRUMPIDO":
 				audio.play("interrupt", p2)
+				if v != null and str(v.entry.get("dummy", "")) == "caster":
+					gameplay_event.emit("interrupt")
 			elif is_me and CC_WORDS.any(func(w): return f.text.contains(w)):
 				audio.play("ccMe")
 		"cast":
+			if is_me:
+				gameplay_event.emit("cast:%s" % str(f.ability))
+				if SpellKinds.kind(_ability_spec(str(f.ability))) == "ground":
+					gameplay_event.emit("ground_cast")
 			if v != null and v.shown:
 				if f.ability == "disengage":
 					fx.dash(pos.x, pos.z)
@@ -474,6 +508,7 @@ func _input(event: InputEvent) -> void:
 			for b in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
 				if _press.has(b) and not _dragged.get(b, false) and InputLogic.is_drag(_press[b], event.position):
 					_dragged[b] = true
+					gameplay_event.emit("cam_rmb" if b == MOUSE_BUTTON_RIGHT else "cam_lmb")
 					_begin_look(_press[b])
 	elif event is InputEventMouseButton:
 		_on_mouse_button(event)
@@ -509,11 +544,15 @@ func _input(event: InputEvent) -> void:
 
 func _on_mouse_button(event: InputEventMouseButton) -> void:
 	var b: int = event.button_index
+	if hud != null and event.pressed and hud.blocks_mouse(event.position):
+		return  # a click on the practice panel / tutorial card is not a click on the world
 	if b == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 		cam.zoom(-0.35)
+		gameplay_event.emit("zoom")
 		return
 	if b == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 		cam.zoom(0.35)
+		gameplay_event.emit("zoom")
 		return
 	if b != MOUSE_BUTTON_LEFT and b != MOUSE_BUTTON_RIGHT:
 		return
@@ -555,6 +594,8 @@ func _click(button: int, pos: Vector2) -> void:
 		return
 	if button == MOUSE_BUTTON_LEFT:
 		_select(id)
+		if _team_of(id) != my_team:
+			gameplay_event.emit("click_target")
 		return
 	var res := controller.right_click_unit(id, _ctx())
 	_select(id)
@@ -594,7 +635,7 @@ func _ctx() -> Dictionary:
 		if v.snap.is_empty():
 			continue
 		units.append({"id": id, "team": v.entry.team, "x": v.position.x, "z": v.position.z, "alive": v.snap.alive, "visible": v.shown,
-			"hp": float(v.snap.hp) / float(GameData.classes[v.entry.cls].hp),
+			"hp": float(v.snap.hp) / GameData.entry_max_hp(v.entry),
 			"incap": v.snap.cc.has("incap")})
 	var map := world.map
 	return {
@@ -617,6 +658,7 @@ func _cycle_target() -> void:
 		hud.error("No hay enemigos a la vista")
 	else:
 		audio.play("tick")
+		gameplay_event.emit("tab_target")
 
 
 func _jump() -> void:
@@ -626,6 +668,7 @@ func _jump() -> void:
 	_last_jump = t
 	client.send_jump()
 	views[my_id].jump_now(t / 1000.0)
+	gameplay_event.emit("jumped")
 
 
 const JUMP_COOLDOWN_MS := 650.0
@@ -946,7 +989,7 @@ func _target_frame(local: Vector2) -> void:
 		status = ""
 		kind = ""
 	hud.show_target({
-		"friend": friend, "name": v.entry.name, "cls": v.entry.cls, "hp": float(s.hp), "max_hp": float(spec.hp), "cast": s.cast,
+		"friend": friend, "name": v.entry.name, "cls": v.entry.cls, "hp": float(s.hp), "max_hp": GameData.entry_max_hp(v.entry), "cast": s.cast,
 		"effects": Effects.debuffs_of(s.cc) + Effects.buffs_of(s.buffs), "dist": ("%d m" % roundi(d)) if v.shown else "fuera de vista",
 		"status": status, "status_kind": kind, "lost": not v.shown,
 	})

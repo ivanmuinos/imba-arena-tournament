@@ -5,6 +5,8 @@ extends Node
 ## Command line (after `--`):
 ##   --server [--port=7777] [--mode=2|3] [--map=magma|moon] [--diff=easy|normal|hard] [--wait=SEC]
 ##   --offline | --host | --join=IP[:PORT]   skip the menu   (+ --name= --cls= --team= --mode= --map= --diff=)
+##   --practice[=tutorial]   the training yard (or the guided tutorial in it)
+##   --god              (playtests) human players take no damage and cannot be crowd controlled
 ##   --autopilot        bots drive the human units too (demos, smoke tests)
 ##   --target           keep an enemy selected (screenshots)
 ##   --drive            the local player is scripted (random moves/casts/targets): exercises the input paths
@@ -46,6 +48,7 @@ var _browser: SteamBrowser
 var _steam_cfg := {}
 var _via_steam := false
 var _last_error := ""
+var _tutorial_next := false
 var _state := "menu"
 var _auto_start := false
 var _started_at := 0.0
@@ -90,6 +93,9 @@ func _ready() -> void:
 	fade_layer.add_child(_cut_fade)
 	_menu = MenuScreen.new()
 	_menu.play_offline.connect(_start_offline)
+	_menu.play_practice.connect(func(cfg): _start_practice(cfg))
+	_menu.start_tutorial.connect(func(cfg): _start_practice(cfg, true))
+	_menu.offer_tutorial = not (args.has("menu") or args.has("shot-times") or args.has("playtest") or args.has("menu-script") or args.has("offline"))
 	_menu.host.connect(_start_host)
 	_menu.join.connect(_start_join)
 	_menu.map_changed.connect(_set_preview)
@@ -121,7 +127,7 @@ func _ready() -> void:
 	_show("menu")
 	_set_preview(_menu.selected_map())
 	if args.has("playtest"):  # real-input automated playtest (see scripts/dev/playtest.gd, tools/playtest.sh)
-		var pt := Playtest.new()
+		var pt: Playtest = (PracticePlaytest.new() if args.has("practice-test") else (TutorialPlaytest.new() if args.has("tutorial-test") else Playtest.new()))
 		add_child(pt)
 		pt.run.call_deferred(self, str(args.get("cls", "mage")), str(args.get("shot", "/tmp/playtest")), str(args.get("spec", "")))
 	if args.has("menu-script"):  # e.g. --menu-script=1:key,2:go:play,3:flow:practice,4:next  (screenshots of transitions)
@@ -148,6 +154,8 @@ func _ready() -> void:
 		_lobby.show_connect_info(["192.168.0.23"], 7777)
 		_lobby._http.cancel_request()  # the demo must not look up (or show) the real public IP
 		_lobby._refresh_info("203.0.113.7")
+	elif args.has("practice"):  # --practice[=tutorial]: the training yard (see also --cls= --spec=)
+		_start_practice(cfg, str(args.practice) == "tutorial")
 	elif args.has("offline"):
 		_start_offline(cfg)
 	elif args.has("host"):
@@ -169,7 +177,7 @@ func _parse(list: PackedStringArray) -> Dictionary:
 
 func _cfg_from_args() -> Dictionary:
 	var base := {"name": "Jugador", "cls": "mage", "mode": 2, "diff": "normal", "map": "random", "pref": "any"}
-	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join"):
+	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join") and not args.has("practice"):
 		return _menu._cfg()
 	for k in ["name", "cls", "spec", "mode", "diff", "map"]:
 		if args.has(k):
@@ -333,13 +341,46 @@ func _start_offline(cfg: Dictionary) -> void:
 	last_cfg = cfg
 	offline = true
 	_auto_start = true
-	var scfg := {"mode": cfg.mode, "diff": cfg.diff, "map": cfg.map, "dedicated": false, "autopilot": args.has("autopilot")}
+	var scfg := {"mode": cfg.mode, "diff": cfg.diff, "map": cfg.map, "dedicated": false, "autopilot": args.has("autopilot"), "god": args.has("god")}
 	server = GameServer.new(scfg)
 	var link := LoopbackTransport.pair()
 	server.attach(link[0], true)
 	client = _new_client(cfg)
 	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": cfg.pref})
 	_show("none")
+
+
+## "Arena de práctica" (training yard) or, with `tutorial`, the same yard with the guided tutorial on top. Offline only.
+func _start_practice(cfg: Dictionary, tutorial := false) -> void:
+	_teardown_session()
+	last_cfg = cfg
+	offline = true
+	_auto_start = true
+	_tutorial_next = tutorial
+	var scfg := {"mode": 2, "diff": "normal", "map": GameMap.PRACTICE_ID, "dedicated": false, "autopilot": false, "practice": true}
+	server = GameServer.new(scfg)
+	var link := LoopbackTransport.pair()
+	server.attach(link[0], true)
+	client = _new_client(cfg)
+	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": "red"})
+	_show("none")
+
+
+func _on_practice_switch(cls: String, spec: String) -> void:
+	var st: SettingsStore = _menu.st
+	st.set_value("cls", cls)
+	if spec != "":
+		st.set_value("spec", spec)
+	st.save()
+	var cfg := _menu._cfg()
+	_start_practice.call_deferred(cfg)
+
+
+func _on_tutorial_finished(action: String) -> void:
+	match action:
+		"arena": _start_practice.call_deferred(last_cfg)
+		"bots": _start_offline.call_deferred(last_cfg)
+		_: _to_menu.call_deferred()
 
 
 func _start_host(cfg: Dictionary, port: int) -> void:
@@ -425,9 +466,18 @@ func _on_match_started(msg: Dictionary) -> void:
 	_match.drive_bot = args.has("drive")
 	_match.demo_target = args.has("target")
 	_match.gfx_choice = gfx_choice
+	_match.tutorial = _tutorial_next
 	add_child(_match)
 	_match.start(client, msg)
 	_match.finished.connect(_on_match_finished)
+	if _match.practice:
+		_match.practice_switch.connect(_on_practice_switch)
+		_match.leave_requested.connect(func(): _to_menu.call_deferred())
+		if _tutorial_next:
+			var tut := TutorialOverlay.new()
+			tut.attach(_match, TutorialFlow.new(str(last_cfg.cls), str(last_cfg.get("spec", ""))))
+			tut.finished.connect(_on_tutorial_finished)
+	_tutorial_next = false
 
 
 func _on_match_finished(end: Dictionary, rows: Array) -> void:

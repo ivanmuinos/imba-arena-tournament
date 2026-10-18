@@ -5,6 +5,9 @@ extends Control
 ## animates screens and forwards the launch signals main.gd listens to.
 
 signal play_offline(cfg: Dictionary)
+## "Arena de práctica" (training yard, offline) and the guided tutorial.
+signal play_practice(cfg: Dictionary)
+signal start_tutorial(cfg: Dictionary)
 signal host(cfg: Dictionary, port: int)
 signal join(cfg: Dictionary, address: String, port: int)
 signal map_changed(map_id: String)
@@ -24,6 +27,8 @@ var status: Label
 var steam_ok := false
 var steam_text := "Steam no disponible"
 var scale_ := 1.0
+## The hub offers the tutorial on the first launch (off for scripted runs and screenshots).
+var offer_tutorial := true
 
 var _stage: Control
 var _shade: TextureRect
@@ -51,7 +56,7 @@ func _ready() -> void:
 	_stage = Control.new()
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_stage)
-	for pair in [["splash", MSplash], ["hub", MHub], ["play", MPlay], ["setup", MSetup], ["join", MJoin], ["champions", MChampions], ["settings", MSettings]]:
+	for pair in [["splash", MSplash], ["hub", MHub], ["play", MPlay], ["setup", MSetup], ["join", MJoin], ["champions", MChampions], ["settings", MSettings], ["howto", MHowTo]]:
 		var v: MenuView = pair[1].new()
 		v.menu = self
 		_views[pair[0]] = v
@@ -157,6 +162,8 @@ func debug_goto(spec: String) -> void:
 	match id:
 		"play":
 			nav.go("play")
+		"howto":
+			nav.go("howto")
 		"setup", "champions", "join":
 			nav.go("play")
 			nav.start_flow("join" if id == "join" else "practice")
@@ -213,9 +220,22 @@ func _launch() -> void:
 			steam_host.emit(cfg, bool(st.get_value("steam_friends")))
 		"steam_browse":
 			steam_browse.emit()
+		"arena":
+			play_practice.emit(cfg)
 		_:
 			play_offline.emit(cfg)
 	# If main kept the menu visible (error), allow another try.
+	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
+
+
+## "Cómo jugar" -> tutorial. Marks it as seen so it is only offered by itself once.
+func launch_tutorial() -> void:
+	if _launching:
+		return
+	_launching = true
+	st.set_value("tutorial_seen", true)
+	var cfg := _cfg()
+	start_tutorial.emit(cfg)
 	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
 
 

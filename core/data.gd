@@ -12,7 +12,9 @@ static var C: Dictionary = {}
 ## Maximum health of a roster entry: training dummies carry their own huge value, everyone else the class's.
 static func entry_max_hp(entry: Dictionary) -> float:
 	ensure_loaded()
-	return float(entry.hp) if entry.has("hp") else float(classes[entry.cls].hp)
+	if entry.has("hp"):
+		return float(entry.hp)
+	return float(kit(str(entry.cls), str(entry.get("spec", ""))).hp)
 
 
 static func ensure_loaded() -> void:
@@ -70,6 +72,9 @@ static func kit(cls: String, spec := "") -> Dictionary:
 		k["spec_color"] = s.color
 		k["stats"] = s.stats
 		k["tagline"] = s.desc
+		for key in ["hp", "armor", "crit"]:  # a specialization may be sturdier, tougher or crit-ier than its class
+			if s.has(key):
+				k[key] = s[key]
 	return k
 
 

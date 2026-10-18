@@ -33,6 +33,11 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	col.add_child(row)
+	var howto := MButton.new("Cómo jugar", "secondary", "ui_book")
+	howto.custom_minimum_size = Vector2(430, 48)
+	howto.add_theme_font_size_override("font_size", 16)
+	howto.pressed.connect(func(): menu.go("howto"))
+	col.add_child(howto)
 	var champs := MButton.new("Campeones", "secondary", "ui_helm")
 	var cfg := MButton.new("Configuración", "secondary", "ui_gear")
 	var quit := MButton.new("Salir", "secondary", "ui_door")
@@ -81,7 +86,55 @@ func _ready() -> void:
 	tc.add_child(change)
 
 
+## First launch: a small skippable card offers the tutorial once (persisted in settings; "Cómo jugar" replays it any time).
+var _offer: PanelContainer
+
+
+func offer_visible() -> bool:
+	return _offer != null and _offer.visible
+
+
+func _maybe_offer() -> void:
+	if not menu.offer_tutorial or bool(menu.st.get_value("tutorial_seen")) or offer_visible():
+		return
+	if _offer == null:
+		_offer = UiKit.glass(UiKit.LINE_STRONG, 14, 18, 3.0, 0.8)
+		_offer.position = Vector2(72, 560)
+		_offer.custom_minimum_size = Vector2(430, 0)
+		var c := VBoxContainer.new()
+		c.add_theme_constant_override("separation", 8)
+		_offer.add_child(c)
+		c.add_child(UiKit.heading("¿Primera vez en la arena?", 22, UiKit.GOLD, 700, 1))
+		var t := UiKit.label("Hacé el tutorial: unos minutos, jugando de verdad. Después lo encontrás en \"Cómo jugar\".", 14, UiKit.MUTED)
+		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		t.custom_minimum_size = Vector2(390, 0)
+		c.add_child(t)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		c.add_child(row)
+		var yes := MButton.new("Hacer el tutorial", "accent")
+		yes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		yes.pressed.connect(func():
+			_offer.visible = false
+			menu.launch_tutorial())
+		var no := MButton.new("Ahora no", "ghost")
+		no.pressed.connect(dismiss_offer)
+		row.add_child(yes)
+		row.add_child(no)
+		add_child(_offer)
+	_offer.visible = true
+
+
+## "Ahora no": hides the card and remembers it was offered, so it does not come back on its own.
+func dismiss_offer() -> void:
+	if _offer != null:
+		_offer.visible = false
+	menu.st.set_value("tutorial_seen", true)
+	menu.st.save()
+
+
 func menu_enter() -> void:
+	_maybe_offer()
 	var n := str(menu.st.get_value("name"))
 	_greet.text = ("Hola, %s" % n) if n != "" else "Bienvenido"
 	var cls := str(menu.st.get_value("cls"))

@@ -37,6 +37,8 @@ var _fps_frames := 0
 
 var score_red: Label
 var score_blue: Label
+## Practice arena: no score, rounds or countdown on screen.
+var practice := false
 var damp := 0.0  # fraction of healing removed by Dampening, shown as a debuff on everyone
 var round_label: Label
 var ping_label: Label
@@ -101,6 +103,41 @@ func _ready() -> void:
 	_rescale()
 	get_viewport().size_changed.connect(_rescale)
 	_build()
+
+
+var _overlays: Array = []
+
+
+## Adds a panel to the scaled HUD root, pinned `top` px from the top and `margin` px from the right edge (design pixels).
+func add_overlay(c: Control, top: float, margin := 12.0, from_right := true) -> void:
+	_root.add_child(c)
+	_overlays.append(c)
+	var place := func():
+		c.position = Vector2(_root.size.x - c.size.x - margin if from_right else margin, top)
+	place.call()
+	_root.resized.connect(place)
+	c.resized.connect(place)
+
+
+## True when a screen position is over one of the interactive overlays (practice panel, tutorial card): the world ignores that click.
+func blocks_mouse(pos: Vector2) -> bool:
+	for c in _overlays:
+		if is_instance_valid(c) and c.is_visible_in_tree() and Rect2(c.global_position, c.size * ui_scale).has_point(pos):
+			return true
+	return false
+
+
+## Screen rectangle of a HUD element the tutorial points at ("bar", "target_panel", "cast", "score", "frames"), or an empty Rect2.
+func rect_of(key: String) -> Rect2:
+	var c: Control = {"bar": _bar, "target_panel": _target_panel, "cast": _my_cast, "score": round_label, "frames": _frames_ally}.get(key)
+	if c == null or not c.is_visible_in_tree():
+		return Rect2()
+	return Rect2(c.global_position, c.size * ui_scale)
+
+
+## Ability slot whose tooltip is showing (-1 when none).
+func tooltip_slot() -> int:
+	return _tip_slot
 
 
 func _full(c: Control) -> Control:
@@ -535,6 +572,13 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 		center_sub.text = ""
 		center_text.remove_theme_color_override("font_color")
 
+	if practice:
+		round_label.text = "Arena de práctica"
+		score_red.visible = false
+		score_blue.visible = false
+		center_text.text = ""
+		center_sub.text = ""
+
 	var seen := {}
 	for u in s.units:
 		seen[u.id] = u
@@ -559,7 +603,7 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 			if not dead:
 				f.auras.set_effects([])
 			continue
-		var max_hp: float = GameData.classes[_cls_of(id)].hp
+		var max_hp: float = GameData.entry_max_hp(_entry_of(id))
 		f.hp.ratio = u.hp / max_hp
 		f.hp_text.text = str(u.hp) if u.alive else ""
 		f.cast.visible = u.cast != null
@@ -623,6 +667,13 @@ func _team_of(id: int) -> String:
 		if r.id == id:
 			return r.team
 	return "red"
+
+
+func _entry_of(id: int) -> Dictionary:
+	for r in _roster:
+		if r.id == id:
+			return r
+	return {"cls": "mage"}
 
 
 func _cls_of(id: int) -> String:
@@ -766,7 +817,7 @@ func update_plate(id: int, view: UnitView, cam: Camera3D, targeted: bool, hovere
 		if d.loc:
 			loc = d.color
 			break
-	var max_hp: float = GameData.classes[view.entry.cls].hp
+	var max_hp: float = GameData.entry_max_hp(view.entry)
 	plate.update_state(s.hp / max_hp, s.cast, bad + Effects.buffs_of(s.buffs), loc)
 
 
