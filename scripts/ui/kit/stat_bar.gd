@@ -12,7 +12,7 @@ var _tw: Tween
 
 func _init() -> void:
 	custom_minimum_size = Vector2(0, 14)
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mouse_filter = Control.MOUSE_FILTER_PASS  # hover shows the numbers behind the bar
 
 
 func animate_to(v: float, c: Color) -> void:

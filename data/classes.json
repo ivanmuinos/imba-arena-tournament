@@ -4,7 +4,7 @@
     "name": "Mago",
     "role": "Daño a distancia y control",
     "icon": "class_mage",
-    "hp": 520,
+    "hp": 480,
     "speed": 6.5,
     "abilities": [
       {
@@ -94,9 +94,9 @@
       "Control"
     ],
     "stats": {
-      "hp": 2,
+      "hp": 1,
       "mobility": 3,
-      "damage": 5,
+      "damage": 4,
       "control": 4,
       "difficulty": 4
     },
@@ -110,7 +110,7 @@
         "role": "Daño explosivo",
         "desc": "Pega muy fuerte y deja a los enemigos ardiendo. Frágil: si te interrumpen, perdés tu daño.",
         "stats": {
-          "hp": 2,
+          "hp": 1,
           "mobility": 3,
           "damage": 5,
           "control": 3,
@@ -125,7 +125,7 @@
             "cd": 700,
             "cast": 0,
             "range": 18,
-            "dmg": 26,
+            "dmg": 32,
             "projSpeed": 34,
             "projR": 0.35,
             "burnDps": 6,
@@ -139,7 +139,7 @@
             "cd": 7000,
             "cast": 1800,
             "range": 22,
-            "dmg": 75,
+            "dmg": 110,
             "projSpeed": 30,
             "projR": 0.55
           },
@@ -200,7 +200,8 @@
             "ccMs": 1000,
             "ult": true
           }
-        }
+        },
+        "hp": 440
       },
       "frost": {
         "name": "Escarcha",
@@ -209,9 +210,9 @@
         "role": "Control y desgaste",
         "desc": "Pega un poco menos pero ralentiza y enraíza: combiná la nova con la lanza de hielo para astillar.",
         "stats": {
-          "hp": 3,
+          "hp": 2,
           "mobility": 3,
-          "damage": 3,
+          "damage": 2,
           "control": 5,
           "difficulty": 3
         },
@@ -238,7 +239,7 @@
             "cd": 2000,
             "cast": 0,
             "range": 20,
-            "dmg": 24,
+            "dmg": 22,
             "projSpeed": 55,
             "projR": 0.24,
             "shatter": 2.5
@@ -303,25 +304,27 @@
             "ccMs": 1000,
             "ult": true
           }
-        }
+        },
+        "hp": 480
       }
-    }
+    },
+    "identity": "Daño o control a distancia con poca vida. Se sostiene con Traslación y el control; elegí Fuego o Escarcha."
   },
   "warlock": {
     "id": "warlock",
     "name": "Brujo",
     "role": "Maldiciones y desgaste",
     "icon": "class_warlock",
-    "hp": 540,
+    "hp": 570,
     "speed": 6.3,
     "tags": [
       "Desgaste",
       "Control"
     ],
     "stats": {
-      "hp": 3,
+      "hp": 4,
       "mobility": 1,
-      "damage": 4,
+      "damage": 3,
       "control": 4,
       "difficulty": 4
     },
@@ -410,14 +413,15 @@
         "dotDps": 12,
         "durationMs": 6000
       }
-    ]
+    ],
+    "identity": "Desgaste: maldiciones que dañan solas y Drenar vida para sostenerse. Vida medio-alta, lento y con poca explosión."
   },
   "hunter": {
     "id": "hunter",
     "name": "Cazador",
     "role": "Daño sostenido y trampas",
     "icon": "class_hunter",
-    "hp": 600,
+    "hp": 560,
     "speed": 7.2,
     "abilities": [
       {
@@ -428,7 +432,7 @@
         "cd": 450,
         "cast": 0,
         "range": 22,
-        "dmg": 25,
+        "dmg": 28,
         "projSpeed": 50,
         "projR": 0.22,
         "physical": true,
@@ -513,19 +517,20 @@
     ],
     "stats": {
       "hp": 3,
-      "mobility": 4,
-      "damage": 4,
+      "mobility": 3,
+      "damage": 3,
       "control": 3,
       "difficulty": 3
     },
-    "tagline": "Presión sostenida y dominio del terreno."
+    "tagline": "Presión sostenida y dominio del terreno.",
+    "identity": "Daño sostenido a distancia con vida media y movilidad media. Las trampas y el desenganche marcan el ritmo."
   },
   "warrior": {
     "id": "warrior",
     "name": "Guerrero",
     "role": "Cuerpo a cuerpo resistente",
     "icon": "class_warrior",
-    "hp": 440,
+    "hp": 640,
     "speed": 6.8,
     "abilities": [
       {
@@ -536,7 +541,7 @@
         "cd": 900,
         "cast": 0,
         "range": 3.2,
-        "dmg": 12,
+        "dmg": 8,
         "melee": true,
         "physical": true,
         "auto": true
@@ -549,7 +554,7 @@
         "cd": 6000,
         "cast": 0,
         "range": 3.2,
-        "dmg": 20,
+        "dmg": 15,
         "melee": true,
         "physical": true
       },
@@ -573,7 +578,7 @@
         "cd": 6000,
         "cast": 0,
         "range": 3.2,
-        "dmg": 8,
+        "dmg": 7,
         "melee": true,
         "slowPct": 0.5,
         "ccMs": 6000,
@@ -610,7 +615,7 @@
         "cd": 0,
         "cast": 0,
         "range": 4.2,
-        "dmg": 11,
+        "dmg": 9,
         "ccMs": 4000,
         "ult": true,
         "physical": true
@@ -623,18 +628,20 @@
     "stats": {
       "hp": 5,
       "mobility": 3,
-      "damage": 3,
-      "control": 3,
+      "damage": 2,
+      "control": 4,
       "difficulty": 2
     },
-    "tagline": "Aguanta, embiste y rompe formaciones."
+    "tagline": "Aguanta, embiste y rompe formaciones.",
+    "armor": 0.18,
+    "identity": "Tanque: la mayor vida y 18% de armadura contra daño físico. Aguanta mucho, pega poco y controla con Carga, Tajo y Golpe de escudo. Cuesta matarlo y también matar a los demás."
   },
   "priest": {
     "id": "priest",
     "name": "Sacerdote",
     "role": "Sanador y control",
     "icon": "class_priest",
-    "hp": 430,
+    "hp": 480,
     "speed": 6.4,
     "abilities": [
       {
@@ -721,20 +728,21 @@
       "Control"
     ],
     "stats": {
-      "hp": 2,
+      "hp": 3,
       "mobility": 2,
-      "damage": 2,
-      "control": 4,
+      "damage": 1,
+      "control": 3,
       "difficulty": 4
     },
-    "tagline": "El equipo vive mientras él se mantenga en pie."
+    "tagline": "El equipo vive mientras él se mantenga en pie.",
+    "identity": "Poco daño y mucha curación. Vida media y buenas defensivas (escudo, disipar, grito): el equipo vive mientras él se mantenga en pie."
   },
   "rogue": {
     "id": "rogue",
     "name": "Asesino",
     "role": "Cuerpo a cuerpo y sigilo",
     "icon": "class_rogue",
-    "hp": 500,
+    "hp": 380,
     "speed": 7.4,
     "abilities": [
       {
@@ -742,10 +750,10 @@
         "name": "Puñalada",
         "icon": "stab",
         "desc": "Auto-ataque rápido cuerpo a cuerpo contra tu objetivo (clic derecho sobre el enemigo o tecla 1).",
-        "cd": 650,
+        "cd": 600,
         "cast": 0,
         "range": 3,
-        "dmg": 14,
+        "dmg": 17,
         "melee": true,
         "physical": true,
         "auto": true
@@ -758,7 +766,7 @@
         "cd": 7000,
         "cast": 0,
         "range": 3,
-        "dmg": 48,
+        "dmg": 90,
         "melee": true,
         "physical": true
       },
@@ -828,12 +836,14 @@
       "Sigilo"
     ],
     "stats": {
-      "hp": 3,
+      "hp": 1,
       "mobility": 5,
       "damage": 5,
       "control": 3,
       "difficulty": 5
     },
-    "tagline": "Desaparece, elige a su presa y remata."
+    "tagline": "Desaparece, elige a su presa y remata.",
+    "crit": 0.1,
+    "identity": "Cañón de cristal: el mayor golpe inicial desde el sigilo y mucho crítico, pero la menor vida. Si cae en una trampa, muere en segundos; si engancha a un mago, lo liquida."
   }
 }

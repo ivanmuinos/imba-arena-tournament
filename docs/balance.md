@@ -351,3 +351,64 @@ Putrefacción del alma 16 -> 12, Drenar vida 42 -> 32. Resultado final (bots nor
 
 Todas dentro de 42-58%. Un 2.7% de las rondas largas se cierra por el límite de ronda (ver arriba). El sacerdote bot ahora disipa maldiciones
 (sólo si el aliado acumula 9 o más por segundo de daño de maldición), y el Brujo bot aterroriza a sacerdotes y cuerpo a cuerpo cercanos.
+
+
+## 0.6.0: identidades asimétricas (1600 partidas, `tools/balance_run.sh 200`)
+
+Pedido: que las clases varíen de verdad (el asesino pega mucho y aguanta poco, el guerrero aguanta mucho y pega poco). Se agregaron al núcleo tres números por clase o especialización, todos en `data/classes.json`: `hp` (también por especialización), `armor` (fracción del daño [físico] que no entra; no reduce magia ni efectos periódicos) y `crit` (suma al crítico base de 15%). Cada habilidad ya tenía su daño.
+
+| Clase | Vida (antes) | Armadura | Crítico | Perfil |
+|---|---|---|---|---|
+| Asesino | 380 (500) | 0% | +10% | Cañón de cristal: Puñalada 17 cada 0,6 s, Evisceración 90, x1,3 desde el sigilo; la menor vida, la mayor movilidad |
+| Guerrero | 640 (440) | 18% | 0 | Tanque: Golpe 8, Golpe mortal 15, Tajo 7, Torbellino 9; el control fuerte (Carga, Tajo, Golpe de escudo) |
+| Mago Fuego | 440 (520) | 0% | 0 | Mucha explosión (Bola 32, Piroexplosión 110), segunda vida más baja; vive de Traslación y control |
+| Mago Escarcha | 480 (520) | 0% | 0 | Menos daño (Rayo 45, Lanza 22) y el mejor control (ralentiza, congela, ventisca) |
+| Cazador | 560 (600) | 0% | 0 | Daño sostenido a distancia (Disparo 28, Certero 64) |
+| Sacerdote | 480 (430) | 0% | 0 | Poco daño, mucha curación, buenas defensivas |
+| Brujo | 570 (540) | 0% | 0 | Desgaste: maldiciones y Drenar vida; el más lento |
+
+Primeras pasadas (sólo para ver el efecto): con el asesino a 150 de Evisceración llegó a 72% y el cazador cayó a 35%; se bajó el daño del asesino y del guerrero y se subió el del cazador y de Escarcha hasta lo siguiente.
+
+Tasas de victoria finales (bots normales, sorteo uniforme, ambos magos):
+
+| Clase | Win rate | +/- (95%) |
+|---|---|---|
+| hunter | 48.8% | 2.7 |
+| mage (Fuego + Escarcha) | 46.0% | 2.7 |
+| mage-fire | 45.2% | 3.9 |
+| mage-frost | 46.8% | 3.7 |
+| priest | 46.8% | 2.7 |
+| rogue | 53.9% | 2.7 |
+| warlock | 50.1% | 2.7 |
+| warrior | 54.5% | 2.7 |
+
+Todas dentro de 42-58%. (Las tasas por modo y por mapa salen de `tools/balance_run.sh`.)
+
+### Matriz 1v1 (fila le gana a columna)
+
+Duelos entre bots (`tools/duel_run.sh 3`: 12 duelos por par, al mejor de 3 rondas; mucho ruido, sirve para ver las tendencias). Los emparejamientos asimétricos son esperables:
+
+| fila vs columna | hunter | mage-fire | mage-frost | priest | rogue | warlock | warrior |
+|---|---|---|---|---|---|---|---|
+| hunter | 33% | 75% | 100% | 100% | 58% | 8% | 75% |
+| mage-fire | 50% | 42% | 100% | 92% | 0% | 33% | 58% |
+| mage-frost | 8% | 17% | 58% | 92% | 17% | 42% | 33% |
+| priest | 0% | 0% | 8% | 64% | 0% | 0% | 0% |
+| rogue | 42% | 92% | 83% | 100% | 42% | 83% | 92% |
+| warlock | 92% | 67% | 58% | 100% | 0% | 67% | 42% |
+| warrior | 25% | 58% | 83% | 100% | 17% | 50% | 58% |
+
+Tiempo medio hasta la primera baja (s), fila contra columna:
+
+| fila vs columna | hunter | mage-fire | mage-frost | priest | rogue | warlock | warrior |
+|---|---|---|---|---|---|---|---|
+| hunter | 41.9 | 29.9 | 30.2 | 100.1 | 20.3 | 32.6 | 40.2 |
+| mage-fire | 33.5 | 28.2 | 29.5 | 80.9 | 15.9 | 26.0 | 31.9 |
+| mage-frost | 35.4 | 29.9 | 32.2 | 91.1 | 14.6 | 28.0 | 37.1 |
+| priest | 92.9 | 73.5 | 96.2 | 39.5 | 32.4 | 103.8 | 92.1 |
+| rogue | 23.6 | 15.8 | 17.9 | 34.8 | 13.3 | 22.2 | 27.0 |
+| warlock | 36.3 | 28.0 | 27.5 | 100.2 | 23.2 | 36.8 | 47.8 |
+| warrior | 45.5 | 34.2 | 62.4 | 89.4 | 25.1 | 48.5 | 60.9 |
+
+
+Lectura (con la salvedad de que los bots no usan el desenganche ni huyen): el asesino domina los duelos 1v1 (75% al Mago Fuego, 92% a Escarcha, 100% al Brujo y al Guerrero) y sólo pierde contra el Cazador (33%) porque éste lo ve venir y lo ralentiza; en equipo, donde no puede elegir presa, queda en 54%. El Guerrero tarda mucho en caer (columna con los tiempos más largos, 27-48 s hasta la primera baja) pero tampoco mata rápido, y le gana a Escarcha y al Brujo (67%) pero pierde contra el asesino (17%). El Brujo les gana a los magos y al Cazador pero no al asesino (0%). El Cazador le gana a Escarcha y al Guerrero y pierde contra el Brujo. El Sacerdote pierde todos los duelos 1v1 (no tiene daño: está hecho para el 2v2 y el 3v3). En la tabla de tiempos, la columna del asesino es la más corta: es el que cae primero (14-23 s contra 28-47 s de los demás). El tiempo incluye el cruce desde las salas de inicio (unos 5 s), por eso no refleja el "4 a 6 s" de una trabada ya encima del objetivo: con la rotación completa sin crítico (Impacto desde sigilo, Evisceración y Puñaladas) el asesino mata a un Mago de Fuego en unos 9 s en la prueba de `tests/test_classes.gd`; con críticos y el aturdimiento, menos.

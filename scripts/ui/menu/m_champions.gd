@@ -203,6 +203,7 @@ func select(id: String, from_user := false) -> void:
 		_tags.add_child(chip)
 	for s in STATS:
 		(_bars[s[0]] as StatBar).animate_to(float(spec.stats[s[0]]), tint)
+		(_bars[s[0]] as StatBar).tooltip_text = HowToContent.stat_tip(spec, s[0])
 	for i in 7:
 		var slot: Button = _slots[i]
 		var a: Dictionary = spec.abilities[i]

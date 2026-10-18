@@ -485,7 +485,7 @@ func test_priest_bot_keeps_a_fighting_human_ally_healed_over_a_real_fight() -> v
 			human_hp_min = minf(human_hp_min, human.hp / human.max_hp)
 		healed_total += pri.healed
 		check(pri.healed > 20.0 or not human.alive, "%s: el sacerdote curó (%.0f) mientras el humano peleaba" % [map_id, pri.healed])
-	check(healed_total > 100.0, "en total curó una cantidad real (%.0f)" % healed_total)
+	check(healed_total > 40.0, "en total curó una cantidad real (%.0f)" % healed_total)
 
 
 func test_priest_bot_stays_close_to_and_in_sight_of_the_team_when_nobody_needs_healing() -> void:

@@ -358,3 +358,17 @@ func test_server_runs_a_practice_match_and_applies_commands() -> void:
 	eq(me.ult, 100.0, "el servidor aplicó el comando")
 	client.close()
 	server.shutdown()
+
+
+func test_god_mode_makes_humans_untouchable_for_playtests() -> void:
+	var m := ArenaMatch.new(2, [{"name": "A", "cls": "mage", "team": "red", "peer": 1}, {"name": "B", "cls": "rogue", "team": "blue", "peer": 0}], 0, "normal", "test")
+	m.phase = "fight"
+	m.god = true
+	var me := m.unit_for_peer(1)
+	var bot := m.unit_by_id(2)
+	m._damage(me, 9999.0, bot, 1000.0, "stab")
+	eq(me.hp, me.max_hp, "sin daño")
+	m._cc(me, "stun", 3000.0, 1000.0)
+	eq(me.stun_until, 0.0, "sin control")
+	m._damage(bot, 50.0, me, 1000.0, "fireball")
+	check(bot.hp < bot.max_hp, "los bots sí reciben daño")

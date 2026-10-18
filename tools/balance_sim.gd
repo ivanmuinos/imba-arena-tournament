@@ -23,6 +23,9 @@ func _init() -> void:
 	var draws := 0
 	var durations: Array = []   # fight time per match in seconds (prep and between-round pauses excluded)
 	var n := int(args.n)
+	if args.has("duel"):
+		_duels(args, rng)
+		return
 	for mode_s in str(args.modes).split(","):
 		var mode := int(mode_s)
 		for map_id in str(args.maps).split(","):
@@ -88,3 +91,47 @@ func _add(stats: Dictionary, key: String, won: bool) -> void:
 	e[0] += 1 if won else 0
 	e[1] += 1
 	stats[key] = e
+
+
+## 1v1 matchup matrix: every ordered pair of class/spec variants, `n` duels per map (best of 3 like a real match).
+## RESULT JSON: {"duel": {"A|B": [wins of A, games]}, "ttk": {"A|B": [seconds until the first death, games]}}
+func _duels(args: Dictionary, rng: RandomNumberGenerator) -> void:
+	var variants: Array = []
+	for c in GameData.classes:
+		var sp := GameData.spec_ids(c)
+		if sp.is_empty():
+			variants.append([c, ""])
+		else:
+			for s in sp:
+				variants.append([c, s])
+	var duel := {}
+	var ttk := {}
+	for map_id in str(args.maps).split(","):
+		for a in variants:
+			for b in variants:
+				for i in int(args.n):
+					var swap := rng.randf() < 0.5
+					var entries := [
+						{"name": "A", "cls": a[0], "spec": a[1], "team": "blue" if swap else "red"},
+						{"name": "B", "cls": b[0], "spec": b[1], "team": "red" if swap else "blue"}]
+					var now := 1_000_000.0
+					var m := ArenaMatch.new(2, entries, now, str(args.diff), map_id)
+					var limit := now + 12 * 60_000
+					var first := -1.0
+					while not m.done and now < limit:
+						now += STEP
+						m.tick(now)
+						if first < 0.0 and m.units.any(func(u): return not u.alive):
+							first = (now - m.fight_start) / 1000.0
+					if not m.done:
+						continue
+					var a_team: String = "blue" if swap else "red"
+					var won: bool = (m.score.red > m.score.blue) == (a_team == "red")
+					var key := "%s%s|%s%s" % [a[0], "-" + a[1] if a[1] != "" else "", b[0], "-" + b[1] if b[1] != "" else ""]
+					_add(duel, key, won)
+					var t: Array = ttk.get(key, [0.0, 0])
+					t[0] += maxf(first, 0.0)
+					t[1] += 1
+					ttk[key] = t
+	print("RESULT ", JSON.stringify({"duel": duel, "ttk": ttk}))
+	quit()
