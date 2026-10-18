@@ -48,7 +48,7 @@ Para capturas de menús: `--menu=hub|play|setup:practice|join|champions:rogue|se
 ## Arenas
 
 Cuatro arenas simétricas (rotación de 180°), chicas y limpias: 3–5 objetos que bloquean la visión y nada de decoración dentro del campo.
-Cada equipo empieza en una **sala cerrada con puerta**: **20 s** de preparación la primera ronda (10 s entre rondas), podés moverte y
+Cada equipo empieza en una **sala cerrada con puerta**: **10 s** de preparación antes de cada ronda, podés moverte y
 usar escudos/refuerzos adentro; las puertas bloquean paso y visión hasta que empieza la pelea. El mapa se elige **al azar por partida**
 (el anfitrión sortea con semilla y lo informa a todos) o a mano.
 

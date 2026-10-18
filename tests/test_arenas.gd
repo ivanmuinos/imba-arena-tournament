@@ -1,5 +1,5 @@
 extends TestBase
-## The four hand-designed arenas: symmetry, start-room gates, 20 s prep, living pillars, bridge/lava,
+## The four hand-designed arenas: symmetry, start-room gates, 10 s prep, living pillars, bridge/lava,
 ## random selection and bots playing every map to the end.
 
 const STEP := 1000.0 / 60.0
@@ -104,11 +104,11 @@ func _advance(m: ArenaMatch, ms: float) -> void:
 		m.tick(now)
 
 
-func test_first_prep_is_20_seconds_and_later_rounds_10() -> void:
+func test_prep_is_10_seconds_every_round() -> void:
 	var m := _bots_match("pillars", ["mage", "warrior"])
 	eq(m.phase, "prep", "arranca en preparación")
-	near(m.phase_ends_at - now, 20000.0, 1.0, "20 s")
-	_advance(m, 19500)
+	near(m.phase_ends_at - now, 10000.0, 1.0, "10 s")
+	_advance(m, 9500)
 	eq(m.phase, "prep", "sigue esperando")
 	_advance(m, 700)
 	eq(m.phase, "fight", "empieza la pelea")

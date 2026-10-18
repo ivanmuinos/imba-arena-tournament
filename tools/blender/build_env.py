@@ -114,8 +114,9 @@ def pillar():
     shaft.grid(fn, nu, nv)
     shaft.solid = 0.05
     base = part("pillar_base", m["basalt_l"], H, bevel=0.06, subsurf=0)
-    base.box((0, 0, 0.4), (2.7, 2.7, 0.8))
-    base.cyl((0, 0, 1.0), (0, 0, 1.3), 1.25, 1.05, seg=24)
+    # Round plinth no wider than the collision circle (radius 1 = o.r once scaled): units must not stand on it.
+    base.cyl((0, 0, 0.0), (0, 0, 0.8), 1.06, 1.04, seg=36)
+    base.cyl((0, 0, 0.8), (0, 0, 1.25), 1.04, 1.0, seg=36)
     cap = part("pillar_cap", m["basalt_l"], H, bevel=0.05, subsurf=0)
     cap.cyl((0, 0, 8.0), (0, 0, 8.5), 0.92, 1.3, seg=24)
     cap.box((0, 0, 8.85), (2.9, 2.9, 0.5))

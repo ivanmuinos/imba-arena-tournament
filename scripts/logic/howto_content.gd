@@ -26,7 +26,7 @@ static func controls() -> String:
 static func rules() -> String:
 	return "[b]Reglas de la partida[/b]\n\n" \
 		+ "[color=#ffc15a][b]Equipos[/b][/color]  2 contra 2 o 3 contra 3. Los lugares vacíos los ocupan bots.\n" \
-		+ "[color=#ffc15a][b]Sala de inicio[/b][/color]  Cada equipo espera con las puertas cerradas (20 s la primera ronda, 10 s las demás). Ahí podés usar escudos y curas.\n" \
+		+ "[color=#ffc15a][b]Sala de inicio[/b][/color]  Cada equipo espera con las puertas cerradas (10 s antes de cada ronda). Ahí podés usar escudos y curas.\n" \
 		+ "[color=#ffc15a][b]Ronda[/b]  [/color]Se abren las puertas y se pelea. Gana la ronda el equipo que elimina a todos los rivales.\n" \
 		+ "[color=#ffc15a][b]Partida[/b][/color]  Al mejor de 3: gana quien primero consigue 2 rondas.\n" \
 		+ "[color=#ffc15a][b]Amortiguación[/b][/color]  Pasados 40 s de pelea, toda curación recibida baja un 2% por segundo (hasta casi nada): los duelos de sanadores no se estiran para siempre.\n" \

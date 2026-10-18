@@ -131,7 +131,7 @@ func _build() -> void:
 	_step("ult", "La definitiva", "[b]%s[/b] [key]R[/key] se carga haciendo y recibiendo daño. Para la práctica te la dejamos lista. %s%s" % [ult.name, short(str(ult.desc)), ult_where],
 		[_obj("ult", "Usá tu definitiva", "cast:%s" % ult.id)], {"arrow": "bar", "on_enter": "ult"})
 	_step("rounds", "Cómo es una partida real",
-		"Cada equipo arranca en su [b]sala de inicio[/b] con las puertas cerradas (20 s la primera vez, 10 s las demás). Ahí podés usar escudos y curas.\n\nCuando las puertas se abren, empieza la pelea. Gana la ronda el equipo que elimina a todos los rivales; gana la partida el primero en ganar [b]2 rondas[/b] (al mejor de 3).\n\nSi la ronda se estira, aparece la [b]amortiguación[/b]: pasados 40 s la curación recibida baja cada vez más (2% por segundo), así los duelos de sanadores terminan.",
+		"Cada equipo arranca en su [b]sala de inicio[/b] con las puertas cerradas (10 s antes de cada ronda). Ahí podés usar escudos y curas.\n\nCuando las puertas se abren, empieza la pelea. Gana la ronda el equipo que elimina a todos los rivales; gana la partida el primero en ganar [b]2 rondas[/b] (al mejor de 3).\n\nSi la ronda se estira, aparece la [b]amortiguación[/b]: pasados 40 s la curación recibida baja cada vez más (2% por segundo), así los duelos de sanadores terminan.",
 		[], {"arrow": "score"})
 	_step("done", "¡Listo!", "Ya sabés lo básico. Probá la [b]Arena de práctica[/b] para repetir rotaciones con medidor de daño, o jugá contra bots.", [], {"final": true})
 

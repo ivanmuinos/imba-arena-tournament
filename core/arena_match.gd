@@ -5,7 +5,7 @@ extends RefCounted
 ## the network layer (ENet now, Steam later) just ships them. Times are in milliseconds.
 
 ## First round: players wait in their start rooms; later rounds are shorter.
-const FIRST_PREP_MS := 20000.0
+const FIRST_PREP_MS := 10000.0
 const ROUND_PREP_MS := 10000.0
 ## Abilities that may be used in the start room (buffs/shields).
 const PREP_OK := ["pwshield", "renew", "shieldwall"]
