@@ -242,8 +242,8 @@ func _rogue_extras(inner: Node3D) -> void:
 	head.bone_name = "head"
 	sk.add_child(head)
 	var cloth := UnitModels.std(Color("#2b2233"), Color.BLACK, 0.0, 0.0, 0.85)
-	_add_mesh(head, MeshBuilder.sphere(0.5, 16, 8), cloth, Vector3(0, 0.17, 0.08), Vector3.ZERO, Vector3(1.1, 0.46, 0.98))  # band round the face
-	_add_mesh(head, MeshBuilder.cylinder(0.4, 0.0, 0.45, 4), cloth, Vector3(0, -0.06, 0.32), Vector3(-10, 0, 0), Vector3(1.0, 1.0, 0.35))  # point over the chin
+	_add_mesh(head, MeshBuilder.sphere(0.5, 16, 8), cloth, Vector3(0, 0.17, 0.1), Vector3.ZERO, Vector3(0.86, 0.46, 0.9))  # band round the lower face, as narrow as the jaw
+	_add_mesh(head, MeshBuilder.cylinder(0.34, 0.0, 0.42, 4), cloth, Vector3(0, -0.06, 0.32), Vector3(-10, 0, 0), Vector3(1.0, 1.0, 0.35))  # point over the chin
 	_add_mesh(head, MeshBuilder.sphere(0.09, 8, 5), cloth, Vector3(0, 0.26, -0.5))  # knot
 	for side in [-1.0, 1.0]:
 		_add_mesh(head, MeshBuilder.box(Vector3(0.09, 0.32, 0.03)), cloth, Vector3(side * 0.07, 0.1, -0.54), Vector3(15, 0, side * 14))
