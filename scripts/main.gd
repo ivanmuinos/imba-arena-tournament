@@ -677,6 +677,8 @@ func _notification(what: int) -> void:
 
 func _exit_tree() -> void:
 	_teardown_session()
+	if steam != null:
+		steam.shutdown()
 	# Static caches keep Resources alive past shutdown ("resources still in use" warnings).
 	Textures.clear_cache()
 	MeshBuilder.clear_cache()

@@ -1,8 +1,7 @@
 class_name SteamBackendReal
 extends SteamBackend
 ## GodotSteam (GDExtension 4.23.1, addons/godotsteam) behind the SteamBackend interface.
-## NOT exercised against a live Steam client in development (none was available): the calls follow the GodotSteam
-## documentation and the method/signal names were checked to exist in the loaded extension.
+## Checked against a live Steam client (init, lobby create/list); method and signal signatures match the loaded extension.
 
 const APP_ID := 480  # Spacewar, for development; replace with the real app id when the game has one
 const GAME_TAG := "imba-arena-tournament"
@@ -19,6 +18,7 @@ var _status := "La extensión de Steam no está instalada"
 var _pending_lobby := 0
 var _sent := 0
 var _received := 0
+var _hooks: Array = []  # [signal name, callable]: all disconnected in shutdown()
 
 
 func _init(p_verbose := false) -> void:
@@ -35,21 +35,26 @@ func _init(p_verbose := false) -> void:
 	_ok = true
 	_status = "Conectado a Steam como %s" % persona_name()
 	_log("%s (SteamID %d)" % [_status, my_id()])
-	_steam.lobby_created.connect(_on_lobby_created)
-	_steam.lobby_match_list.connect(_on_match_list)
-	_steam.lobby_joined.connect(_on_lobby_joined)
-	_steam.lobby_chat_update.connect(_on_chat_update)
-	_steam.join_requested.connect(func(lobby_id: int, friend: int):
+	_hook("lobby_created", _on_lobby_created)
+	_hook("lobby_match_list", _on_match_list)
+	_hook("lobby_joined", _on_lobby_joined)
+	_hook("lobby_chat_update", _on_chat_update)
+	_hook("join_requested", func(lobby_id: int, friend: int):
 		_log("invitación aceptada: sala %d (de %d)" % [lobby_id, friend])
 		join_requested.emit(lobby_id))
-	_steam.network_messages_session_request.connect(func(remote: int):
+	_hook("network_messages_session_request", func(remote: int):
 		_log("pedido de sesión de %d: aceptado" % remote)
 		_steam.acceptSessionWithUser(remote))
-	_steam.network_messages_session_failed.connect(func(reason, remote: int, state, dbg):
+	_hook("network_messages_session_failed", func(reason, remote: int, state, dbg):
 		_log("sesión con %d falló: motivo=%s estado=%s %s" % [remote, reason, state, dbg])
 		session_failed.emit(remote))
 	if _steam.has_method("initRelayNetworkAccess"):
 		_steam.initRelayNetworkAccess()
+
+
+func _hook(sig: String, c: Callable) -> void:
+	_steam.connect(sig, c)
+	_hooks.append([sig, c])
 
 
 func _log(text: String) -> void:
@@ -76,6 +81,20 @@ func my_id() -> int:
 func run_callbacks() -> void:
 	if _ok:
 		_steam.run_callbacks()
+
+
+## Without this the process crashed on exit (segfault, exit code 139) whenever Steam had been initialized: the extension
+## is torn down after the scripts, and a signal of the Steam singleton still connected to a script callable crashes it.
+func shutdown() -> void:
+	if not _ok:
+		return
+	_ok = false
+	_log("cerrando Steam")
+	for h in _hooks:
+		if _steam.is_connected(h[0], h[1]):
+			_steam.disconnect(h[0], h[1])
+	_hooks.clear()
+	_steam.steamShutdown()
 
 
 func create_lobby(friends_only: bool, max_members: int) -> void:

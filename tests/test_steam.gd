@@ -39,6 +39,8 @@ func test_unavailable_backend_is_inert() -> void:
 	eq(b.poll_messages(), [], "sin mensajes")
 	var real := SteamBackendReal.new()  # with a Steam client running (the developer machine) it may be available: either way it explains itself
 	check(real.available() or real.status_text() != "", "el backend real está disponible o dice por qué no, sin errores")
+	real.shutdown()  # releases its signal hooks: left connected, the process crashes on exit when Steam is running
+	check(not real.available(), "después de cerrar ya no está disponible")
 
 
 # ---------------------------------------------------------------- lobbies

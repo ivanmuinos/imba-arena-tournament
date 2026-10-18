@@ -34,6 +34,11 @@ func run_callbacks() -> void:
 	pass
 
 
+## Called once when the game exits: release Steam before the engine unloads the extension.
+func shutdown() -> void:
+	pass
+
+
 func create_lobby(_friends_only: bool, _max_members: int) -> void:
 	pass
 
