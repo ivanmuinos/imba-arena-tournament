@@ -9,7 +9,7 @@ signal practice_switch(cls: String, spec: String)
 signal leave_requested
 signal gameplay_event(name: String)
 
-const PICK_RADIUS := 42.0
+const PICK_MIN_RADIUS := 22.0  # px: far-away units stay clickable
 
 var client: GameClient
 var world: ArenaWorld
@@ -484,17 +484,19 @@ func _team_of(id: int) -> String:
 	return ""
 
 
-## Unit under the cursor from the projected positions (head/chest), nearest to the camera first.
+## Unit under the cursor: anywhere on its body (feet to top of the head), nearest to the camera first.
 func _unit_at(mouse: Vector2) -> int:
 	var cands: Array = []
 	for id in views:
 		var v: UnitView = views[id]
 		if id == my_id or not v.shown or not v.is_alive():
 			continue
-		var wp := v.position + Vector3(0, 1.1 * UnitView.VS, 0)
-		if cam.is_position_behind(wp):
+		var feet := v.position
+		var head := v.position + Vector3(0, 2.4 * UnitView.VS, 0)
+		if cam.is_position_behind(feet) or cam.is_position_behind(head):
 			continue
-		cands.append({"id": id, "pos": cam.unproject_position(wp), "r": PICK_RADIUS, "depth": cam.global_position.distance_to(wp)})
+		var depth := cam.global_position.distance_to(v.position + Vector3(0, 1.1 * UnitView.VS, 0))
+		cands.append(ClickPicker.body(id, cam.unproject_position(feet), cam.unproject_position(head), depth, PICK_MIN_RADIUS))
 	return ClickPicker.pick(cands, mouse)
 
 

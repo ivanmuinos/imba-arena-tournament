@@ -148,7 +148,7 @@ func _clear_enemy() -> int:
 		var covered := false
 		for aid in mv.views:
 			var a: UnitView = mv.views[aid]
-			if aid != mv.my_id and a.entry.team == mv.my_team and a.shown and a.is_alive() and _screen_of(aid).distance_to(sp) < MatchView.PICK_RADIUS * 1.6:
+			if aid != mv.my_id and a.entry.team == mv.my_team and a.shown and a.is_alive() and _screen_of(aid).distance_to(sp) < MatchView.PICK_MIN_RADIUS * 1.6:
 				covered = true
 		if not covered and _on_screen(sp):
 			return id
@@ -196,7 +196,7 @@ func _picked_ok(id: int) -> bool:
 	if t < 0 or not mv.views.has(t):
 		return false
 	# another unit drawn over the click (an ally standing in front selects the ally, as in WoW) is fine
-	return _screen_of(t).distance_to(last_click) <= MatchView.PICK_RADIUS * 1.5
+	return _screen_of(t).distance_to(last_click) <= MatchView.PICK_MIN_RADIUS * 1.5
 
 
 func _click_unit(id: int, button: int) -> void:

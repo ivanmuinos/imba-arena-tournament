@@ -63,6 +63,18 @@ func test_click_picker_chooses_nearest_within_radius_and_prefers_closer_to_camer
 	eq(ClickPicker.pick(cands, Vector2(398, 310)), 3, "el tercero")
 
 
+func test_click_picker_hits_the_whole_body_from_feet_to_head() -> void:
+	# A unit standing on screen from feet (500, 400) up to head (500, 280): 120 px tall.
+	var body := ClickPicker.body(1, Vector2(500, 400), Vector2(500, 280), 10.0)
+	eq(ClickPicker.pick([body], Vector2(500, 395)), 1, "los pies")
+	eq(ClickPicker.pick([body], Vector2(500, 285)), 1, "la cabeza")
+	eq(ClickPicker.pick([body], Vector2(525, 340)), 1, "un costado del torso")
+	eq(ClickPicker.pick([body], Vector2(580, 340)), -1, "lejos del cuerpo: nada")
+	# Far away units are small on screen but keep a minimum clickable width.
+	var tiny := ClickPicker.body(2, Vector2(100, 100), Vector2(100, 92), 40.0)
+	eq(ClickPicker.pick([tiny], Vector2(112, 96)), 2, "un muñeco lejano sigue siendo clickeable")
+
+
 # ---------------------------------------------------------------- off-screen indicator
 
 func test_offscreen_indicator() -> void:
