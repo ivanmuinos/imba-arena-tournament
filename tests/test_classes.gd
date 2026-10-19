@@ -131,3 +131,30 @@ func test_champion_stat_bars_reflect_the_identities_and_tooltips_show_numbers() 
 	for c in GameData.classes:
 		check(str(GameData.classes[c].get("identity", "")).length() > 30, "%s tiene identidad escrita" % c)
 	check(HowToContent.classes().contains("Armadura") and HowToContent.classes().contains("Cañón de cristal"), "la página Campeones muestra armadura e identidad")
+
+
+func test_a_sheep_regains_health_quickly() -> void:
+	var m := ArenaMatch.new(1, [{"name": "M", "cls": "mage", "spec": "frost", "team": "red", "peer": 0}, {"name": "V", "cls": "warrior", "spec": "", "team": "blue", "peer": 0}], 1000000.0, "normal", "bridge")
+	var now := 1000000.0
+	while m.phase != "fight":
+		now += 1000.0 / 60.0
+		m.tick(now)
+	var v: ArenaUnit = m.units[1]
+	for u in m.units:
+		u.brain = null
+	v.hp = v.max_hp * 0.5
+	m._cc(v, "incap", 4000.0, now, "poly")
+	var start := v.hp
+	var numbers := 0
+	for i in 240:
+		now += 1000.0 / 60.0
+		m.tick(now)
+		numbers += m.fx.filter(func(f): return f.k == "heal" and f.id == v.id).size()
+		m.fx.clear()
+	near(v.hp - start, v.max_hp * float(GameData.C.POLY_HEAL_PCT) * 4.0, v.max_hp * 0.03, "4 s de oveja curan ~%d%% de la vida" % roundi(GameData.C.POLY_HEAL_PCT * 400.0))
+	check(numbers >= 3 and numbers <= 5, "un número por segundo, no uno por cuadro")
+	var hp := v.hp
+	for i in 60:
+		now += 1000.0 / 60.0
+		m.tick(now)
+	check(v.hp <= hp + 0.01, "terminada la oveja, deja de curar")

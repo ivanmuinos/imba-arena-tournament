@@ -68,6 +68,9 @@ var pact_until := 0.0
 var wall_until := 0.0
 var marked_until := 0.0
 var mortal_until := 0.0
+## Healed while a sheep (Polymorph), shown as one number per second.
+var poly_heal_acc := 0.0
+var poly_heal_t := 0.0
 var hot_until := 0.0
 var hot_hps := 0.0
 var hot_by: ArenaUnit = null

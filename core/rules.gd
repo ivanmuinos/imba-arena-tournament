@@ -6,7 +6,7 @@ extends RefCounted
 const PLAYER_R := 0.5
 const ACCEL := 50.0
 const REVEAL_DIST := 3.2
-const DR_RESET_MS := 15000.0
+const DR_RESET_MS := 18000.0  # WoW: a category resets 18 s after its last CC ends
 const DR_MULT := [1.0, 0.5, 0.25, 0.0]
 
 

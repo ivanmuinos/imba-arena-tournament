@@ -689,6 +689,30 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 		_die(t, now)
 
 
+## Like in WoW, a sheep quickly regains health (POLY_HEAL_PCT of its max per second, after Mortal Strike and dampening):
+## the price of a long, safe crowd control. Nobody gets credit or ultimate charge for it.
+func _sheep_heal(u: ArenaUnit, now: float) -> void:
+	if not u.alive or phase != "fight":
+		return
+	var amount := u.max_hp * float(C.POLY_HEAL_PCT) * _dt
+	if now < u.mortal_until: amount *= 0.5
+	amount *= 1.0 - _damp(now)
+	var real := minf(u.max_hp - u.hp, amount)
+	if real > 0.0:
+		u.hp += real
+		u.poly_heal_acc += real
+	u.poly_heal_t += _dt
+	if u.poly_heal_t >= 1.0:
+		_sheep_heal_number(u)
+
+
+func _sheep_heal_number(u: ArenaUnit) -> void:
+	if u.poly_heal_acc >= 1.0:
+		fx.append({"k": "heal", "id": u.id, "amt": roundi(u.poly_heal_acc)})
+	u.poly_heal_acc = 0.0
+	u.poly_heal_t = 0.0
+
+
 func _heal(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, quiet := false) -> void:
 	if not t.alive or phase != "fight":
 		return
@@ -895,6 +919,10 @@ func _step_effects(u: ArenaUnit, now: float) -> void:
 			return
 	if now < u.hot_until and u.hot_by != null:
 		_heal(u, u.hot_hps * _dt, u.hot_by, now, true)
+	if now < u.incap_until and u.incap_kind == "poly":
+		_sheep_heal(u, now)
+	elif u.poly_heal_t > 0.0:
+		_sheep_heal_number(u)  # the sheep ended or broke: show what it healed
 	if now < u.storm_until and now >= u.storm_next:
 		u.storm_next = now + 500
 		var spec := u.ability(6)
