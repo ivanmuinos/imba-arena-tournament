@@ -261,7 +261,7 @@ Los sonidos de habilidades son capas de grabaciones reales CC0 de OpenGameArt en
 ## Compañeros
 
 Cada clase tiene una mascota que la acompaña (`companion` en `data/classes.json`; una especialización puede traer la suya):
-Cazador lobo, Guerrero puma, Asesino gato negro, Sacerdote hada, Mago Fuego fénix, Mago Escarcha elemental de hielo y Brujo un
+Cazador lobo, Guerrero león, Asesino gato negro, Sacerdote hada, Mago Fuego fénix, Mago Escarcha elemental de hielo y Brujo un
 diablillo vil. Por ahora son **sólo visuales**: los dibuja cada cliente al lado de su dueño (`scripts/view/companion_view.gd`), sin
 tocar el servidor ni el protocolo. Siguen al personaje, reaparecen a su lado tras Traslación o Retirada, se ocultan con el sigilo
 y se desvanecen al morir. Reaccionan a lo que hace su dueño: saltan cuando lanza un hechizo, se abalanzan con sus golpes,

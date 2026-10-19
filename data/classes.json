@@ -640,7 +640,7 @@
     "tagline": "Aguanta, embiste y rompe formaciones.",
     "armor": 0.18,
     "identity": "Tanque: la mayor vida y 18% de armadura contra daño físico. Aguanta mucho, pega poco y controla con Carga, Tajo y Golpe de escudo. Cuesta matarlo y también matar a los demás.",
-    "companion": {"name": "Puma", "model": "cat", "len": 1.35, "idle": "Idle", "move": "Walking", "walk": 1.6, "tint": {"Grey": "#b8884c", "White": "#e3d2b0", "Pink": "#8a4e40"}, "yaw": -90}
+    "companion": {"name": "León", "model": "cat", "len": 1.5, "idle": "Idle", "move": "Walking", "walk": 1.6, "tint": {"Grey": "#c8994f", "White": "#ead6a6", "Pink": "#6e4434"}, "mane": {"color": "#7a3d14", "neck": "Bone.002", "head": "Bone.003", "tail": "Bone.007"}, "yaw": -90}
   },
   "priest": {
     "id": "priest",

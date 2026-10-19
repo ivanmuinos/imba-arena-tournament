@@ -91,7 +91,7 @@ func _ready() -> void:
 	_name.text_changed.connect(func(t): menu.st.set_value("name", t); menu.settings_changed("name"))
 	_row(j, "Nombre", "Es el que ven los demás jugadores (hasta 16 caracteres).", _name)
 	_pets = Segmented.new().setup([["on", "Mostrar"], ["off", "Ocultar"]], "on")
-	_row(j, "Compañeros", "La mascota de cada clase (lobo, puma, hada...). Es sólo visual; se aplica en la próxima partida.", _pets)
+	_row(j, "Compañeros", "La mascota de cada clase (lobo, león, hada...). Es sólo visual; se aplica en la próxima partida.", _pets)
 	_pets.changed.connect(func(v): menu.st.set_value("companions", v == "on"); menu.settings_changed("companions"))
 	var reset := MButton.new("Restablecer valores", "secondary")
 	reset.custom_minimum_size = Vector2(260, 44)

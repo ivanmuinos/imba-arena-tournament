@@ -1,6 +1,6 @@
 class_name CompanionView
 extends Node3D
-## A class companion (wolf, puma, fairy, imp...) that follows its fighter around. Purely visual: the server knows nothing
+## A class companion (wolf, lion, fairy, imp...) that follows its fighter around. Purely visual: the server knows nothing
 ## about it; every client draws one next to each unit, from the "companion" block of data/classes.json (a specialization
 ## may bring its own). Models: assets/third_party/quaternius_animals (CC0); the fairy and the frost crystal are built here.
 
@@ -149,6 +149,8 @@ func _build_model() -> void:
 				sm.next_pass = CharacterRig._outline_mat()
 			m.set_surface_override_material(s, sm)
 	_fit(inner, float(def.get("len", 1.0)))
+	if def.has("mane"):
+		_build_mane(inner, def.mane)
 	var players := inner.find_children("*", "AnimationPlayer", true, false)
 	if not players.is_empty():
 		_player = players[0]
@@ -178,6 +180,54 @@ func _fit(inner: Node3D, length: float) -> void:
 	inner.scale = Vector3.ONE * k
 	inner.position = Vector3(-box.get_center().x * k, -box.position.y * k, -box.get_center().z * k)
 	_base_scale = 1.0
+
+
+## Warrior's lion: a shaggy mane of tufts around the neck and a dark tail tuft, riding the model's own bones so they
+## follow its walk. `m`: {color, neck, head, tail} (bone names; the neck ring sits where the neck bone meets the head).
+func _build_mane(inner: Node3D, m: Dictionary) -> void:
+	var skel := inner.find_children("*", "Skeleton3D", true, false)
+	if skel.is_empty():
+		return
+	var sk := skel[0] as Skeleton3D
+	var neck := sk.find_bone(str(m.get("neck", "")))
+	var head := sk.find_bone(str(m.get("head", "")))
+	if neck < 0 or head < 0:
+		return
+	var color := Color(str(m.get("color", "#6e3816")))
+	var mat := UnitModels.std(color, Color.BLACK, 0.0, 0.0, 0.95)
+	if CharacterRig.outlines:
+		mat.next_pass = CharacterRig._outline_mat()
+	# Neck direction in the neck bone's own frame (no guessing the exporter's bone axes).
+	var along := sk.get_bone_global_rest(neck).affine_inverse() * sk.get_bone_global_rest(head).origin
+	var axis := along.normalized()
+	var side := axis.cross(Vector3.UP if absf(axis.y) < 0.9 else Vector3.RIGHT).normalized()
+	var up := side.cross(axis).normalized()
+	var att := BoneAttachment3D.new()
+	att.bone_name = sk.get_bone_name(neck)
+	sk.add_child(att)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7  # same shag every time
+	for ring in [[0.8, 0.62, 14, 0.3], [1.02, 0.5, 11, 0.26]]:  # [where along the neck, radius, tufts, tuft size]
+		for i in int(ring[2]):
+			var a := TAU * i / float(ring[2])
+			var tuft := MeshInstance3D.new()
+			tuft.mesh = MeshBuilder.sphere(float(ring[3]) * rng.randf_range(0.85, 1.2), 7, 5)
+			tuft.material_override = mat
+			var out := side * cos(a) + up * sin(a)
+			tuft.position = along * float(ring[0]) + out * float(ring[1]) * along.length()
+			tuft.scale = Vector3(1.0, 1.0, 1.0) + out.abs() * 0.4
+			att.add_child(tuft)
+			_parts.append(tuft)
+	var tail := sk.find_bone(str(m.get("tail", "")))
+	if tail >= 0:
+		var t_att := BoneAttachment3D.new()
+		t_att.bone_name = sk.get_bone_name(tail)
+		sk.add_child(t_att)
+		var tuft := MeshInstance3D.new()
+		tuft.mesh = MeshBuilder.sphere(0.24, 7, 5)
+		tuft.material_override = mat
+		t_att.add_child(tuft)
+		_parts.append(tuft)
 
 
 ## Priest: a tiny sun with four fluttering wings and a sparkle trail.
