@@ -68,6 +68,8 @@ var _tint: ColorRect
 var _vignette: TextureRect
 var _arrow: Polygon2D
 var _target_panel: PanelContainer
+var _focus_panel: PanelContainer
+var _ff := {}
 var _tf := {}
 var _plate_layer := Control.new()
 var _float_layer := Control.new()
@@ -388,6 +390,43 @@ func _build_target_frame() -> void:
 	_target_panel.add_child(v)
 	_target_panel.visible = false
 	_root.add_child(_target_panel)
+	_build_focus_frame()
+
+
+## The focus (macros' [@focus]): a small frame under the target's with name, health and cast.
+func _build_focus_frame() -> void:
+	_focus_panel = PanelContainer.new()
+	_focus_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_focus_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_focus_panel.position = Vector2(250, 74)
+	_focus_panel.custom_minimum_size = Vector2(220, 0)
+	_focus_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_focus_panel.add_theme_stylebox_override("panel", UiKit.box(UiKit.PANEL, Color("#c77dff"), 10, 2, 8))
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 2)
+	_ff.name = UiKit.label("", 15, UiKit.INK)
+	v.add_child(_ff.name)
+	_ff.hp = Bar.new(14.0, HP_ENEMY)
+	v.add_child(_ff.hp)
+	_ff.cast = Bar.new(8.0, Color("#ffd166"))
+	_ff.cast.visible = false
+	v.add_child(_ff.cast)
+	_focus_panel.add_child(v)
+	_focus_panel.visible = false
+	_root.add_child(_focus_panel)
+
+
+func show_focus(info: Dictionary) -> void:
+	_focus_panel.visible = not info.is_empty()
+	if info.is_empty():
+		return
+	_ff.name.text = "Foco: %s" % info.name
+	_ff.hp.fill = HP_ALLY if info.get("friend", false) else HP_ENEMY
+	_ff.hp.ratio = info.hp / info.max_hp
+	_ff.cast.visible = info.cast != null
+	if info.cast != null:
+		_ff.cast.ratio = 1.0 - info.cast.left / maxf(info.cast.total, 1.0)
+	_focus_panel.modulate.a = 0.55 if info.lost else 1.0
 
 
 # ---------------------------------------------------------------- setup per match

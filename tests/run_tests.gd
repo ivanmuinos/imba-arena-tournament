@@ -1,7 +1,7 @@
 extends SceneTree
 ## Headless test runner: godot --headless --script res://tests/run_tests.gd
 
-const SUITES := ["res://tests/test_rules.gd", "res://tests/test_match.gd", "res://tests/test_logic.gd", "res://tests/test_client_logic.gd", "res://tests/test_net.gd", "res://tests/test_hud_layout.gd", "res://tests/test_quality.gd", "res://tests/test_arenas.gd", "res://tests/test_controls.gd", "res://tests/test_steam.gd", "res://tests/test_menu_logic.gd", "res://tests/test_vfx.gd", "res://tests/test_paths.gd", "res://tests/test_shots.gd", "res://tests/test_specs.gd", "res://tests/test_companions.gd", "res://tests/test_ranked.gd"]
+const SUITES := ["res://tests/test_rules.gd", "res://tests/test_match.gd", "res://tests/test_logic.gd", "res://tests/test_client_logic.gd", "res://tests/test_net.gd", "res://tests/test_hud_layout.gd", "res://tests/test_quality.gd", "res://tests/test_arenas.gd", "res://tests/test_controls.gd", "res://tests/test_steam.gd", "res://tests/test_menu_logic.gd", "res://tests/test_vfx.gd", "res://tests/test_paths.gd", "res://tests/test_shots.gd", "res://tests/test_specs.gd", "res://tests/test_companions.gd", "res://tests/test_ranked.gd", "res://tests/test_macros.gd"]
 
 
 func _init() -> void:

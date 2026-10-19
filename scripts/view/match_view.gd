@@ -25,6 +25,10 @@ var my_spec := ""
 var me: Dictionary = {}
 var last_state: Dictionary = {}
 var controller := PlayerController.new()
+var macros := MacroStore.new()
+var _macro_chain: Array = []  # [[slot, unit]] waiting for the global cooldown
+var _seq_step := {}  # macro index -> next /castsequence step
+var _seq_at := {}  # macro index -> last press (ms)
 var predictor := Predictor.new()
 ## false for automated runs (screenshots, smoke tests) so the real mouse is left alone.
 var capture_mouse := true
@@ -520,6 +524,11 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton:
 		_on_mouse_button(event)
 	elif event is InputEventKey and event.pressed and not event.echo:
+		var mi := macros.index_for_key(Macro.key_name(event))
+		if mi >= 0:
+			get_viewport().set_input_as_handled()
+			run_macro(mi)
+			return
 		var slot := InputLogic.slot_for_key(event.keycode)
 		if slot >= 0:
 			get_viewport().set_input_as_handled()
@@ -684,9 +693,91 @@ func _jump() -> void:
 const JUMP_COOLDOWN_MS := 650.0
 
 
-func _cast(slot: int) -> void:
+# ---------------------------------------------------------------- macros (see Macro)
+
+## Runs macro `i`: focus commands at once, /cast lines in order (off-GCD ones together, the rest chained after the
+## global cooldown), /castsequence one step per press.
+func run_macro(i: int) -> void:
 	if me.is_empty():
 		return
+	var m := Macro.parse(str(macros.macros[i].text), my_cls, my_spec)  # lines naming another class's ability are skipped
+	var now := _now_ms()
+	var casts: Array = []  # [slot, unit id or -2]
+	for line in m.lines:
+		match line.cmd:
+			"focus":
+				if controller.target >= 0:
+					controller.set_focus(controller.target)
+					hud.error("Foco: %s" % _unit_name(controller.target))
+			"clearfocus":
+				controller.set_focus(-1)
+			"target":
+				if line.arg == "focus" and controller.focus >= 0:
+					_select(controller.focus)
+			"stopcasting":
+				if me.get("cast") != null:
+					client.send_stop_cast()
+			"cast":
+				casts.append([int(line.slots[0]), _macro_unit(line.at)])
+			"castsequence":
+				var step: int = _seq_step.get(i, 0) if now - float(_seq_at.get(i, -1e9)) < Macro.RESET_MS else 0
+				casts.append([int(line.slots[step % line.slots.size()]), _macro_unit(line.at)])
+				_seq_step[i] = (step + 1) % line.slots.size()
+				_seq_at[i] = now
+	_macro_chain = []
+	var gcd_used := false
+	for c in casts:
+		var on_gcd := ArenaMatch.on_gcd(controller.ability(c[0]))
+		if on_gcd and gcd_used:
+			_macro_chain.append(c)  # waits for the global cooldown, then goes out (poll below)
+			continue
+		if _cast_on(c[0], c[1]) and on_gcd:
+			gcd_used = true
+
+
+## -2: the normal target; the focus id (or -1 when there is none); yourself.
+func _macro_unit(at: String) -> int:
+	match at:
+		"focus": return controller.focus if not controller.focus_unit(_ctx()).is_empty() else -1
+		"player": return my_id
+	return -2
+
+
+func _macro_chain_poll(now: float) -> void:
+	if _macro_chain.is_empty() or me.get("cast") != null:
+		return
+	var c: Array = _macro_chain[0]
+	if now >= float(controller.ready_at[c[0]]) - 30.0:
+		_macro_chain.pop_front()
+		_cast_on(c[0], c[1])
+
+
+func _unit_name(id: int) -> String:
+	for r in _roster:
+		if int(r.id) == id:
+			return str(r.name)
+	return "?"
+
+
+## _cast on a given unit (-2: the normal target). Returns whether a cast went out.
+func _cast_on(slot: int, unit: int) -> bool:
+	if unit == -2:
+		return _cast(slot)
+	if me.is_empty():
+		return false
+	var res := controller.try_cast_on(slot, _ctx(), unit)
+	if res.error != "":
+		hud.error(res.error)
+		audio.play("error")
+	if not res.msg.is_empty():
+		client.send_cast(res.msg)
+		return true
+	return false
+
+
+func _cast(slot: int) -> bool:
+	if me.is_empty():
+		return false
 	var res := controller.try_cast(slot, _ctx())
 	if res.error != "":
 		hud.error(res.error)
@@ -699,6 +790,8 @@ func _cast(slot: int) -> void:
 		client.send_cast(res.msg)
 		if predictor.predict_movement(my_cls, slot, res.aim_dir, me, world.map, _now_ms()):
 			cam.kick(0.6)
+		return true
+	return false
 
 
 func _make_reticle() -> MeshInstance3D:
@@ -825,7 +918,11 @@ func _process(delta: float) -> void:
 		_send_input(input, now)
 		var q := controller.poll_queue(now, me.get("cast") != null)
 		if q >= 0:
-			_cast(q)
+			if controller.queued_on == -2:
+				_cast(q)
+			else:
+				_cast_on(q, controller.queued_on)
+		_macro_chain_poll(now)
 		_hud_frame(focus, now, dt)
 	for id in views:
 		var v: UnitView = views[id]
@@ -967,6 +1064,16 @@ func _hud_frame(focus: Vector2, now: float, _dt: float) -> void:
 		text = "Oculto entre la vegetación"
 	hud.status(text, burning)
 	_target_frame(local)
+	_focus_frame()
+
+
+func _focus_frame() -> void:
+	var v: UnitView = views.get(controller.focus)
+	if v == null or v.snap.is_empty() or not v.snap.alive:
+		hud.show_focus({})
+		return
+	hud.show_focus({"name": v.entry.name, "friend": v.entry.team == my_team, "hp": float(v.snap.hp), "max_hp": GameData.entry_max_hp(v.entry),
+		"cast": v.snap.cast, "lost": not v.shown})
 
 
 func _target_frame(local: Vector2) -> void:

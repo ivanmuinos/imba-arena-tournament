@@ -1,14 +1,15 @@
 class_name MSettings
 extends MenuView
-## Settings tabs: Gráficos / Controles / Audio / Juego. Everything persists through SettingsStore.
+## Settings tabs: Gráficos / Controles / Audio / Juego / Macros. Everything persists through SettingsStore (macros:
+## MacroStore).
 
-const TABS := [["graficos", "Gráficos"], ["controles", "Controles"], ["audio", "Audio"], ["juego", "Juego"]]
+const TABS := [["graficos", "Gráficos"], ["controles", "Controles"], ["audio", "Audio"], ["juego", "Juego"], ["macros", "Macros"]]
 const KEYS := [
 	["Moverse", "W A S D  /  flechas"], ["Saltar", "Espacio"], ["Habilidades", "1  2  Q  E  Shift  F  R"],
 	["Seleccionar", "Click izquierdo"], ["Auto-ataque", "Click derecho en un enemigo"],
 	["Girar el personaje", "Mantener click derecho"], ["Orbitar la cámara", "Mantener click izquierdo"],
 	["Zoom", "Rueda del mouse"], ["Siguiente objetivo", "Tab"], ["Aliados", "F1  F2  F3"],
-	["Cancelar / soltar objetivo", "Esc"], ["Silenciar", "M"],
+	["Cancelar / soltar objetivo", "Esc"], ["Silenciar", "M"], ["Abalorio PvP", "T"], ["Macros", "Ctrl+1 … Ctrl+6 (pestaña Macros)"],
 ]
 
 var _tabs: Segmented
@@ -23,6 +24,13 @@ var _sliders := {}
 var _gfx_info: Label
 var _holder: Control
 var _panel: PanelContainer
+var _macros := MacroStore.new()
+var _macro_sel := 0
+var _macro_list: Array[MButton] = []
+var _macro_key: MButton
+var _macro_text: TextEdit
+var _macro_err: Label
+var _capturing := false
 
 
 func _ready() -> void:
@@ -98,6 +106,94 @@ func _ready() -> void:
 	reset.pressed.connect(_reset)
 	j.add_child(UiKit.spacer(14))
 	j.add_child(reset)
+	_build_macros(_page(holder, "macros"))
+
+
+## Macros: six slots on the left, the selected one's key and text on the right, the syntax under it.
+func _build_macros(page: VBoxContainer) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 18)
+	page.add_child(row)
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 6)
+	list.custom_minimum_size = Vector2(230, 0)
+	row.add_child(list)
+	for i in MacroStore.COUNT:
+		var b := MButton.new("", "secondary")
+		b.custom_minimum_size = Vector2(230, 44)
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_select_macro.bind(i))
+		list.add_child(b)
+		_macro_list.append(b)
+	var ed := VBoxContainer.new()
+	ed.add_theme_constant_override("separation", 8)
+	ed.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(ed)
+	_macro_key = MButton.new("", "accent")
+	_macro_key.custom_minimum_size = Vector2(260, 40)
+	_macro_key.pressed.connect(func():
+		_capturing = true
+		_macro_key.text = "Apretá la tecla (Esc: sin tecla)…")
+	ed.add_child(_macro_key)
+	_macro_text = TextEdit.new()
+	_macro_text.custom_minimum_size = Vector2(540, 170)
+	_macro_text.add_theme_font_size_override("font_size", 15)
+	_macro_text.placeholder_text = "#Nombre
+/cast [@focus] Polimorfia"
+	_macro_text.text_changed.connect(_macro_edited)
+	ed.add_child(_macro_text)
+	_macro_err = UiKit.label("", 12, Color("#ff9b7a"))
+	ed.add_child(_macro_err)
+	var help := UiKit.label(Macro.HELP, 12, UiKit.MUTED)
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	help.custom_minimum_size = Vector2(540, 0)
+	ed.add_child(help)
+	_select_macro(0)
+
+
+func _macro_title(i: int) -> String:
+	var m: Dictionary = _macros.macros[i]
+	var parsed := Macro.parse(str(m.text), str(menu.st.get_value("cls")) if menu != null else "mage")
+	var name := str(parsed.name) if parsed.name != "" else ("Macro %d" % (i + 1) if str(m.text).strip_edges() != "" else "(vacía)")
+	return "%s  ·  %s" % [m.key if m.key != "" else "sin tecla", name]
+
+
+func _select_macro(i: int) -> void:
+	_macro_sel = i
+	_capturing = false
+	for j in _macro_list.size():
+		_macro_list[j].text = ("▶ " if j == i else "") + _macro_title(j)
+	var m: Dictionary = _macros.macros[i]
+	_macro_key.text = "Tecla: %s (cambiar)" % (m.key if m.key != "" else "ninguna")
+	_macro_text.text = str(m.text)
+	_check_macro()
+
+
+func _macro_edited() -> void:
+	var m: Dictionary = _macros.macros[_macro_sel]
+	_macros.set_macro(_macro_sel, str(m.key), _macro_text.text)
+	_macros.save()
+	_macro_list[_macro_sel].text = "▶ " + _macro_title(_macro_sel)
+	_check_macro()
+
+
+func _check_macro() -> void:
+	var parsed := Macro.parse(_macro_text.text, str(menu.st.get_value("cls")), str(menu.st.get_value("spec")))
+	_macro_err.text = "" if parsed.errors.is_empty() else ("Con tu campeón actual: " + " · ".join(parsed.errors))
+
+
+func _input(event: InputEvent) -> void:
+	if not _capturing or not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	var k := event as InputEventKey
+	if k.keycode in [KEY_CTRL, KEY_SHIFT, KEY_ALT, KEY_META]:
+		return  # wait for the real key of a combination
+	get_viewport().set_input_as_handled()
+	_capturing = false
+	var key := "" if k.keycode == KEY_ESCAPE else Macro.key_name(k)
+	_macros.set_macro(_macro_sel, key, str(_macros.macros[_macro_sel].text))
+	_macros.save()
+	_select_macro(_macro_sel)
 
 
 func _page(parent: Control, id: String) -> VBoxContainer:
@@ -171,7 +267,7 @@ func select_tab(id: String) -> void:
 	for k in _pages:
 		_pages[k].visible = k == id
 	if _holder != null:
-		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 330.0, "audio": 200.0, "juego": 300.0}.get(id, 300.0)
+		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 330.0, "audio": 200.0, "juego": 300.0, "macros": 420.0}.get(id, 300.0)
 		_panel.reset_size()
 	_tabs.select(id, false)
 

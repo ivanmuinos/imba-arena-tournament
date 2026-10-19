@@ -19,12 +19,16 @@ var spec_id := ""
 var team := "red"
 ## Selected unit (enemy or ally), -1 = none.
 var target := -1
+## WoW focus: a second remembered unit that macros can cast on ([@focus]) without changing the target.
+var focus := -1
 ## Slot waiting for a ground click, -1 = none.
 var pending_ground := -1
 ## Absolute local times (ms) when each slot comes off cooldown.
 var ready_at: Array = []
 var cast_lock: Array = []
 var queued := {}
+## Unit of the cast poll_queue() just returned (-2: the normal target), for queued macro casts.
+var queued_on := -2
 var last_range_warn := -1e9
 var _cast_warned := false
 
@@ -127,6 +131,30 @@ func _dist_to(ctx: Dictionary, u: Dictionary) -> float:
 func _sight(ctx: Dictionary, u: Dictionary) -> bool:
 	var f = ctx.get("los")
 	return f == null or f.call(ctx.pos, Vector2(u.x, u.z))
+
+
+func set_focus(id: int) -> void:
+	focus = id
+
+
+func focus_unit(ctx: Dictionary) -> Dictionary:
+	var u := _unit(ctx, focus)
+	return u if not u.is_empty() and u.alive and u.visible else {}
+
+
+## try_cast on another unit (a macro's [@focus] / [@player]) without changing the selected target. `id` < 0: no unit.
+func try_cast_on(slot: int, ctx: Dictionary, id: int) -> Dictionary:
+	if id < 0:
+		var r := _res()
+		r.error = "No tenés foco"
+		return r
+	var saved := target
+	target = id
+	var res := try_cast(slot, ctx)
+	target = saved
+	if not queued.is_empty() and queued.slot == slot:
+		queued["on"] = id  # a queued cast keeps its unit
+	return res
 
 
 ## Tries the ability in `slot`. See _res() for the result shape.
@@ -302,6 +330,7 @@ func poll_queue(now: float, casting := false) -> int:
 		return -1
 	if now >= ready_at[queued.slot] - 30.0:
 		var s: int = queued.slot
+		queued_on = int(queued.get("on", -2))
 		queued = {}
 		return s
 	return -1
