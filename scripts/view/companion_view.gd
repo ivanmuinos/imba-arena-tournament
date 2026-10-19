@@ -1,6 +1,6 @@
 class_name CompanionView
 extends Node3D
-## A class companion (wolf, lion, fairy, imp...) that follows its fighter around. Purely visual: the server knows nothing
+## A class companion (wolf, war bull, fairy, imp...) that follows its fighter around. Purely visual: the server knows nothing
 ## about it; every client draws one next to each unit, from the "companion" block of data/classes.json (a specialization
 ## may bring its own). Models: assets/third_party/quaternius_animals (CC0); the fairy and the frost crystal are built here.
 
@@ -44,6 +44,9 @@ var _act := ""
 var _act_t := 0.0
 var _act_last := {}
 var _clock := 0.0
+var _accents: Array = []  # [material, resting energy]: gear in the owner's colour
+var _flare := 0.0
+var _bond: CPUParticles3D = null  # burst in the owner's colour when the owner casts
 
 
 ## The companion of a class (and specialization), {} when it has none.
@@ -101,6 +104,10 @@ func react(kind: String) -> void:
 	if _act != "" and int(REACT_RANK[kind]) < int(REACT_RANK[_act]):
 		return
 	_act_last[kind] = _clock
+	if kind == "cast":
+		_flare = 1.0  # its owner's colour flares on the gear as the spell goes off
+		if _bond != null:
+			_bond.restart()
 	_act = kind
 	_act_t = 0.0
 	if kind == "hurt" and _player != null and def.has("hit") and _player.has_animation(str(def.hit)):
@@ -118,6 +125,8 @@ func setup(p_def: Dictionary, team: Color, world: ArenaWorld) -> void:
 		"crystal": _build_crystal()
 		_: _build_model()
 	_team_mark(team)
+	if def.has("bond"):
+		_bond_burst(Color(str(def.bond)))
 
 
 # ---------------------------------------------------------------- models
@@ -133,9 +142,9 @@ func _build_model() -> void:
 		_parts.append(m)
 		for s in m.mesh.get_surface_count():
 			var src: Material = m.get_active_material(s)
-			if not src is StandardMaterial3D:
+			if not src is BaseMaterial3D:  # the wolf comes in as an ORMMaterial3D: Standard-only skipped its tint
 				continue
-			var sm := (src as StandardMaterial3D).duplicate() as StandardMaterial3D
+			var sm := (src as BaseMaterial3D).duplicate() as BaseMaterial3D
 			var key := String(src.resource_name)
 			if tint.has(key):
 				sm.albedo_color = Color(str(tint[key]))
@@ -147,10 +156,11 @@ func _build_model() -> void:
 				sm.emission_energy_multiplier = 1.6 if key == "Eyes" else 0.35
 			if CharacterRig.outlines:
 				sm.next_pass = CharacterRig._outline_mat()
-			m.set_surface_override_material(s, sm)
+			var two: Dictionary = def.get("two_tone", {})
+			m.set_surface_override_material(s, _two_tone(sm, two, m.get_aabb()) if two.get("material", "") == key else sm)
 	_fit(inner, float(def.get("len", 1.0)))
-	if def.has("mane"):
-		_build_mane(inner, def.mane)
+	if def.has("gear"):
+		_build_gear(inner, def.gear)
 	var players := inner.find_children("*", "AnimationPlayer", true, false)
 	if not players.is_empty():
 		_player = players[0]
@@ -182,52 +192,72 @@ func _fit(inner: Node3D, length: float) -> void:
 	_base_scale = 1.0
 
 
-## Warrior's lion: a shaggy mane of tufts around the neck and a dark tail tuft, riding the model's own bones so they
-## follow its walk. `m`: {color, neck, head, tail} (bone names; the neck ring sits where the neck bone meets the head).
-func _build_mane(inner: Node3D, m: Dictionary) -> void:
+## Gear that ties a pet to its fighter (the bull's steel plate and gold horn caps, the wolf's green scarf...): simple
+## shapes riding the model's bones so they follow its walk. Each item: {bone, mesh: [kind, sizes...], at: offset from the
+## bone's rest position in model axes and model units, rot: degrees, color, metal, rough, glow (energy), accent}.
+## `accent` items glow in the owner's colour and flare when the owner casts (see react()).
+func _build_gear(inner: Node3D, items: Array) -> void:
 	var skel := inner.find_children("*", "Skeleton3D", true, false)
 	if skel.is_empty():
 		return
 	var sk := skel[0] as Skeleton3D
-	var neck := sk.find_bone(str(m.get("neck", "")))
-	var head := sk.find_bone(str(m.get("head", "")))
-	if neck < 0 or head < 0:
-		return
-	var color := Color(str(m.get("color", "#6e3816")))
-	var mat := UnitModels.std(color, Color.BLACK, 0.0, 0.0, 0.95)
+	var atts := {}
+	for it in items:
+		var bone := sk.find_bone(str(it.get("bone", "")))
+		if bone < 0:
+			continue
+		if not atts.has(bone):
+			var att := BoneAttachment3D.new()
+			att.bone_name = sk.get_bone_name(bone)
+			sk.add_child(att)
+			atts[bone] = att
+		var rest := sk.get_bone_global_rest(bone)
+		var at: Array = it.get("at", [0, 0, 0])
+		var rot: Array = it.get("rot", [0, 0, 0])
+		var xf := Transform3D(Basis.from_euler(Vector3(deg_to_rad(rot[0]), deg_to_rad(rot[1]), deg_to_rad(rot[2]))), rest.origin + Vector3(at[0], at[1], at[2]))
+		var color := Color(str(it.get("color", "#888888")))
+		var energy := float(it.get("glow", 0.0))
+		var mat := UnitModels.std(color, color, energy, float(it.get("metal", 0.0)), float(it.get("rough", 0.8)))
+		if bool(it.get("accent", false)):
+			mat.emission_enabled = true
+			mat.emission = color
+			mat.emission_energy_multiplier = maxf(energy, 0.4)
+			_accents.append([mat, mat.emission_energy_multiplier])
+		if CharacterRig.outlines:
+			mat.next_pass = CharacterRig._outline_mat()
+		var mi := MeshInstance3D.new()
+		mi.mesh = _gear_mesh(it.get("mesh", ["sphere", 0.2]))
+		mi.material_override = mat
+		mi.transform = rest.affine_inverse() * xf
+		(atts[bone] as Node3D).add_child(mi)
+		_parts.append(mi)
+
+
+static func _gear_mesh(m: Array) -> Mesh:
+	match str(m[0]):
+		"box": return MeshBuilder.box(Vector3(m[1], m[2], m[3]))
+		"cone": return MeshBuilder.cylinder(0.0, float(m[1]), float(m[2]), 8)
+		"cyl": return MeshBuilder.cylinder(float(m[1]), float(m[2]), float(m[3]), 10)
+		"torus": return MeshBuilder.torus(float(m[1]), float(m[2]), 18, 6)
+		"capsule": return MeshBuilder.capsule(float(m[1]), float(m[2]), 8)
+	return MeshBuilder.sphere(float(m[1]), 8, 5)
+
+
+## Fur in two tones (darker back, lighter belly and muzzle) instead of one flat colour: {material, back, belly, lo, hi},
+## the blend band as fractions of the mesh's height.
+func _two_tone(src: BaseMaterial3D, tt: Dictionary, box: AABB) -> Material:
+	if not UnitView.live_params:
+		return src
+	var sh := ShaderMaterial.new()
+	sh.shader = load("res://assets/shaders/two_tone.gdshader")
+	sh.set_shader_parameter("back", Color(str(tt.back)))
+	sh.set_shader_parameter("belly", Color(str(tt.belly)))
+	sh.set_shader_parameter("lo", box.position.y + box.size.y * float(tt.lo))
+	sh.set_shader_parameter("hi", box.position.y + box.size.y * float(tt.hi))
+	sh.set_shader_parameter("roughness", src.roughness)
 	if CharacterRig.outlines:
-		mat.next_pass = CharacterRig._outline_mat()
-	# Neck direction in the neck bone's own frame (no guessing the exporter's bone axes).
-	var along := sk.get_bone_global_rest(neck).affine_inverse() * sk.get_bone_global_rest(head).origin
-	var axis := along.normalized()
-	var side := axis.cross(Vector3.UP if absf(axis.y) < 0.9 else Vector3.RIGHT).normalized()
-	var up := side.cross(axis).normalized()
-	var att := BoneAttachment3D.new()
-	att.bone_name = sk.get_bone_name(neck)
-	sk.add_child(att)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7  # same shag every time
-	for ring in [[0.8, 0.62, 14, 0.3], [1.02, 0.5, 11, 0.26]]:  # [where along the neck, radius, tufts, tuft size]
-		for i in int(ring[2]):
-			var a := TAU * i / float(ring[2])
-			var tuft := MeshInstance3D.new()
-			tuft.mesh = MeshBuilder.sphere(float(ring[3]) * rng.randf_range(0.85, 1.2), 7, 5)
-			tuft.material_override = mat
-			var out := side * cos(a) + up * sin(a)
-			tuft.position = along * float(ring[0]) + out * float(ring[1]) * along.length()
-			tuft.scale = Vector3(1.0, 1.0, 1.0) + out.abs() * 0.4
-			att.add_child(tuft)
-			_parts.append(tuft)
-	var tail := sk.find_bone(str(m.get("tail", "")))
-	if tail >= 0:
-		var t_att := BoneAttachment3D.new()
-		t_att.bone_name = sk.get_bone_name(tail)
-		sk.add_child(t_att)
-		var tuft := MeshInstance3D.new()
-		tuft.mesh = MeshBuilder.sphere(0.24, 7, 5)
-		tuft.material_override = mat
-		t_att.add_child(tuft)
-		_parts.append(tuft)
+		sh.next_pass = CharacterRig._outline_mat()
+	return sh
 
 
 ## Priest: a tiny sun with four fluttering wings and a sparkle trail.
@@ -320,6 +350,36 @@ func _motes(color: Color, amount: int, spread: float) -> void:
 	add_child(p)
 
 
+## The bond with its fighter: a one-shot burst of sparks in the owner's class colour, fired with each of the owner's casts.
+func _bond_burst(color: Color) -> void:
+	if not UnitView.live_params:
+		return
+	_bond = CPUParticles3D.new()
+	_bond.one_shot = true
+	_bond.emitting = false
+	_bond.amount = 18
+	_bond.lifetime = 0.6
+	_bond.explosiveness = 0.9
+	_bond.local_coords = false
+	_bond.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	_bond.emission_sphere_radius = 0.25
+	_bond.direction = Vector3.UP
+	_bond.spread = 70.0
+	_bond.initial_velocity_min = 0.8
+	_bond.initial_velocity_max = 1.8
+	_bond.gravity = Vector3(0, -1.5, 0)
+	var curve := Curve.new()
+	curve.add_point(Vector2(0, 1))
+	curve.add_point(Vector2(1, 0))
+	_bond.scale_amount_curve = curve
+	var mat := UnitModels.std(color, color, 3.5)
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_bond.mesh = MeshBuilder.sphere(0.035, 4, 2)
+	_bond.material_override = mat
+	_bond.position.y = 0.0 if _fly > 0.0 else 0.45
+	add_child(_bond)
+
+
 ## A small team-coloured ring under walking pets, so in a 3v3 it is clear whose pet it is (flyers hover by their owner).
 func _team_mark(team: Color) -> void:
 	if _fly > 0.0:
@@ -404,6 +464,10 @@ func track(dt: float, now_s: float, owner: Vector3, owner_rot: float, owner_vel:
 		w.rotation.y = side * (0.25 + sin(now_s * 30.0 + _phase) * 0.55)
 	if _orbit != null:
 		_orbit.rotation.y = now_s * 1.6
+	if _flare > 0.0:
+		_flare = maxf(0.0, _flare - dt * 2.5)
+		for a in _accents:
+			(a[0] as StandardMaterial3D).emission_energy_multiplier = float(a[1]) * (1.0 + _flare * 4.0)
 
 	var want_fade := clampf(_dead_t / DEATH_FADE_S, 0.0, 1.0) if not alive else see_through
 	if absf(want_fade - _fade) > 0.01:

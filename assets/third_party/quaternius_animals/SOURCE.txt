@@ -10,3 +10,9 @@ Download: https://opengameart.org/sites/default/files/Animated%20Monster%20Pack%
 sha256 of the zip: acab2bddc5939f9b1b92c930507d73e0fd80037a39631cf2049bb6cfcaec1acd
 License: CC0 1.0. File used: Blend/Dragon.blend -> dragon.glb (same tool, unchanged).
 Downloaded 2026-10-18.
+
+LowPoly Animated Farm Animal Pack: https://opengameart.org/content/lowpoly-animated-farm-animal-pack
+Download: https://opengameart.org/sites/default/files/Farm%20Animals%20by%20%40Quaternius.zip
+sha256 of the zip: 9ff42b7e2445eaf259e4734c08172637db92e4b59a6145909ac56d946152c39b
+License: CC0 1.0. File used: Blends/Cow.blend -> cow.glb (same tool, unchanged; the war bull's colours and horns are added in code).
+Downloaded 2026-10-18.

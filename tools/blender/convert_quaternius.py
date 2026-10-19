@@ -5,7 +5,7 @@ import os, sys
 import bpy
 
 OUT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "third_party", "quaternius_animals"))
-WANTED = {"Wolf", "Cat", "Eagle", "Dragon"}
+WANTED = {"Wolf", "Cat", "Eagle", "Dragon", "Cow"}
 
 
 def convert(blend):

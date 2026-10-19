@@ -202,7 +202,7 @@
           }
         },
         "hp": 440,
-        "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90}
+        "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90, "bond": "#ff7a1a"}
       },
       "frost": {
         "name": "Escarcha",
@@ -307,11 +307,11 @@
           }
         },
         "hp": 480,
-        "companion": {"name": "Elemental de escarcha", "kind": "crystal", "fly": 1.25, "glow": "#7fd8ff"}
+        "companion": {"name": "Elemental de escarcha", "kind": "crystal", "fly": 1.25, "glow": "#7fd8ff", "bond": "#8fe4ff"}
       }
     },
     "identity": "Daño o control a distancia con poca vida. Se sostiene con Traslación y el control; elegí Fuego o Escarcha.",
-    "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90}
+    "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90, "bond": "#ff7a1a"}
   },
   "warlock": {
     "id": "warlock",
@@ -418,7 +418,7 @@
       }
     ],
     "identity": "Desgaste: maldiciones que dañan solas y Drenar vida para sostenerse. Vida medio-alta, lento y con poca explosión.",
-    "companion": {"name": "Diablillo vil", "model": "dragon", "len": 0.85, "fly": 0.95, "idle": "Dragon_Flying", "move": "Dragon_Flying", "hit": "Dragon_Hit", "tint": {"Main": "#3a2048", "Belly": "#5f9e34", "Wings": "#24123a", "Claws": "#cbbf9f", "Eyes": "#7dff4a"}, "glow": "#4fe03a"}
+    "companion": {"name": "Diablillo vil", "model": "dragon", "len": 0.85, "fly": 0.95, "idle": "Dragon_Flying", "move": "Dragon_Flying", "hit": "Dragon_Hit", "tint": {"Main": "#3a2048", "Belly": "#5f9e34", "Wings": "#24123a", "Claws": "#cbbf9f", "Eyes": "#7dff4a"}, "glow": "#4fe03a", "bond": "#6dff3a"}
   },
   "hunter": {
     "id": "hunter",
@@ -528,7 +528,7 @@
     },
     "tagline": "Presión sostenida y dominio del terreno.",
     "identity": "Daño sostenido a distancia con vida media y movilidad media. Las trampas y el desenganche marcan el ritmo.",
-    "companion": {"name": "Lobo", "model": "wolf", "len": 1.55, "idle": "Idle", "move": "Walking", "walk": 1.8, "tint": {"Wolf": "#76695c"}, "yaw": -90}
+    "companion": {"name": "Lobo", "model": "wolf", "len": 1.55, "idle": "Idle", "move": "Walking", "walk": 1.8, "tint": {"Wolf": "#76695c"}, "yaw": -90, "two_tone": {"material": "Wolf", "back": "#4a4440", "belly": "#d6cbb9", "lo": 0.45, "hi": 0.75}, "bond": "#6dff6a"}
   },
   "warrior": {
     "id": "warrior",
@@ -640,7 +640,7 @@
     "tagline": "Aguanta, embiste y rompe formaciones.",
     "armor": 0.18,
     "identity": "Tanque: la mayor vida y 18% de armadura contra daño físico. Aguanta mucho, pega poco y controla con Carga, Tajo y Golpe de escudo. Cuesta matarlo y también matar a los demás.",
-    "companion": {"name": "León", "model": "cat", "len": 1.5, "idle": "Idle", "move": "Walking", "walk": 1.6, "tint": {"Grey": "#c8994f", "White": "#ead6a6", "Pink": "#6e4434"}, "mane": {"color": "#7a3d14", "neck": "Bone.002", "head": "Bone.003", "tail": "Bone.007"}, "yaw": -90}
+    "companion": {"name": "Toro de guerra", "model": "cow", "len": 1.6, "idle": "Idle", "move": "Walk", "walk": 1.6, "tint": {"White": "#4f3120", "Black": "#3b2416", "Pink": "#2e2019"}, "gear": [{"bone": "Head", "mesh": ["cone", 0.19, 1.3], "at": [0.95, 0.68, 0.25], "rot": [15, 0, -55], "color": "#ece0c4", "rough": 0.6}, {"bone": "Head", "mesh": ["cone", 0.12, 0.36], "at": [1.47, 1.05, 0.3], "rot": [15, 0, -55], "color": "#e0aa3e", "metal": 0.9, "rough": 0.3, "accent": true, "glow": 0.3}, {"bone": "Head", "mesh": ["cone", 0.19, 1.3], "at": [-0.95, 0.68, 0.25], "rot": [15, 0, 55], "color": "#ece0c4", "rough": 0.6}, {"bone": "Head", "mesh": ["cone", 0.12, 0.36], "at": [-1.47, 1.05, 0.3], "rot": [15, 0, 55], "color": "#e0aa3e", "metal": 0.9, "rough": 0.3, "accent": true, "glow": 0.3}, {"bone": "Head", "mesh": ["box", 0.95, 0.14, 0.85], "at": [0.03, 0.43, 0.55], "rot": [25, 0, 0], "color": "#aab3be", "metal": 0.85, "rough": 0.35}, {"bone": "Head", "mesh": ["box", 0.34, 0.05, 0.34], "at": [0.03, 0.52, 0.6], "rot": [25, 45, 0], "color": "#c4161c", "glow": 0.5}, {"bone": "Head", "mesh": ["torus", 0.17, 0.04], "at": [0.03, -1.08, 1.66], "rot": [90, 0, 0], "color": "#e0aa3e", "metal": 0.9, "rough": 0.3}], "bond": "#ffc04a"}
   },
   "priest": {
     "id": "priest",
@@ -742,7 +742,7 @@
     },
     "tagline": "El equipo vive mientras él se mantenga en pie.",
     "identity": "Poco daño y mucha curación. Vida media y buenas defensivas (escudo, disipar, grito): el equipo vive mientras él se mantenga en pie.",
-    "companion": {"name": "Hada", "kind": "fairy", "fly": 1.3, "glow": "#ffe9a8"}
+    "companion": {"name": "Hada", "kind": "fairy", "fly": 1.3, "glow": "#ffe9a8", "bond": "#fff0b0"}
   },
   "rogue": {
     "id": "rogue",
@@ -852,6 +852,6 @@
     "tagline": "Desaparece, elige a su presa y remata.",
     "crit": 0.1,
     "identity": "Cañón de cristal: el mayor golpe inicial desde el sigilo y mucho crítico, pero la menor vida. Si cae en una trampa, muere en segundos; si engancha a un mago, lo liquida.",
-    "companion": {"name": "Gato negro", "model": "cat", "len": 0.6, "idle": "Idle", "move": "Walking", "walk": 1.1, "tint": {"Grey": "#232129"}, "yaw": -90}
+    "companion": {"name": "Gato negro", "model": "cat", "len": 0.6, "idle": "Idle", "move": "Walking", "walk": 1.1, "tint": {"Grey": "#232129"}, "yaw": -90, "bond": "#b070ff"}
   }
 }
