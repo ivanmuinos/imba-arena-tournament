@@ -21,11 +21,14 @@ static func game_version() -> String:
 
 
 const MAX_MSGS_PER_SEC := 120
+## A full ranked lobby starts after this short countdown (time to see who you got).
+const RANKED_START_MS := 4000.0
 const BASE_TIME := 1_000_000.0  # sim clock start; keeps "ms since" fields away from zero
 
 ## mode 2|3, diff, map, dedicated (no local host), autopilot (bots drive human units: demos),
 ## auto_start_ms (dedicated: wait this long after the first player, 0 = never).
-var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0, "practice": false}
+## ranked: no bots, teams split by rating, starts by itself when full, settings fixed (see Ranked).
+var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0, "practice": false, "ranked": false}
 var state := "lobby"  # lobby | match
 var game: ArenaMatch = null
 ## peer -> {name, cls, pref}
@@ -34,6 +37,8 @@ var host_peer := 0
 var sim_now := BASE_TIME
 ## Arena actually used by the running match (cfg.map may be "random").
 var resolved_map := ""
+## Ranked match in progress: average rating per team ({} otherwise).
+var ranked_teams := {}
 
 var _transports: Array[Transport] = []
 var _route := {}  # peer id -> Transport
@@ -105,6 +110,13 @@ func process(delta_ms: float) -> void:
 			if game.done:
 				_finish_match()
 				break
+	elif state == "lobby" and bool(cfg.ranked):
+		if players.size() >= int(cfg.mode) * 2:
+			_auto_timer -= delta_ms
+			if _auto_timer <= 0.0:
+				start_match()
+		else:
+			_auto_timer = RANKED_START_MS
 	elif state == "lobby" and bool(cfg.dedicated) and cfg.auto_start_ms > 0.0 and not players.is_empty():
 		_auto_timer -= delta_ms
 		if _auto_timer <= 0.0 or players.size() >= int(cfg.mode) * 2:
@@ -167,7 +179,7 @@ func _on_message(from: int, msg: Dictionary) -> void:
 					if from == host_peer and state == "lobby":
 						start_match()
 				"leave": _on_peer_disconnected(from)
-				"input", "cast", "target", "jump", "auto", "stopcast", "practice":
+				"input", "cast", "target", "jump", "auto", "stopcast", "practice", "trinket":
 					_on_game_message(from, msg)
 
 
@@ -184,11 +196,15 @@ func _on_hello(from: int, msg: Dictionary) -> void:
 	if players.size() >= int(cfg.mode) * 2:
 		_kick(from, "La sala está llena")
 		return
+	if bool(cfg.ranked) != bool(msg.get("ranked", false)):
+		_kick(from, "Esta sala es ranked: entrá desde Ranked." if bool(cfg.ranked) else "Esta sala no es ranked.")
+		return
 	var n := MatchConfig.normalize(msg)
 	var sid := 0
 	if _route[from].has_method("steam_id_of"):
 		sid = _route[from].steam_id_of(from)  # players that arrive through Steam are identified by their SteamID
-	players[from] = {"name": _unique_name(n.name), "cls": n.cls, "spec": n.spec, "pref": n.pref, "sid": str(sid) if sid != 0 else ""}
+	var mmr := Ranked.clamp_mmr(int(msg.get("mmr", Ranked.START))) if typeof(msg.get("mmr")) in [TYPE_INT, TYPE_FLOAT] else Ranked.START
+	players[from] = {"name": _unique_name(n.name), "cls": n.cls, "spec": n.spec, "pref": n.pref, "sid": str(sid) if sid != 0 else "", "mmr": mmr}
 	var is_host: bool = _hosts.has(_route[from])
 	if is_host:
 		host_peer = from
@@ -217,7 +233,7 @@ func _on_set(from: int, msg: Dictionary) -> void:
 	p.cls = n.cls
 	p.spec = n.spec
 	p.pref = n.pref
-	if from == host_peer:
+	if from == host_peer and not bool(cfg.ranked):
 		var c := MatchConfig.normalize({"mode": msg.get("mode", cfg.mode), "diff": msg.get("diff", cfg.diff), "map": msg.get("map", cfg.map)})
 		if c.mode * 2 >= players.size():
 			cfg.mode = c.mode
@@ -246,6 +262,8 @@ func _on_game_message(from: int, msg: Dictionary) -> void:
 			game.set_target(u, id)
 		"jump":
 			game.jump(u, sim_now)
+		"trinket":
+			game.use_trinket(u, sim_now)
 		"stopcast":
 			game.cancel_cast(u)
 		"practice":
@@ -262,11 +280,36 @@ func _on_game_message(from: int, msg: Dictionary) -> void:
 # ---------------------------------------------------------------- lobby
 
 func lobby_entries(rng: RandomNumberGenerator = null) -> Array:
+	if bool(cfg.ranked):
+		return _ranked_entries()
 	var humans: Array = []
 	for peer in players:
 		var p: Dictionary = players[peer]
 		humans.append({"peer": peer, "name": p.name, "cls": p.cls, "spec": p.get("spec", ""), "pref": p.pref})
 	return MatchConfig.build_entries(int(cfg.mode), humans, rng)
+
+
+## Ranked: only the players, split into the two teams with the closest average rating.
+func _ranked_entries() -> Array:
+	var list: Array = []
+	for peer in players:
+		list.append({"peer": peer, "mmr": int(players[peer].get("mmr", Ranked.START))})
+	var side := Ranked.split_teams(list, int(cfg.mode))
+	var entries: Array = []
+	for team in ["red", "blue"]:
+		for peer in players:
+			if side.get(peer, "blue") == team:
+				var p: Dictionary = players[peer]
+				entries.append({"name": p.name, "cls": p.cls, "spec": p.get("spec", ""), "team": team, "peer": peer, "mmr": p.get("mmr", Ranked.START)})
+	return entries
+
+
+## Average rating of each team of a ranked match: every client computes its own change from these.
+static func team_ratings(entries: Array) -> Dictionary:
+	var by := {"red": [], "blue": []}
+	for e in entries:
+		by[e.team].append(int(e.get("mmr", Ranked.START)))
+	return {"red": Ranked.average(by.red), "blue": Ranked.average(by.blue)}
 
 
 func _send_lobby() -> void:
@@ -278,10 +321,10 @@ func _send_lobby() -> void:
 		teams[e.team].append({"name": e.name if e.peer != 0 else "", "cls": e.cls if e.peer != 0 else "", "spec": e.get("spec", "") if e.peer != 0 else "", "peer": e.peer, "bot": e.peer == 0})
 	var members: Array = []
 	for peer in players:
-		members.append({"peer": peer, "name": players[peer].name, "cls": players[peer].cls, "spec": players[peer].get("spec", ""), "pref": players[peer].pref, "sid": players[peer].get("sid", "")})
+		members.append({"peer": peer, "name": players[peer].name, "cls": players[peer].cls, "spec": players[peer].get("spec", ""), "pref": players[peer].pref, "sid": players[peer].get("sid", ""), "mmr": players[peer].get("mmr", Ranked.START)})
 	for peer in players:
 		_send(peer, {"t": "lobby", "mode": cfg.mode, "diff": cfg.diff, "map": cfg.map, "host": host_peer, "you": peer,
-			"dedicated": cfg.dedicated, "members": members, "teams": teams})
+			"dedicated": cfg.dedicated, "members": members, "teams": teams, "ranked": cfg.ranked})
 
 
 func start_match() -> bool:
@@ -299,7 +342,9 @@ func start_match() -> bool:
 		var p: Dictionary = players[peer]
 		game = ArenaMatch.new(2, PracticeYard.entries(p.name, p.cls, p.get("spec", ""), peer), sim_now, cfg.diff, map_id)
 	else:
-		game = ArenaMatch.new(int(cfg.mode), lobby_entries(), sim_now, cfg.diff, map_id)
+		var entries := lobby_entries()
+		ranked_teams = team_ratings(entries) if bool(cfg.ranked) else {}
+		game = ArenaMatch.new(int(cfg.mode), entries, sim_now, cfg.diff, map_id)
 	game.god = bool(cfg.get("god", false))
 	if cfg.autopilot:
 		for u in game.units:
@@ -311,7 +356,10 @@ func start_match() -> bool:
 	var roster := game.roster()
 	for peer in players:
 		var u := game.unit_for_peer(peer)
-		_send(peer, {"t": "match", "you": u.id, "mode": cfg.mode, "map": map_id, "roster": roster})
+		var msg := {"t": "match", "you": u.id, "mode": cfg.mode, "map": map_id, "roster": roster}
+		if not ranked_teams.is_empty():
+			msg["ranked"] = ranked_teams
+		_send(peer, msg)
 	match_started.emit()
 	return true
 

@@ -35,7 +35,7 @@ static func normalize(c: Dictionary) -> Dictionary:
 		"name": sanitize_name(str(c.get("name", ""))),
 		"cls": cls_ok,
 		"spec": GameData.normalize_spec(cls_ok, str(c.get("spec", ""))),
-		"mode": 3 if int(c.get("mode", 2)) == 3 else 2,
+		"mode": int(c.get("mode", 2)) if int(c.get("mode", 2)) in [1, 2, 3] else 2,
 		"diff": diff if DIFFS.has(diff) else "normal",
 		"map": map_id if (GameData.maps.has(map_id) or map_id == "random" or map_id == "test") else "random",
 		"pref": pref if pref in ["any", "red", "blue"] else "any",

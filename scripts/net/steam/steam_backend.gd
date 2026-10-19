@@ -11,6 +11,10 @@ signal member_changed(lobby_id: int, steam_id: int, joined: bool)
 ## The player accepted an invite / "join game" in the Steam overlay or friends list.
 signal join_requested(lobby_id: int)
 signal session_failed(steam_id: int)
+## Leaderboards (ranked): found/created, entries downloaded [{steam_id, rank, score, details}], own score uploaded.
+signal leaderboard_ready(board: String, ok: bool)
+signal leaderboard_entries(board: String, entries: Array)
+signal leaderboard_uploaded(board: String, ok: bool)
 
 
 func available() -> bool:
@@ -86,4 +90,34 @@ func accept_session(_from: int) -> void:
 
 
 func close_session(_steam_id: int) -> void:
+	pass
+
+
+## Steam name of any player (empty when unknown).
+func persona_of(_steam_id: int) -> String:
+	return ""
+
+
+## Ranked lobbies: lobbies of this game and version with lobby data `filters` ({key: value}), closest `near` value first.
+func request_ranked_lobbies(_version: String, _filters: Dictionary, _near_key: String, _near_value: int) -> void:
+	pass
+
+
+## Finds (or creates) a leaderboard; leaderboard_ready says when it can be used.
+func find_leaderboard(_board: String) -> void:
+	pass
+
+
+## Replaces our score (not "keep best": a rating goes down too). `details`: extra ints (games, wins).
+func upload_score(_board: String, _score: int, _details: PackedInt32Array) -> void:
+	pass
+
+
+## Global top entries [start, end] (1-based ranks).
+func request_top(_board: String, _start: int, _end: int) -> void:
+	pass
+
+
+## Just our own entry.
+func request_mine(_board: String) -> void:
 	pass

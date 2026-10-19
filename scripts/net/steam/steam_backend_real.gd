@@ -19,6 +19,7 @@ var _pending_lobby := 0
 var _sent := 0
 var _received := 0
 var _hooks: Array = []  # [signal name, callable]: all disconnected in shutdown()
+var _boards := {}  # leaderboard name -> handle
 
 
 func _init(p_verbose := false) -> void:
@@ -198,3 +199,69 @@ func _on_chat_update(lobby_id: int, changed_id: int, _making_change: int, chat_s
 	# chat_state bit 1 = entered; 2 = left; 4 = disconnected; 8 = kicked; 16 = banned
 	_log("sala %d: miembro %d estado=%d" % [lobby_id, changed_id, chat_state])
 	member_changed.emit(lobby_id, changed_id, (chat_state & 1) != 0)
+
+
+func persona_of(steam_id: int) -> String:
+	return str(_steam.getFriendPersonaName(steam_id)) if _ok else ""
+
+
+func request_ranked_lobbies(version: String, filters: Dictionary, near_key: String, near_value: int) -> void:
+	_steam.addRequestLobbyListStringFilter("game", GAME_TAG, 0)
+	_steam.addRequestLobbyListStringFilter("version", version, 0)
+	for k in filters:
+		_steam.addRequestLobbyListStringFilter(str(k), str(filters[k]), 0)
+	if near_key != "":
+		_steam.addRequestLobbyListNearValueFilter(near_key, near_value)
+	_steam.addRequestLobbyListDistanceFilter(DISTANCE_WORLDWIDE)
+	_log("buscando salas ranked %s cerca de %s=%d" % [filters, near_key, near_value])
+	_steam.requestLobbyList()
+
+
+func find_leaderboard(board: String) -> void:
+	if not _ok:
+		leaderboard_ready.emit(board, false)
+		return
+	if _boards.has(board):
+		leaderboard_ready.emit(board, true)
+		return
+	_log("buscando tabla %s" % board)
+	_steam.findOrCreateLeaderboard(board, 2, 1)  # sort descending, numeric display
+
+
+func upload_score(board: String, score: int, details: PackedInt32Array) -> void:
+	if _boards.has(board):
+		_steam.uploadLeaderboardScore(score, false, details, int(_boards[board]))
+
+
+func request_top(board: String, start: int, end: int) -> void:
+	if _boards.has(board):
+		_steam.downloadLeaderboardEntries(start, end, 0, int(_boards[board]))  # 0 = global
+
+
+func request_mine(board: String) -> void:
+	if _boards.has(board):
+		_steam.downloadLeaderboardEntriesForUsers([my_id()], int(_boards[board]))
+
+
+func _board_name(handle: int) -> String:
+	for k in _boards:
+		if int(_boards[k]) == handle:
+			return k
+	return str(_steam.getLeaderboardName(handle))
+
+
+func _on_board_found(handle: int, found: int) -> void:
+	var board := str(_steam.getLeaderboardName(handle)) if found != 0 else ""
+	_log("tabla %s -> handle %d (encontrada=%d)" % [board, handle, found])
+	if found != 0 and board != "":
+		_boards[board] = handle
+	leaderboard_ready.emit(board, found != 0)
+
+
+func _on_board_scores(_message: String, handle: int, entries: Array) -> void:
+	var out: Array = []
+	for e in entries:
+		out.append({"steam_id": int(e.get("steam_id", 0)), "rank": int(e.get("global_rank", 0)), "score": int(e.get("score", 0)),
+			"details": Array(e.get("details", PackedInt32Array()))})
+	_log("%d entradas de %s" % [out.size(), _board_name(handle)])
+	leaderboard_entries.emit(_board_name(handle), out)
