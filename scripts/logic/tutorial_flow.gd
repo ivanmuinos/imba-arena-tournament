@@ -6,7 +6,7 @@ extends RefCounted
 ## Steps are built from the player's class/spec (names, keys and descriptions come from data/classes.json), skipping what a kit
 ## does not have (no cast time -> no cast-bar step, no ground spell -> no placement step, ...).
 ## Events (strings): moved, jumped, cam_rmb, cam_lmb, zoom, click_target, tab_target, cast:<ability id>, cast_cancel, ground_cast,
-## auto_on, los_hidden, interrupt, cc, debuff_seen, tooltip. A step with `manual` also waits for next().
+## auto_on, los_hidden, interrupt, cc, debuff_seen, tooltip, trinket, focus_set, macro_cast, bind_mode_off. A step with `manual` also waits for next().
 
 const KEYS := ["1", "2", "Q", "E", "Shift", "F", "R"]
 ## Abilities that cut a cast. A kit without one practises plain crowd control instead.
@@ -26,8 +26,9 @@ func _init(p_cls := "mage", p_spec := "") -> void:
 	_build()
 
 
+## The key the player actually has on that slot (Keybinds), so a rebound bar reads right in the tutorial too.
 static func key_of(slot: int) -> String:
-	return KEYS[slot] if slot >= 0 and slot < KEYS.size() else "?"
+	return Keybinds.shared().slot_label(slot) if slot >= 0 and slot < KEYS.size() else "?"
 
 
 func _abilities() -> Array:
@@ -59,7 +60,7 @@ func _build() -> void:
 		spec_name = " (%s)" % str(info.specs[spec].name)
 	_step("welcome", "¡Bienvenido a la arena!",
 		"Vas a aprender a jugar con tu campeón: el [b]%s%s[/b]. Es una práctica tranquila: los muñecos no te hacen daño. Cada paso se completa solo cuando hacés lo que pide. Podés saltear un paso o salir cuando quieras." % [info.name, spec_name], [], {"arrow": ""})
-	_step("move", "Moverte", "Movete con [key]W[/key] [key]A[/key] [key]S[/key] [key]D[/key]. Saltás con [key]Espacio[/key].",
+	_step("move", "Moverte", "Movete con [key]W[/key] [key]A[/key] [key]S[/key] [key]D[/key]. Saltás con [key]%s[/key]." % Keybinds.shared().label("jump"),
 		[_obj("moved", "Caminá unos pasos", "moved"), _obj("jumped", "Saltá una vez", "jumped")])
 	_step("camera", "La cámara", "Mirá alrededor sin perder a tus enemigos. Con el botón derecho tu personaje gira junto con la cámara.",
 		[_obj("rmb", "Mantené [key]clic derecho[/key] y arrastrá: mirás y girás", "cam_rmb"),
@@ -67,15 +68,15 @@ func _build() -> void:
 		_obj("zoom", "Rueda del mouse: acercás y alejás la cámara", "zoom")])
 	_step("target", "Elegir un objetivo", "Los hechizos usan el objetivo que elegiste. Los enemigos tienen la barra roja; tu equipo, verde.",
 		[_obj("click", "[key]Clic izquierdo[/key] sobre un muñeco enemigo para elegirlo", "click_target"),
-		_obj("tab", "[key]Tab[/key] cambia al siguiente enemigo ([key]Esc[/key] suelta el objetivo)", "tab_target")], {"arrow": "dummy:mid"})
+		_obj("tab", "[key]%s[/key] cambia al siguiente enemigo ([key]Esc[/key] suelta el objetivo)" % Keybinds.shared().label("target_next"), "tab_target")], {"arrow": "dummy:mid"})
 	var b: Dictionary = abs[0]
 	if b.get("auto", false):
 		_step("basic", "Tu ataque básico", "El [b]%s[/b] es un auto-ataque: una vez activado pega solo mientras estés a tiro y mirando al objetivo. %s" % [b.name, str(b.desc)],
-			[_obj("auto", "[key]Clic derecho[/key] sobre el muñeco (o tecla [key]1[/key]) para activar el auto-ataque", "auto_on"),
+			[_obj("auto", "[key]Clic derecho[/key] sobre el muñeco (o tecla [key]%s[/key]) para activar el auto-ataque" % key_of(0), "auto_on"),
 			_obj("hit", "Quedate a %s m o menos de tu objetivo hasta pegarle" % str(b.range), "cast:%s" % b.id)], {"arrow": "dummy:melee"})
 	else:
 		_step("basic", "Tu hechizo básico", "[b]%s[/b]. %s" % [b.name, str(b.desc)],
-			[_obj("cast0", "Con un objetivo elegido, apretá [key]1[/key]", "cast:%s" % b.id)], {"arrow": "bar"})
+			[_obj("cast0", "Con un objetivo elegido, apretá [key]%s[/key]" % key_of(0), "cast:%s" % b.id)], {"arrow": "bar"})
 	var objs: Array = []
 	for slot in range(1, 6):
 		var a: Dictionary = abs[slot]
@@ -128,8 +129,17 @@ func _build() -> void:
 		_obj("tip", "Pasá el mouse sobre una habilidad de tu barra para leer su descripción", "tooltip")], {"arrow": "target_panel"})
 	var ult: Dictionary = abs[6]
 	var ult_where := " Se coloca en el suelo con el retículo: clic izquierdo confirma." if SpellKinds.kind(ult) == "ground" else ""
-	_step("ult", "La definitiva", "[b]%s[/b] [key]R[/key] se carga haciendo y recibiendo daño. Para la práctica te la dejamos lista. %s%s" % [ult.name, short(str(ult.desc)), ult_where],
+	_step("ult", "La definitiva", "[b]%s[/b] [key]%s[/key] se carga haciendo y recibiendo daño. Para la práctica te la dejamos lista. %s%s" % [ult.name, key_of(6), short(str(ult.desc)), ult_where],
 		[_obj("ult", "Usá tu definitiva", "cast:%s" % ult.id)], {"arrow": "bar", "on_enter": "ult"})
+	var kb := Keybinds.shared()
+	_step("trinket", "El abalorio PvP", "Como en WoW: el [b]abalorio[/b] [key]%s[/key] rompe cualquier control (aturdimiento, oveja, miedo, raíces, silencio, ralentización) y tarda [b]2 minutos[/b] en volver. Guardalo para el control que te mata. Ojo: la [b]oveja te cura[/b] 10%% por segundo; muchas veces conviene esperarla." % kb.label("trinket"),
+		[_obj("trinket", "Te acabamos de aturdir: apretá [key]%s[/key] para liberarte" % kb.label("trinket"), "trinket")], {"arrow": "bar", "on_enter": "stun"})
+	_step("focus", "Foco y macros", "El [b]foco[/b] es un segundo objetivo: elegís a quién controlar (oveja, ceguera, miedo, interrupción) y seguís pegándole a otro. Las [b]macros[/b] (Configuración → Macros) lanzan habilidades sobre tu foco sin cambiar de objetivo y encadenan varias en una tecla.",
+		[_obj("focus", "Elegí un muñeco y apretá [key]%s[/key] (macro \"Marcar foco\")" % kb.label("macro_1"), "focus_set"),
+		_obj("other", "Elegí otro muñeco con [key]%s[/key]: el foco queda en el recuadro violeta" % kb.label("target_next"), "tab_target"),
+		_obj("macro", "Usá una macro sobre el foco (por ejemplo [key]%s[/key] o [key]%s[/key]), o cualquier macro tuya" % [kb.label("macro_2"), kb.label("macro_5")], "macro_cast")], {"arrow": "bar"})
+	_step("keys", "Tus teclas, a tu gusto", "Como el Bartender de WoW: todas las teclas se reasignan. En partida apretá [key]%s[/key], pasá el mouse por un botón de la barra (habilidades, abalorio o macros) y apretá la tecla nueva; [key]Esc[/key] la deja sin tecla. También desde Configuración → Controles." % kb.label("bind_mode"),
+		[_obj("bind", "Entrá al modo teclas con [key]%s[/key] y salí con la misma tecla" % kb.label("bind_mode"), "bind_mode_off")], {"arrow": "bar"})
 	_step("rounds", "Cómo es una partida real",
 		"Cada equipo arranca en su [b]sala de inicio[/b] con las puertas cerradas (10 s antes de cada ronda). Ahí podés usar escudos y curas.\n\nCuando las puertas se abren, empieza la pelea. Gana la ronda el equipo que elimina a todos los rivales; gana la partida el primero en ganar [b]2 rondas[/b] (al mejor de 3).\n\nSi la ronda se estira, aparece la [b]amortiguación[/b]: pasados 40 s la curación recibida baja cada vez más (2% por segundo), así los duelos de sanadores terminan.",
 		[], {"arrow": "score"})

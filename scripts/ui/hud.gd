@@ -5,6 +5,7 @@ extends CanvasLayer
 ## floating combat text.
 
 signal frame_clicked(id: int)
+signal macro_pressed(index: int)
 
 const TEAM_NAME := {"red": "ROJO", "blue": "AZUL"}
 ## Health bars: allies and you green, enemies red everywhere; team colour is only for borders and accents.
@@ -291,6 +292,10 @@ func _build() -> void:
 	_my_cast = CastBar.new()
 	_my_cast.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	bottom.add_child(_my_cast)
+	_macro_bar = HBoxContainer.new()  # your macros, a small row over the ability bar
+	_macro_bar.add_theme_constant_override("separation", 5)
+	_macro_bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bottom.add_child(_macro_bar)
 	_bar = HBoxContainer.new()
 	_bar.add_theme_constant_override("separation", 6)
 	_bar.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -341,7 +346,7 @@ func set_spectator(dead: bool, observed: String) -> void:
 
 func _show_ability_tip(index: int) -> void:
 	_tip_slot = index
-	_ability_tip.set_ability(GameData.abilities(my_cls, my_spec)[index], GameData.C.SLOT_KEYS[index])
+	_ability_tip.set_ability(GameData.abilities(my_cls, my_spec)[index], Keybinds.shared().slot_label(index))
 	_ability_tip.modulate.a = 0.0
 	_ability_tip.show()
 	_place_ability_tip.call_deferred(index)
@@ -521,7 +526,6 @@ func _build_bar() -> void:
 	for c in _bar.get_children():
 		c.queue_free()
 	_slots.clear()
-	var keys: Array = GameData.C.SLOT_KEYS
 	var abilities: Array = GameData.abilities(my_cls, my_spec)
 	var dot := Image.create(60, 60, false, Image.FORMAT_RGBA8)
 	dot.fill(Color(0, 0, 0, 0.68))
@@ -535,6 +539,7 @@ func _build_bar() -> void:
 		slot.mouse_filter = Control.MOUSE_FILTER_PASS
 		slot.mouse_entered.connect(_show_ability_tip.bind(i))
 		slot.mouse_exited.connect(_ability_tip.hush)
+		_track_hover(slot, "slot_%d" % i)
 		var charge := ColorRect.new()
 		charge.color = Color(1.0, 0.7, 0.2, 0.35)
 		charge.position = Vector2(2, 58)
@@ -542,7 +547,7 @@ func _build_bar() -> void:
 		charge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var icon := Icons.rect(a.icon, 56)
 		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 3)
-		var key := UiKit.label(("Auto · " + keys[i]) if a.get("auto", false) else keys[i], 11, Color("#ffd27a"))
+		var key := UiKit.label("", 11, Color("#ffd27a"))
 		UiKit.outlined(key, 4)
 		key.position = Vector2(4, 1)
 		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -564,8 +569,84 @@ func _build_bar() -> void:
 		slot.add_child(key)
 		slot.add_child(cd)
 		_bar.add_child(slot)
-		_slots.append({"root": slot, "sweep": sweep, "cd": cd, "charge": charge, "icon": icon, "ult": ult, "auto": a.get("auto", false)})
+		_slots.append({"root": slot, "sweep": sweep, "cd": cd, "charge": charge, "icon": icon, "ult": ult, "auto": a.get("auto", false), "key": key})
 	_build_trinket(dim_tex)
+	_build_macro_bar()
+	refresh_keys()
+
+
+## Keybinding mode and the hovered button: every bar button reports its action while the mouse is over it.
+var _hovered := ""
+var _binding_banner: Label = null
+var _macro_buttons: Array = []  # [{root, key, index}]
+var _macro_bar: HBoxContainer
+
+
+func _track_hover(c: Control, action: String) -> void:
+	c.mouse_entered.connect(func(): _hovered = action)
+	c.mouse_exited.connect(func(): if _hovered == action: _hovered = "")
+
+
+func hovered_action() -> String:
+	return _hovered
+
+
+## The keys on every button, from Keybinds (after a rebind too).
+func refresh_keys() -> void:
+	var kb := Keybinds.shared()
+	for i in _slots.size():
+		var sl: Dictionary = _slots[i]
+		(sl.key as Label).text = ("Auto · " if sl.auto else "") + kb.slot_label(i)
+	if not _trinket.is_empty():
+		(_trinket.key as Label).text = kb.label("trinket")
+	for m in _macro_buttons:
+		(m.key as Label).text = kb.label("macro_%d" % (m.index + 1))
+
+
+func set_binding(on: bool) -> void:
+	if _binding_banner == null:
+		_binding_banner = UiKit.label("", 17, Color("#ffd166"), HORIZONTAL_ALIGNMENT_CENTER)
+		UiKit.outlined(_binding_banner, 6)
+		_binding_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+		_binding_banner.position.y -= 150
+		_binding_banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		_binding_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root.add_child(_binding_banner)
+	_binding_banner.text = "MODO TECLAS · pasá el mouse por un botón y apretá la tecla · Esc: sin tecla · %s: salir" % Keybinds.shared().label("bind_mode")
+	_binding_banner.visible = on
+	for sl in _slots:
+		(sl.root as Control).modulate = Color(1.0, 0.9, 0.6) if on else Color.WHITE
+
+
+## Your macros as small buttons after the trinket (only the ones with text): click to run, rebind in keybinding mode.
+func _build_macro_bar() -> void:
+	_macro_buttons.clear()
+	for c in _macro_bar.get_children():
+		c.queue_free()
+	var store := MacroStore.new()
+	for i in MacroStore.COUNT:
+		if store.is_empty(i):
+			continue
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(96, 34)
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_stylebox_override("normal", UiKit.box(Color(0.12, 0.06, 0.12, 0.85), Color("#c77dff"), 8, 2, 0))
+		b.add_theme_stylebox_override("hover", UiKit.box(Color(0.2, 0.1, 0.2, 0.9), Color("#e0b0ff"), 8, 2, 0))
+		b.add_theme_stylebox_override("pressed", UiKit.box(Color(0.3, 0.15, 0.3, 0.95), Color("#ffffff"), 8, 2, 0))
+		b.text = "      " + store.title(i)
+		b.add_theme_font_size_override("font_size", 11)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.clip_text = true
+		b.tooltip_text = store.title(i)
+		b.pressed.connect(func(): macro_pressed.emit(i))
+		var key := UiKit.label("", 11, Color("#ffd27a"))
+		UiKit.outlined(key, 4)
+		key.position = Vector2(4, 1)
+		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(key)
+		_macro_bar.add_child(b)
+		_track_hover(b, "macro_%d" % (i + 1))
+		_macro_buttons.append({"root": b, "key": key, "index": i})
 
 
 ## The PvP trinket next to the bar: gold frame, "T", a 2 minute sweep.
@@ -577,10 +658,10 @@ func _build_trinket(dim_tex: Texture2D) -> void:
 	var slot := Panel.new()
 	slot.custom_minimum_size = Vector2(60, 60)
 	slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.1, 0.05, 0.04, 0.85), Color("#ffd166"), 30, 2, 0))
-	slot.tooltip_text = "Abalorio PvP (T): rompe aturdimientos, ovejas, miedos, raíces, silencios y ralentizaciones. 2 min de reutilización."
+	slot.tooltip_text = "Abalorio PvP: rompe aturdimientos, ovejas, miedos, raíces, silencios y ralentizaciones. 2 min de reutilización."
 	var icon := Icons.rect("dispel", 56)
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 3)
-	var key := UiKit.label("T", 11, Color("#ffd27a"))
+	var key := UiKit.label("", 11, Color("#ffd27a"))
 	UiKit.outlined(key, 4)
 	key.position = Vector2(6, 1)
 	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -597,7 +678,8 @@ func _build_trinket(dim_tex: Texture2D) -> void:
 	for c in [icon, sweep, key, cd]:
 		slot.add_child(c)
 	_bar.add_child(slot)
-	_trinket = {"sweep": sweep, "cd": cd}
+	_trinket = {"sweep": sweep, "cd": cd, "key": key}
+	_track_hover(slot, "trinket")
 
 
 # ---------------------------------------------------------------- state in

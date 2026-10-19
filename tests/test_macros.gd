@@ -21,16 +21,28 @@ func test_parse_focus_cast_and_chains() -> void:
 	eq(misc.errors.size(), 2, "comando y condición desconocidos")
 
 
-func test_store_keeps_one_macro_per_key() -> void:
+func test_store_saves_texts_and_keybinds_keep_one_action_per_key() -> void:
 	var path := "user://test_macros.json"
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var s := MacroStore.new(path)
 	eq(s.macros.size(), MacroStore.COUNT, "6 macros")
-	eq(s.index_for_key("Ctrl+2"), 1, "Ctrl+2 por defecto")
-	eq(s.index_for_key("Ctrl+6"), -1, "una macro vacía no se dispara")
-	s.set_macro(5, "Ctrl+2", "/focus")
-	eq(s.index_for_key("Ctrl+2"), 5, "la tecla pasa a la otra macro")
-	eq(s.macros[1].key, "", "y la anterior queda sin tecla")
+	eq(s.title(1), "Oveja al foco", "nombre del comentario")
+	check(s.is_empty(5), "la 6ta viene vacía")
+	s.set_text(5, "/focus")
 	s.save()
 	eq(MacroStore.new(path).macros[5].text, "/focus", "queda guardada")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var kpath := "user://test_keybinds.json"
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(kpath))
+	var k := Keybinds.new(kpath)
+	eq(k.action_for("Q"), "slot_2", "Q: habilidad 3 por defecto")
+	eq(k.action_for("Ctrl+2"), "macro_2", "Ctrl+2: macro 2")
+	eq(k.bind("slot_2", "Ctrl+2"), "macro_2", "reasignar quita la tecla a la otra acción")
+	eq(k.key_of("macro_2"), "", "la macro queda sin tecla")
+	eq(k.slot_label(2), "Ctrl+2", "la barra muestra la tecla nueva")
+	eq(k.label("jump"), "Espacio", "nombre amigable")
+	k.save()
+	eq(Keybinds.new(kpath).action_for("Ctrl+2"), "slot_2", "queda guardado")
+	k.reset()
+	eq(k.action_for("Q"), "slot_2", "restablecer")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(kpath))

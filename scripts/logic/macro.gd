@@ -77,9 +77,8 @@ static func slot_for(name: String, cls: String, spec := "") -> int:
 	var want := _fold(name)
 	if want == "":
 		return -1
-	var keys: Array = GameData.C.SLOT_KEYS
-	for i in keys.size():
-		if _fold(str(keys[i])) == want:
+	for i in int(GameData.C.SLOT_COUNT):
+		if _fold(Keybinds.shared().slot_label(i)) == want or _fold(str(GameData.C.SLOT_KEYS[i])) == want:
 			return i
 	var abilities: Array = GameData.abilities(cls, spec)
 	for i in abilities.size():
@@ -94,7 +93,3 @@ static func _fold(s: String) -> String:
 		t = t.replace(pair[0], pair[1])
 	return t
 
-
-## The key a macro is bound to, as Godot spells it ("Ctrl+1"), from a key event.
-static func key_name(event: InputEventKey) -> String:
-	return OS.get_keycode_string(event.get_keycode_with_modifiers())

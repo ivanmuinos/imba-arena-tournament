@@ -1,11 +1,11 @@
 class_name MacroStore
 extends RefCounted
-## The player's macros: COUNT slots of {key, text}, saved in user://macros.json. The texts use ability names, so one set
-## works for every class (a line naming an ability the current class lacks is just skipped and reported).
+## The player's macro texts (COUNT slots), saved in user://macros.json; their keys live in Keybinds ("macro_1"...).
+## The texts use ability names, so one set works for every class (a line naming an ability the current class lacks is
+## just skipped).
 
 const PATH := "user://macros.json"
-const COUNT := 6
-const DEFAULT_KEYS := ["Ctrl+1", "Ctrl+2", "Ctrl+3", "Ctrl+4", "Ctrl+5", "Ctrl+6"]
+const COUNT := Keybinds.MACROS
 const DEFAULT_TEXTS := [
 	"#Marcar foco\n/focus",
 	"#Oveja al foco\n/cast [@focus] Polimorfia",
@@ -16,7 +16,7 @@ const DEFAULT_TEXTS := [
 ]
 
 var path := PATH
-var macros: Array = []  # [{key, text}]
+var macros: Array = []  # [{text}]
 
 
 func _init(p_path := PATH) -> void:
@@ -27,7 +27,7 @@ func _init(p_path := PATH) -> void:
 func load_file() -> void:
 	macros = []
 	for i in COUNT:
-		macros.append({"key": DEFAULT_KEYS[i], "text": DEFAULT_TEXTS[i]})
+		macros.append({"text": DEFAULT_TEXTS[i]})
 	if not FileAccess.file_exists(path):
 		return
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -35,7 +35,7 @@ func load_file() -> void:
 		return
 	for i in mini(parsed.size(), COUNT):
 		if typeof(parsed[i]) == TYPE_DICTIONARY:
-			macros[i] = {"key": str(parsed[i].get("key", "")).substr(0, 40), "text": str(parsed[i].get("text", "")).substr(0, 1000)}
+			macros[i] = {"text": str(parsed[i].get("text", "")).substr(0, 1000)}
 
 
 func save() -> void:
@@ -44,19 +44,19 @@ func save() -> void:
 		f.store_string(JSON.stringify(macros))
 
 
-func set_macro(i: int, key: String, text: String) -> void:
-	if i < 0 or i >= COUNT:
-		return
-	# one key, one macro: taking a key from another macro unbinds that one
-	for j in COUNT:
-		if j != i and key != "" and macros[j].key == key:
-			macros[j].key = ""
-	macros[i] = {"key": key, "text": text}
+func set_text(i: int, text: String) -> void:
+	if i >= 0 and i < COUNT:
+		macros[i] = {"text": text}
 
 
-## Index of the macro bound to `key` ("Ctrl+1"), -1 if none.
-func index_for_key(key: String) -> int:
-	for i in COUNT:
-		if key != "" and macros[i].key == key and str(macros[i].text).strip_edges() != "":
-			return i
-	return -1
+func is_empty(i: int) -> bool:
+	return str(macros[i].text).strip_edges() == ""
+
+
+## Short name for buttons: the macro's # comment, else "Macro N".
+func title(i: int) -> String:
+	for line in str(macros[i].text).split("\n"):
+		var l := line.strip_edges()
+		if l.begins_with("#") and l.length() > 1:
+			return l.substr(1).strip_edges()
+	return "Macro %d" % (i + 1)

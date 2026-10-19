@@ -4,12 +4,10 @@ extends MenuView
 ## MacroStore).
 
 const TABS := [["graficos", "Gráficos"], ["controles", "Controles"], ["audio", "Audio"], ["juego", "Juego"], ["macros", "Macros"]]
+## Fixed (not rebindable); everything else is in Keybinds.
 const KEYS := [
-	["Moverse", "W A S D  /  flechas"], ["Saltar", "Espacio"], ["Habilidades", "1  2  Q  E  Shift  F  R"],
-	["Seleccionar", "Click izquierdo"], ["Auto-ataque", "Click derecho en un enemigo"],
-	["Girar el personaje", "Mantener click derecho"], ["Orbitar la cámara", "Mantener click izquierdo"],
-	["Zoom", "Rueda del mouse"], ["Siguiente objetivo", "Tab"], ["Aliados", "F1  F2  F3"],
-	["Cancelar / soltar objetivo", "Esc"], ["Silenciar", "M"], ["Abalorio PvP", "T"], ["Macros", "Ctrl+1 … Ctrl+6 (pestaña Macros)"],
+	["Moverse", "W A S D  /  flechas"], ["Seleccionar", "Click izquierdo"], ["Auto-ataque", "Click derecho en un enemigo"],
+	["Girar / orbitar", "Mantener click derecho / izquierdo"], ["Zoom", "Rueda del mouse"], ["Cancelar / soltar objetivo", "Esc"],
 ]
 
 var _tabs: Segmented
@@ -30,7 +28,8 @@ var _macro_list: Array[MButton] = []
 var _macro_key: MButton
 var _macro_text: TextEdit
 var _macro_err: Label
-var _capturing := false
+var _capturing := ""  # action waiting for its new key ("" = none)
+var _bind_buttons := {}  # action -> MButton
 
 
 func _ready() -> void:
@@ -70,18 +69,19 @@ func _ready() -> void:
 	_row(c, "Eje vertical de la cámara", "", _invert)
 	_invert.changed.connect(func(v): menu.st.set_value("invert", v == "on"); menu.settings_changed("invert"))
 	var grid := GridContainer.new()
-	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 18)
-	grid.add_theme_constant_override("v_separation", 4)
-	c.add_child(UiKit.caption("Teclas y botones", UiKit.MUTED, 12))
+	grid.columns = 6
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 2)
+	c.add_child(UiKit.caption("Fijas", UiKit.MUTED, 12))
 	c.add_child(grid)
+	_build_bindings(c)
 	for k in KEYS:
-		var a := UiKit.label(k[0], 14, UiKit.MUTED)
-		a.custom_minimum_size = Vector2(190, 0)
+		var a := UiKit.label(k[0], 12, UiKit.MUTED)
+		a.custom_minimum_size = Vector2(120, 0)
 		a.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		grid.add_child(a)
-		var kk := UiKit.heading(k[1], 15, UiKit.INK, 600, 1)
-		kk.custom_minimum_size = Vector2(190, 0)
+		var kk := UiKit.heading(k[1], 13, UiKit.INK, 600, 1)
+		kk.custom_minimum_size = Vector2(140, 0)
 		kk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		grid.add_child(kk)
 	# Audio
@@ -132,7 +132,7 @@ func _build_macros(page: VBoxContainer) -> void:
 	_macro_key = MButton.new("", "accent")
 	_macro_key.custom_minimum_size = Vector2(260, 40)
 	_macro_key.pressed.connect(func():
-		_capturing = true
+		_capturing = "macro_%d" % (_macro_sel + 1)
 		_macro_key.text = "Apretá la tecla (Esc: sin tecla)…")
 	ed.add_child(_macro_key)
 	_macro_text = TextEdit.new()
@@ -152,26 +152,23 @@ func _build_macros(page: VBoxContainer) -> void:
 
 
 func _macro_title(i: int) -> String:
-	var m: Dictionary = _macros.macros[i]
-	var parsed := Macro.parse(str(m.text), str(menu.st.get_value("cls")) if menu != null else "mage")
-	var name := str(parsed.name) if parsed.name != "" else ("Macro %d" % (i + 1) if str(m.text).strip_edges() != "" else "(vacía)")
-	return "%s  ·  %s" % [m.key if m.key != "" else "sin tecla", name]
+	var name := "(vacía)" if _macros.is_empty(i) else _macros.title(i)
+	return "%s  ·  %s" % [Keybinds.shared().label("macro_%d" % (i + 1)), name]
 
 
 func _select_macro(i: int) -> void:
 	_macro_sel = i
-	_capturing = false
+	_capturing = ""
 	for j in _macro_list.size():
 		_macro_list[j].text = ("▶ " if j == i else "") + _macro_title(j)
 	var m: Dictionary = _macros.macros[i]
-	_macro_key.text = "Tecla: %s (cambiar)" % (m.key if m.key != "" else "ninguna")
+	_macro_key.text = "Tecla: %s (cambiar)" % Keybinds.shared().label("macro_%d" % (i + 1))
 	_macro_text.text = str(m.text)
 	_check_macro()
 
 
 func _macro_edited() -> void:
-	var m: Dictionary = _macros.macros[_macro_sel]
-	_macros.set_macro(_macro_sel, str(m.key), _macro_text.text)
+	_macros.set_text(_macro_sel, _macro_text.text)
 	_macros.save()
 	_macro_list[_macro_sel].text = "▶ " + _macro_title(_macro_sel)
 	_check_macro()
@@ -182,18 +179,57 @@ func _check_macro() -> void:
 	_macro_err.text = "" if parsed.errors.is_empty() else ("Con tu campeón actual: " + " · ".join(parsed.errors))
 
 
+## Every rebindable action (Keybinds.ACTIONS) with a button: click it, then press the new key (Esc: no key).
+func _build_bindings(parent: Control) -> void:
+	parent.add_child(UiKit.caption("Teclas (clic y apretá la nueva · Esc: sin tecla · en partida también con el modo teclas)", UiKit.MUTED, 12))
+	var grid := GridContainer.new()
+	grid.columns = 6
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 3)
+	parent.add_child(grid)
+	for a in Keybinds.ACTIONS:
+		var l := UiKit.label(str(a[1]).replace(" (reasignar en partida)", "").replace(" (básica)", ""), 12, UiKit.MUTED)
+		l.custom_minimum_size = Vector2(140, 0)
+		grid.add_child(l)
+		var b := MButton.new("", "secondary")
+		b.custom_minimum_size = Vector2(110, 28)
+		b.add_theme_font_size_override("font_size", 13)
+		b.pressed.connect(func():
+			_capturing = a[0]
+			b.text = "Apretá…")
+		grid.add_child(b)
+		_bind_buttons[a[0]] = b
+	var reset := MButton.new("Teclas por defecto", "ghost")
+	reset.pressed.connect(func():
+		Keybinds.shared().reset()
+		Keybinds.shared().save()
+		_refresh_bindings())
+	parent.add_child(reset)
+	_refresh_bindings()
+
+
+func _refresh_bindings() -> void:
+	for a in _bind_buttons:
+		(_bind_buttons[a] as MButton).text = Keybinds.shared().label(a)
+	if _macro_list.size() > 0:
+		_select_macro(_macro_sel)
+
+
 func _input(event: InputEvent) -> void:
-	if not _capturing or not (event is InputEventKey) or not event.pressed or event.echo:
+	if _capturing == "" or not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	var k := event as InputEventKey
-	if k.keycode in [KEY_CTRL, KEY_SHIFT, KEY_ALT, KEY_META]:
-		return  # wait for the real key of a combination
+	if k.keycode in [KEY_CTRL, KEY_ALT, KEY_META]:
+		return  # wait for the real key of a combination (Shift alone is a valid key)
 	get_viewport().set_input_as_handled()
-	_capturing = false
-	var key := "" if k.keycode == KEY_ESCAPE else Macro.key_name(k)
-	_macros.set_macro(_macro_sel, key, str(_macros.macros[_macro_sel].text))
-	_macros.save()
-	_select_macro(_macro_sel)
+	var action := _capturing
+	_capturing = ""
+	var key := "" if k.keycode == KEY_ESCAPE else Keybinds.event_name(k)
+	var lost := Keybinds.shared().bind(action, key)
+	Keybinds.shared().save()
+	_refresh_bindings()
+	if lost != "":
+		menu.set_status("%s ahora es %s (se la sacó a %s)" % [Keybinds.action_label(action), key, Keybinds.action_label(lost)])
 
 
 func _page(parent: Control, id: String) -> VBoxContainer:
@@ -267,7 +303,7 @@ func select_tab(id: String) -> void:
 	for k in _pages:
 		_pages[k].visible = k == id
 	if _holder != null:
-		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 330.0, "audio": 200.0, "juego": 300.0, "macros": 420.0}.get(id, 300.0)
+		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 560.0, "audio": 200.0, "juego": 300.0, "macros": 420.0}.get(id, 300.0)
 		_panel.reset_size()
 	_tabs.select(id, false)
 

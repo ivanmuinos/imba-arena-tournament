@@ -99,8 +99,8 @@ func _refresh() -> void:
 		_hidden_for = 0.0
 		_walked = Vector2.INF
 		_cc_seen.clear()
-		if s.on_enter == "ult" and mv.client != null:
-			mv.client.send_practice("ult")
+		if s.on_enter in ["ult", "stun"] and mv.client != null:
+			mv.client.send_practice(s.on_enter)
 	_step_label.text = "Paso %d de %d" % [flow.index + 1, flow.steps.size()]
 	_title.text = str(s.title)
 	_body.text = bb(str(s.text))

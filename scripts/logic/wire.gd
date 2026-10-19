@@ -51,7 +51,7 @@ static func clean_cast(m: Dictionary) -> Dictionary:
 	}
 
 
-const PRACTICE_CMDS := ["reset", "nocd", "ult"]
+const PRACTICE_CMDS := ["reset", "nocd", "ult", "stun"]
 
 
 ## {cmd, on} for the practice arena controls, or {} when malformed.

@@ -26,6 +26,8 @@ var me: Dictionary = {}
 var last_state: Dictionary = {}
 var controller := PlayerController.new()
 var macros := MacroStore.new()
+var keybinds := Keybinds.shared()
+var binding := false
 var _macro_chain: Array = []  # [[slot, unit]] waiting for the global cooldown
 var _seq_step := {}  # macro index -> next /castsequence step
 var _seq_at := {}  # macro index -> last press (ms)
@@ -123,6 +125,7 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	add_child(hud)
 	hud.setup(_roster, my_id, my_cls, my_team, my_spec)
 	hud.frame_clicked.connect(_on_frame_clicked)
+	hud.macro_pressed.connect(run_macro)
 	practice = str(msg.map) == GameMap.PRACTICE_ID
 	hud.practice = practice
 	if practice and not tutorial:
@@ -524,41 +527,85 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton:
 		_on_mouse_button(event)
 	elif event is InputEventKey and event.pressed and not event.echo:
-		var mi := macros.index_for_key(Macro.key_name(event))
-		if mi >= 0:
-			get_viewport().set_input_as_handled()
-			run_macro(mi)
+		var k := event as InputEventKey
+		if k.keycode == KEY_ESCAPE:
+			if binding:
+				_bind_hovered("")  # Esc in keybinding mode: unbinds the button under the mouse
+				return
+			if controller.pending_ground >= 0:
+				controller.cancel_ground()
+			elif not me.is_empty() and me.get("cast") != null:
+				client.send_stop_cast()  # Esc cancels the cast in progress (movement and jumping do too)
+			else:
+				controller.clear_target()
+				hud.set_friend(-1)
 			return
-		var slot := InputLogic.slot_for_key(event.keycode)
-		if slot >= 0:
+		var name := Keybinds.event_name(k)
+		var action := keybinds.action_for(name)
+		if binding and action != "bind_mode":
 			get_viewport().set_input_as_handled()
-			_cast(slot)
+			_bind_hovered(name)
 			return
-		match event.keycode:
-			KEY_ESCAPE:
-				if controller.pending_ground >= 0:
-					controller.cancel_ground()
-				elif not me.is_empty() and me.get("cast") != null:
-					client.send_stop_cast()  # Esc cancels the cast in progress (movement and jumping do too)
-				else:
-					controller.clear_target()
-					hud.set_friend(-1)
-			KEY_TAB:
-				get_viewport().set_input_as_handled()
-				_cycle_target()
-			InputLogic.TRINKET_KEY:
-				get_viewport().set_input_as_handled()
+		if action == "" and k.shift_pressed and not k.ctrl_pressed and not k.alt_pressed:
+			action = keybinds.action_for(OS.get_keycode_string(k.keycode))  # Shift held (often an ability key) + a plain key
+		if action == "":
+			return
+		get_viewport().set_input_as_handled()
+		_do_action(action)
+
+
+## A key binding's action (see Keybinds.ACTIONS).
+func _do_action(action: String) -> void:
+	if action.begins_with("slot_"):
+		_cast(int(action.substr(5)))
+	elif action.begins_with("macro_"):
+		run_macro(int(action.substr(6)) - 1)
+	elif action.begins_with("ally_"):
+		var ids := hud.ally_ids()
+		var i := int(action.substr(5)) - 1
+		if i < ids.size():
+			_select(ids[i])
+	else:
+		match action:
+			"trinket":
 				client.send_trinket()
-			KEY_SPACE:
-				get_viewport().set_input_as_handled()
+				gameplay_event.emit("trinket")
+			"jump":
 				_jump()
-			KEY_M:
-				hud.error("Sonido apagado (M)" if audio.toggle_mute() else "Sonido activado (M)")
-			KEY_F1, KEY_F2, KEY_F3:
-				var ids := hud.ally_ids()
-				var i: int = int(event.keycode - KEY_F1)
-				if i < ids.size():
-					_select(ids[i])
+			"target_next":
+				_cycle_target()
+			"mute":
+				hud.error("Sonido apagado" if audio.toggle_mute() else "Sonido activado")
+			"bind_mode":
+				set_binding(not binding)
+
+
+# ---------------------------------------------------------------- keybinding mode (like Bartender's)
+
+## On: hovering a button of the bar (abilities, trinket, macros) and pressing a key binds it; Esc unbinds; the same
+## toggle key leaves.
+func set_binding(on: bool) -> void:
+	binding = on
+	hud.set_binding(on)
+	if not on:
+		keybinds.save()
+		gameplay_event.emit("bind_mode_off")
+
+
+func _bind_hovered(key: String) -> void:
+	var action := hud.hovered_action()
+	if action == "":
+		hud.error("Pasá el mouse por un botón de la barra y apretá la tecla")
+		return
+	var lost := keybinds.bind(action, key)
+	keybinds.save()
+	hud.refresh_keys()
+	if key == "":
+		hud.error("%s: sin tecla" % Keybinds.action_label(action))
+	elif lost != "":
+		hud.error("%s → %s (se la sacó a %s)" % [Keybinds.action_label(action), key, Keybinds.action_label(lost)])
+	else:
+		hud.error("%s → %s" % [Keybinds.action_label(action), key])
 
 
 func _on_mouse_button(event: InputEventMouseButton) -> void:
@@ -709,6 +756,7 @@ func run_macro(i: int) -> void:
 				if controller.target >= 0:
 					controller.set_focus(controller.target)
 					hud.error("Foco: %s" % _unit_name(controller.target))
+					gameplay_event.emit("focus_set")
 			"clearfocus":
 				controller.set_focus(-1)
 			"target":
@@ -731,7 +779,10 @@ func run_macro(i: int) -> void:
 		if on_gcd and gcd_used:
 			_macro_chain.append(c)  # waits for the global cooldown, then goes out (poll below)
 			continue
-		if _cast_on(c[0], c[1]) and on_gcd:
+		var sent := _cast_on(c[0], c[1])
+		if sent:
+			gameplay_event.emit("macro_cast")
+		if sent and on_gcd:
 			gcd_used = true
 
 

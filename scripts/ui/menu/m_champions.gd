@@ -154,7 +154,7 @@ func _tip_for(i: int, on: bool) -> void:
 	var a: Dictionary = slot.get_meta("ability", {})
 	if a.is_empty():
 		return
-	_tip.set_ability(a, str(GameData.C.SLOT_KEYS[i]))
+	_tip.set_ability(a, Keybinds.shared().slot_label(i))
 	_tip.modulate.a = 0.0
 	_tip.show()
 	create_tween().tween_property(slot, "scale", Vector2.ONE * 1.14, 0.1)
@@ -210,7 +210,7 @@ func select(id: String, from_user := false) -> void:
 		slot.set_meta("ability", a)
 		(slot.get_meta("icon") as TextureRect).texture = Icons.tex(str(a.icon))
 		var kl: Label = slot.get_meta("key")
-		kl.text = str(GameData.C.SLOT_KEYS[i])
+		kl.text = Keybinds.shared().slot_label(i)
 		kl.add_theme_color_override("font_color", UiKit.GOLD if a.get("ult", false) else UiKit.MUTED)
 		slot.queue_redraw()
 	(_panel.find_child("RoleLine", true, false) as Label).text = str(GameData.classes[id].specs[sid].role) if sid != "" else str(spec.role)
