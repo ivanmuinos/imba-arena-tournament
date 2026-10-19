@@ -298,21 +298,30 @@ func jump_now(now_s: float) -> void:
 	_local_jump_at = now_s
 
 
+## Forwards a moment of the fight to the companion (see CompanionView.react).
+func companion_react(kind: String) -> void:
+	if _companion != null:
+		_companion.react(kind)
+
+
 func swing(heavy: bool) -> void:
 	_swing_t = 0.42 if heavy else 0.25
 	_swing_heavy = heavy
+	companion_react("pounce")
 	if _rig != null:
 		_rig.swing(Time.get_ticks_msec() / 1000.0, heavy, 1.5)
 
 
 ## Cast gesture right when the server reports an instant cast (channelled casts use the cast loop instead).
 func cast_gesture() -> void:
+	companion_react("cast")
 	if _rig != null and snap.get("cast") == null and snap.get("alive", false):
 		_rig.swing(Time.get_ticks_msec() / 1000.0, false, 1.3)
 
 
 func flash() -> void:
 	_flash_t = 0.14
+	companion_react("hurt")
 	if _rig != null and snap.get("cast") == null:
 		_rig.once("hit", Time.get_ticks_msec() / 1000.0, 1.4)
 	_refresh_overlay()

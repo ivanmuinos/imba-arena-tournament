@@ -382,6 +382,7 @@ func _one_fx(f: Dictionary) -> void:
 		"heal":
 			if v != null and v.shown:
 				fx.heal(pos.x, pos.z)
+				v.companion_react("heal")
 				hud.float_text(pos + Vector3(0, 2.4 * UnitView.VS, 0), "+%d" % f.amt, Color("#5cff8a"), false, "heal")
 				audio.play("heal", p2)
 		"power":

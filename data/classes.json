@@ -418,7 +418,7 @@
       }
     ],
     "identity": "Desgaste: maldiciones que dañan solas y Drenar vida para sostenerse. Vida medio-alta, lento y con poca explosión.",
-    "companion": {"name": "Diablillo vil", "model": "dragon", "len": 0.85, "fly": 0.95, "idle": "Dragon_Flying", "move": "Dragon_Flying", "tint": {"Main": "#3a2048", "Belly": "#5f9e34", "Wings": "#24123a", "Claws": "#cbbf9f", "Eyes": "#7dff4a"}, "glow": "#4fe03a"}
+    "companion": {"name": "Diablillo vil", "model": "dragon", "len": 0.85, "fly": 0.95, "idle": "Dragon_Flying", "move": "Dragon_Flying", "hit": "Dragon_Hit", "tint": {"Main": "#3a2048", "Belly": "#5f9e34", "Wings": "#24123a", "Claws": "#cbbf9f", "Eyes": "#7dff4a"}, "glow": "#4fe03a"}
   },
   "hunter": {
     "id": "hunter",

@@ -68,3 +68,44 @@ func test_every_companion_builds_headless() -> void:
 		c.track(0.016, 0.0, Vector3.ZERO, 0.0, Vector2(3, 0), true, true, 0.0)
 		check(c.get_child_count() > 0, "%s %s: tiene modelo" % pair)
 		c.free()
+
+
+func test_reactions_move_it_and_settle_back() -> void:
+	var hop := CompanionView.reaction_offset("cast", CompanionView.REACT_S.cast * 0.5)
+	check(hop.y > 0.2, "al lanzar un hechizo salta")
+	check(CompanionView.reaction_offset("pounce", CompanionView.REACT_S.pounce * 0.5).x > 0.3, "al golpear el dueño se abalanza hacia adelante")
+	check(CompanionView.reaction_offset("hurt", CompanionView.REACT_S.hurt * 0.5).x < 0.0, "si le pegan al dueño retrocede")
+	check(absf(CompanionView.reaction_offset("cast", CompanionView.REACT_S.cast * 0.5, true).z) > 1.0, "el que vuela gira")
+	eq(CompanionView.reaction_offset("cast", 5.0), Vector4(0, 0, 0, 1), "terminada, sin desplazamiento")
+	eq(CompanionView.reaction_offset("nada", 0.1), Vector4(0, 0, 0, 1), "reacción desconocida: nada")
+
+
+func test_react_plays_once_then_returns_to_its_spot() -> void:
+	var c := CompanionView.new()
+	c.setup(CompanionView.def_for("hunter"), Color.RED, null)
+	c.track(0.016, 0.0, Vector3.ZERO, 0.0, Vector2.ZERO, true, true, 0.0)
+	var rest := c.position
+	c.react("cast")
+	c.track(0.2, 0.2, Vector3.ZERO, 0.0, Vector2.ZERO, true, true, 0.0)
+	check(c.position.y > rest.y + 0.1, "en el aire a mitad del salto")
+	for i in 10:
+		c.track(0.1, 0.3 + i * 0.1, Vector3.ZERO, 0.0, Vector2.ZERO, true, true, 0.0)
+	near(c.position.distance_to(rest), 0.0, 0.01, "vuelve a su lugar, sin quedar corrido")
+	c.react("pounce")
+	c.track(0.15, 1.5, Vector3.ZERO, 0.0, Vector2.ZERO, true, true, 0.0)
+	var lunged := c.position
+	c.react("pounce")  # demasiado pronto: no reinicia
+	c.track(0.25, 1.75, Vector3.ZERO, 0.0, Vector2.ZERO, true, true, 0.0)
+	near(Vector2(c.position.x, c.position.z).distance_to(Vector2(rest.x, rest.z)), 0.0, 0.05, "un segundo golpe enseguida no la repite")
+	check(Vector2(lunged.x, lunged.z).distance_to(Vector2(rest.x, rest.z)) > 0.3, "el primero sí se abalanzó")
+	c.free()
+
+
+func test_no_reactions_while_hidden_or_dead() -> void:
+	var c := CompanionView.new()
+	c.setup(CompanionView.def_for("warlock"), Color.RED, null)
+	c.track(0.016, 0.0, Vector3.ZERO, 0.0, Vector2.ZERO, false, true, 0.0)
+	c.react("hurt")
+	c.track(0.1, 0.1, Vector3.ZERO, 0.0, Vector2.ZERO, true, true, 0.0)
+	near(Vector2(c.position.x, c.position.z).distance_to(CompanionView.follow_point(Vector2.ZERO, 0.0, true)), 0.0, 0.01, "oculto (sigilo) no reacciona")
+	c.free()

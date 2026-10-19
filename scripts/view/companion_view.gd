@@ -16,6 +16,12 @@ const LEAD_S := 0.3
 const SNAP_DIST := 7.0
 const DEATH_FADE_S := 1.4
 const MODELS := "res://assets/third_party/quaternius_animals/%s.glb"
+## Reactions to what its owner does (client-side, from the same fx events the unit views use): length in seconds and
+## the minimum gap before the same one can play again, so a flurry of hits or casts does not make it twitch.
+const REACT_S := {"cast": 0.45, "heal": 0.5, "pounce": 0.35, "hurt": 0.3}
+const REACT_GAP_S := 0.6
+## A stronger reaction may cut a weaker one short; a weaker one never interrupts.
+const REACT_RANK := {"heal": 0, "cast": 1, "pounce": 2, "hurt": 3}
 
 var def: Dictionary
 var _world: ArenaWorld
@@ -27,12 +33,17 @@ var _orbit: Node3D = null
 var _fly := 0.0
 var _base_scale := 1.0
 var _vel := Vector2.ZERO
+var _spot := Vector2.ZERO  # where it stands; position adds the reaction's lunge or recoil on top
 var _heading := 0.0
 var _placed := false
 var _pop := 1.0
 var _dead_t := 0.0
 var _fade := -1.0
 var _phase := 0.0
+var _act := ""
+var _act_t := 0.0
+var _act_last := {}
+var _clock := 0.0
 
 
 ## The companion of a class (and specialization), {} when it has none.
@@ -58,6 +69,43 @@ static func follow_point(owner: Vector2, rot: float, flying := false, owner_vel 
 ## Too far to walk there: reappear next to the owner instead.
 static func should_snap(cur: Vector2, goal: Vector2) -> bool:
 	return cur.distance_to(goal) > SNAP_DIST
+
+
+## Offset of a reaction `t` seconds into it: x = metres forward along its heading, y = metres up, z = extra turn
+## (radians), w = squash (1 = none). Walkers hop, pounce forward and shy back; flyers swoop up and twirl instead.
+static func reaction_offset(kind: String, t: float, flying := false) -> Vector4:
+	var len_s: float = REACT_S.get(kind, 0.0)
+	if len_s <= 0.0 or t < 0.0 or t >= len_s:
+		return Vector4(0, 0, 0, 1)
+	var u := t / len_s
+	var arc := sin(u * PI)  # 0 -> 1 -> 0
+	match kind:
+		"cast":
+			return Vector4(0, arc * 0.35, u * TAU, 1) if flying else Vector4(0, arc * 0.32, 0, 1.0 + arc * 0.08)
+		"heal":
+			return Vector4(0, arc * 0.2, u * TAU, 1) if flying else Vector4(0, absf(sin(u * TAU)) * 0.16, 0, 1)
+		"pounce":
+			return Vector4(arc * 0.3, arc * 0.12, 0, 1) if flying else Vector4(arc * 0.55, arc * 0.18, 0, 1)
+		"hurt":
+			return Vector4(-arc * 0.3, arc * (0.15 if flying else 0.05), 0, 1.0 - arc * 0.18)
+	return Vector4(0, 0, 0, 1)
+
+
+## Plays a reaction to its owner: "cast" (owner cast a spell), "heal" (owner was healed), "pounce" (owner swung a melee
+## attack) or "hurt" (owner took a hit). Ignored while hidden, dead or too soon after the same one.
+func react(kind: String) -> void:
+	if not REACT_S.has(kind) or not visible or _dead_t > 0.0:
+		return
+	if _clock - float(_act_last.get(kind, -INF)) < REACT_GAP_S:
+		return
+	if _act != "" and int(REACT_RANK[kind]) < int(REACT_RANK[_act]):
+		return
+	_act_last[kind] = _clock
+	_act = kind
+	_act_t = 0.0
+	if kind == "hurt" and _player != null and def.has("hit") and _player.has_animation(str(def.hit)):
+		_clip = str(def.hit)
+		_player.play(_clip, 0.05)
 
 
 func setup(p_def: Dictionary, team: Color, world: ArenaWorld) -> void:
@@ -247,6 +295,7 @@ func _play(clip: String) -> void:
 
 ## Called by the owner's UnitView every frame. `shown`: the owner is drawn (not stealthed away, not out of sight).
 func track(dt: float, now_s: float, owner: Vector3, owner_rot: float, owner_vel: Vector2, shown: bool, alive: bool, see_through: float) -> void:
+	_clock += dt
 	if not alive:
 		_dead_t += dt
 	else:
@@ -254,9 +303,10 @@ func track(dt: float, now_s: float, owner: Vector3, owner_rot: float, owner_vel:
 	visible = shown and _dead_t < DEATH_FADE_S
 	if not visible:
 		_placed = false  # when it shows again (stealth over, back in sight, respawn) it appears next to the owner
+		_act = ""
 		return
 	var goal := follow_point(Vector2(owner.x, owner.z), owner_rot, _fly > 0.0, owner_vel if alive else Vector2.ZERO)
-	var cur := Vector2(position.x, position.z)
+	var cur := _spot
 	if not _placed or should_snap(cur, goal):
 		cur = goal
 		_vel = Vector2.ZERO
@@ -271,23 +321,31 @@ func track(dt: float, now_s: float, owner: Vector3, owner_rot: float, owner_vel:
 		cur += _vel * dt
 	else:
 		_vel = Vector2.ZERO
-	position.x = cur.x
-	position.z = cur.y
+	_spot = cur
 	var spd := _vel.length()
 	if spd > 0.35:
 		_heading = lerp_angle(_heading, atan2(_vel.x, _vel.y), 1.0 - exp(-10.0 * dt))
 	else:
 		_heading = lerp_angle(_heading, owner_rot, 1.0 - exp(-3.0 * dt))
-	rotation.y = _heading + deg_to_rad(float(def.get("yaw", 0.0)))
+	var off := Vector4(0, 0, 0, 1)
+	if _act != "":
+		_act_t += dt
+		off = reaction_offset(_act, _act_t, _fly > 0.0)
+		if _act_t >= float(REACT_S[_act]):
+			_act = ""
+	rotation.y = _heading + off.z + deg_to_rad(float(def.get("yaw", 0.0)))
+	position.x = cur.x + sin(_heading) * off.x
+	position.z = cur.y + cos(_heading) * off.x
 	var ground := _world.h(cur.x, cur.y) if _world != null else 0.0
-	position.y = ground + (_fly + sin(now_s * 2.3 + _phase) * 0.1 if _fly > 0.0 else 0.0)
+	position.y = ground + off.y + (_fly + sin(now_s * 2.3 + _phase) * 0.1 if _fly > 0.0 else 0.0)
 	var mark := get_node_or_null("TeamMark") as Node3D
 	if mark != null:
 		mark.position.y = -(position.y - ground) + 0.04
 	_pop = minf(1.0, _pop + dt * 4.0)
-	scale = Vector3.ONE * _base_scale * (0.4 + 0.6 * ease(_pop, 0.4))
+	var squash := off.w
+	scale = Vector3(1.0 / sqrt(squash), squash, 1.0 / sqrt(squash)) * _base_scale * (0.4 + 0.6 * ease(_pop, 0.4))
 
-	if _player != null:
+	if _player != null and not (_act == "hurt" and _clip == str(def.get("hit", ""))):
 		var moving := spd > 0.4 and alive
 		_play(str(def.get("move" if moving else "idle", "")))
 		_player.speed_scale = clampf(spd / float(def.get("walk", 1.6)), 0.7, 2.6) if moving and _fly <= 0.0 else 1.0

@@ -264,7 +264,8 @@ Cada clase tiene una mascota que la acompaña (`companion` en `data/classes.json
 Cazador lobo, Guerrero puma, Asesino gato negro, Sacerdote hada, Mago Fuego fénix, Mago Escarcha elemental de hielo y Brujo un
 diablillo vil. Por ahora son **sólo visuales**: los dibuja cada cliente al lado de su dueño (`scripts/view/companion_view.gd`), sin
 tocar el servidor ni el protocolo. Siguen al personaje, reaparecen a su lado tras Traslación o Retirada, se ocultan con el sigilo
-y se desvanecen al morir. Se pueden ocultar en Configuración → Juego.
+y se desvanecen al morir. Reaccionan a lo que hace su dueño: saltan cuando lanza un hechizo, se abalanzan con sus golpes,
+retroceden cuando le pegan y festejan cuando lo curan (los voladores giran en el aire). Se pueden ocultar en Configuración → Juego.
 
 - Modelos: **Quaternius**, *Animal Pack Vol.2* y *Animated Monster Pack*, licencia **CC0** (`assets/third_party/quaternius_animals/`, con
   `LICENSE.txt` y `SOURCE.txt`). Se convierten a `.glb` con `blender -b --python tools/blender/convert_quaternius.py -- <carpetas de los packs>`.
