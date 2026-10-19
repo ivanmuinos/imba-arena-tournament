@@ -437,6 +437,10 @@ func _one_fx(f: Dictionary) -> void:
 				fx.pact(pos.x, pos.z)
 			if CAST_SOUND.has(f.ability) and (is_me or (v != null and v.shown)):
 				audio.play(CAST_SOUND[f.ability], p2)
+		"trinket":
+			if v != null and v.shown:
+				fx.pickup(pos.x, pos.z, "crit")  # a golden flash where the controlled player broke free
+				audio.play("power", p2)
 		"breath":
 			fx.breath(f.x, f.z, f.dx, f.dz, f.r)
 			audio.play("dragonbreath", Vector2(f.x, f.z))
@@ -533,6 +537,9 @@ func _input(event: InputEvent) -> void:
 			KEY_TAB:
 				get_viewport().set_input_as_handled()
 				_cycle_target()
+			InputLogic.TRINKET_KEY:
+				get_viewport().set_input_as_handled()
+				client.send_trinket()
 			KEY_SPACE:
 				get_viewport().set_input_as_handled()
 				_jump()

@@ -15,7 +15,7 @@
         "cd": 600,
         "cast": 0,
         "range": 18,
-        "dmg": 30,
+        "dmg": 73,
         "projSpeed": 34,
         "projR": 0.35
       },
@@ -66,6 +66,7 @@
       },
       {
         "id": "counter",
+        "offGcd": true,
         "name": "Contrahechizo",
         "icon": "counter",
         "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
@@ -125,7 +126,7 @@
             "cd": 700,
             "cast": 0,
             "range": 18,
-            "dmg": 32,
+            "dmg": 73,
             "projSpeed": 34,
             "projR": 0.35,
             "burnDps": 6,
@@ -178,6 +179,7 @@
           },
           "5": {
             "id": "counter",
+            "offGcd": true,
             "name": "Contrahechizo",
             "icon": "counter",
             "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
@@ -226,7 +228,7 @@
             "cd": 300,
             "cast": 1300,
             "range": 20,
-            "dmg": 45,
+            "dmg": 50,
             "projSpeed": 30,
             "projR": 0.4,
             "slowPct": 0.4,
@@ -240,7 +242,7 @@
             "cd": 2000,
             "cast": 0,
             "range": 20,
-            "dmg": 22,
+            "dmg": 25,
             "projSpeed": 55,
             "projR": 0.24,
             "shatter": 2.5
@@ -280,6 +282,7 @@
           },
           "5": {
             "id": "counter",
+            "offGcd": true,
             "name": "Contrahechizo",
             "icon": "counter",
             "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
@@ -341,7 +344,7 @@
         "cd": 300,
         "cast": 1200,
         "range": 22,
-        "dmg": 28,
+        "dmg": 30,
         "projSpeed": 30,
         "projR": 0.35
       },
@@ -535,7 +538,7 @@
     "name": "Guerrero",
     "role": "Cuerpo a cuerpo resistente",
     "icon": "class_warrior",
-    "hp": 640,
+    "hp": 620,
     "speed": 6.8,
     "abilities": [
       {
@@ -559,7 +562,7 @@
         "cd": 6000,
         "cast": 0,
         "range": 3.2,
-        "dmg": 15,
+        "dmg": 14,
         "melee": true,
         "physical": true
       },
@@ -591,6 +594,7 @@
       },
       {
         "id": "shieldwall",
+        "offGcd": true,
         "name": "Muro de escudo",
         "icon": "shieldwall",
         "desc": "Recibís 60% menos de daño durante 6 s.",
@@ -602,6 +606,7 @@
       },
       {
         "id": "pummel",
+        "offGcd": true,
         "name": "Zurrar",
         "icon": "pummel",
         "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
@@ -658,7 +663,7 @@
         "cd": 800,
         "cast": 0,
         "range": 20,
-        "dmg": 12,
+        "dmg": 22,
         "projSpeed": 40,
         "projR": 0.3
       },
@@ -749,6 +754,7 @@
     "name": "Asesino",
     "role": "Cuerpo a cuerpo y sigilo",
     "icon": "class_rogue",
+    "gcd": 1000,
     "hp": 380,
     "speed": 7.4,
     "abilities": [
@@ -760,7 +766,7 @@
         "cd": 600,
         "cast": 0,
         "range": 3,
-        "dmg": 17,
+        "dmg": 16,
         "melee": true,
         "physical": true,
         "auto": true
@@ -773,7 +779,7 @@
         "cd": 7000,
         "cast": 0,
         "range": 3,
-        "dmg": 90,
+        "dmg": 85,
         "melee": true,
         "physical": true
       },
@@ -803,6 +809,7 @@
       },
       {
         "id": "vanish",
+        "offGcd": true,
         "name": "Desvanecer",
         "icon": "vanish",
         "desc": "Te volvés invisible 8 s, te sacás raíces y ralentizaciones y corrés +50% durante 4 s.",
@@ -814,6 +821,7 @@
       },
       {
         "id": "kick",
+        "offGcd": true,
         "name": "Patada",
         "icon": "kick",
         "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",

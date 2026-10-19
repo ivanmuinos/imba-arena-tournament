@@ -177,9 +177,16 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 	if now < next_think:
 		return
 	next_think = now + 90 + randf() * 90 + (1 - skill) * 150
+	# PvP trinket: break a long stun or fear (sheep heal, so bots, like players, usually wait those out).
+	var locked_ms := maxf(u.stun_until, u.fear_until) - now
+	if locked_ms > 1500.0 and now >= u.trinket_ready and randf() < 0.15 + skill * 0.35:
+		m.use_trinket(u, now)
 
 	var ab: Array = u.spec().abilities
-	var ready := func(slot: int) -> bool: return u.ult >= 100 if ab[slot].get("ult", false) else now >= u.cds[slot]
+	var ready := func(slot: int) -> bool:
+		if ArenaMatch.on_gcd(ab[slot]) and now < u.gcd_until:
+			return false  # global cooldown
+		return u.ult >= 100 if ab[slot].get("ult", false) else now >= u.cds[slot]
 	var dist := func(e) -> float: return Vector2(e.x - u.x, e.z - u.z).length()
 	var noise := func() -> float: return (randf() - 0.5) * 2 * (1 - skill) * 3.2
 	var lead := func(e: ArenaUnit, speed: float) -> Vector2:

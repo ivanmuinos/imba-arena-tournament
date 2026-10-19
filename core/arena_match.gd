@@ -145,6 +145,8 @@ func _reset_round(now: float) -> void:
 			u.aim_x = 0.0
 			u.aim_z = 0.0
 			u.cds.fill(0.0)
+			u.gcd_until = 0.0
+			u.trinket_ready = 0.0  # every round starts with everything ready, the trinket too (like Solo Shuffle)
 	if practice:
 		phase = "fight"  # no start room, no countdown: the yard is always live
 		phase_ends_at = 0.0
@@ -245,6 +247,33 @@ func _dist(a, b) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
+## WoW's global cooldown: auto attacks and the instant defensives/interrupts marked offGcd skip it.
+static func on_gcd(spec: Dictionary) -> bool:
+	return not spec.get("auto", false) and not spec.get("offGcd", false)
+
+
+## 1.5 s, or the class's own (the rogue's is 1 s, like WoW's energy users).
+static func gcd_ms(u: ArenaUnit) -> float:
+	return float(u.spec().get("gcd", GameData.C.GCD_MS))
+
+
+## PvP trinket (WoW's medallion): breaks stun, incapacitate, fear, root, silence and slows. Its own 2 min cooldown,
+## off the global cooldown, usable while controlled (that is the point).
+func use_trinket(u: ArenaUnit, now: float) -> bool:
+	if not u.alive or phase != "fight":
+		return false
+	if now < u.trinket_ready:
+		_error(u, "El abalorio todavía no está listo")
+		return false
+	u.trinket_ready = now + float(C.TRINKET_CD_MS)
+	for f in ["stun_until", "incap_until", "fear_until", "root_until", "silence_until", "slow_until"]:
+		if u.get(f) > now:
+			u.set(f, now)
+	_label(u, "ABALORIO", "#ffd166")
+	fx.append({"k": "trinket", "id": u.id})
+	return true
+
+
 ## Tries to use an ability; returns whether it started.
 func cast_ability(u: ArenaUnit, slot: int, ax: float, az: float, now: float, target_id := -1) -> bool:
 	if not u.alive or slot < 0 or slot >= C.SLOT_COUNT:
@@ -255,6 +284,8 @@ func cast_ability(u: ArenaUnit, slot: int, ax: float, az: float, now: float, tar
 	if phase != "fight" and not (phase == "prep" and spec.id in PREP_OK):
 		return false
 	var is_ult: bool = spec.get("ult", false)
+	if on_gcd(spec) and now < u.gcd_until and not (is_ult and u.ult < 100) and (is_ult or now >= u.cds[slot]):
+		return false  # global cooldown: silent, the client queues the key until it ends
 	if (is_ult and u.ult < 100) or (not is_ult and now < u.cds[slot]):
 		if slot != 0:
 			_error(u, "La ultimate no está cargada" if is_ult else "Todavía no está lista")
@@ -313,8 +344,10 @@ func cast_ability(u: ArenaUnit, slot: int, ax: float, az: float, now: float, tar
 		u.auto_on = true  # a melee ability on your target also starts the auto-attack
 		u.auto_target = target
 	u.cast = {}
+	if on_gcd(spec):
+		u.gcd_until = now + gcd_ms(u)  # starts when the ability starts, cast time or not (WoW)
 	if spec.cast > 0:
-		u.cast = {"slot": slot, "start_at": now, "ends_at": now + spec.cast, "ax": ax, "az": az, "target_id": target, "lock": lock}
+		u.cast = {"slot": slot, "start_at": now, "ends_at": now + spec.cast, "ax": ax, "az": az, "target_id": target, "lock": lock, "pushes": 0}
 		u.vx = 0.0
 		u.vz = 0.0
 		return true
@@ -672,6 +705,9 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 			if t.fear_dmg > 40: t.fear_until = 0.0  # fear breaks after enough damage
 	t.hp -= amount
 	if now < t.incap_until: t.incap_until = 0.0  # sheep / freeze / blind break on damage
+	if not t.cast.is_empty() and int(t.cast.get("pushes", 0)) < int(C.PUSHBACK_MAX):
+		t.cast.ends_at += float(C.PUSHBACK_MS)  # WoW pushback: each hit delays the cast, at most twice
+		t.cast.pushes = int(t.cast.get("pushes", 0)) + 1
 	if src != null:
 		src.dmg += amount
 		src.ult = minf(100, src.ult + amount * C.ULT_PER_DAMAGE)
@@ -1318,7 +1354,8 @@ func snapshot_for(viewer: ArenaUnit, now: float) -> Dictionary:
 		"traps": traps.filter(func(t): return t.owner.team == viewer.team).map(func(t): return {"id": t.id, "x": t.x, "z": t.z, "armed": now >= t.armed_at}),
 		"powers": powers.duplicate(),
 		"you": {
-			"cds": range(abilities.size()).map(func(i): return 0 if abilities[i].get("ult", false) else maxi(0, roundi(viewer.cds[i] - now))),
+			"cds": range(abilities.size()).map(func(i): return 0 if abilities[i].get("ult", false) else maxi(0, roundi(maxf(viewer.cds[i], viewer.gcd_until if on_gcd(abilities[i]) else 0.0) - now))),
+			"trinket": maxi(0, roundi(viewer.trinket_ready - now)),
 			"ult": floori(viewer.ult),
 			"auto": viewer.auto_on,
 			"inBush": Rules.bush_at(map, viewer.x, viewer.z) >= 0,

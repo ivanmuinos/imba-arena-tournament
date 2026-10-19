@@ -125,7 +125,7 @@ func test_champion_stat_bars_reflect_the_identities_and_tooltips_show_numbers() 
 	check(int(rogue.stats.damage) > int(warrior.stats.damage), "el asesino pega más que el guerrero")
 	check(int(GameData.kit("mage", "fire").stats.damage) > int(GameData.kit("mage", "frost").stats.damage), "Fuego pega más que Escarcha")
 	check(int(GameData.kit("mage", "frost").stats.control) >= 5, "Escarcha: el mejor control")
-	check(HowToContent.stat_tip(warrior, "hp").contains("640") and HowToContent.stat_tip(warrior, "hp").contains("%d%%" % roundi(float(warrior.armor) * 100.0)), "tooltip de vida con armadura")
+	check(HowToContent.stat_tip(warrior, "hp").contains("620") and HowToContent.stat_tip(warrior, "hp").contains("%d%%" % roundi(float(warrior.armor) * 100.0)), "tooltip de vida con armadura")
 	check(HowToContent.stat_tip(rogue, "damage").contains("crítico"), "tooltip de daño con el crítico del asesino")
 	check(HowToContent.stat_tip(rogue, "mobility").contains("7.4"), "tooltip de movilidad")
 	for c in GameData.classes:
@@ -158,3 +158,62 @@ func test_a_sheep_regains_health_quickly() -> void:
 		now += 1000.0 / 60.0
 		m.tick(now)
 	check(v.hp <= hp + 0.01, "terminada la oveja, deja de curar")
+
+
+func _fight_duel(a_cls: String, a_spec: String, b_cls: String) -> ArenaMatch:
+	var m := ArenaMatch.new(1, [{"name": "A", "cls": a_cls, "spec": a_spec, "team": "red", "peer": 0}, {"name": "B", "cls": b_cls, "spec": "", "team": "blue", "peer": 0}], 1000000.0, "normal", "test")
+	var now := 1000000.0
+	while m.phase != "fight":
+		now += 1000.0 / 60.0
+		m.tick(now)
+	for u in m.units:
+		u.brain = null
+	m.units[0].x = 0.0
+	m.units[0].z = 0.0
+	m.units[1].x = 0.0
+	m.units[1].z = 8.0
+	m.units[0].rot = 0.0  # facing +Z, at the enemy
+	m.set_meta("now", now)
+	return m
+
+
+func test_global_cooldown_like_wow() -> void:
+	var m := _fight_duel("mage", "frost", "warrior")
+	var a: ArenaUnit = m.units[0]
+	var b: ArenaUnit = m.units[1]
+	var now: float = m.get_meta("now")
+	check(m.cast_ability(a, 1, b.x, b.z, now, b.id), "lanza de hielo")
+	check(not m.cast_ability(a, 2, b.x, b.z, now + 500.0, b.id), "nova durante el GCD: no")
+	check(m.cast_ability(a, 5, b.x, b.z, now + 500.0, b.id), "contrahechizo está fuera del GCD")
+	check(m.cast_ability(a, 2, b.x, b.z, now + 1550.0, b.id), "pasado 1,5 s, sí")
+	var r := _fight_duel("rogue", "", "mage")
+	eq(ArenaMatch.gcd_ms(r.units[0]), 1000.0, "el asesino tiene GCD de 1 s")
+	check(not ArenaMatch.on_gcd(r.units[0].ability(0)), "el ataque automático no usa GCD")
+	var snap := m.snapshot_for(a, now + 600.0)
+	check(int(snap.you.cds[2]) > 0, "el cliente ve el GCD en la barra")
+
+
+func test_damage_pushes_a_cast_back_twice() -> void:
+	var m := _fight_duel("mage", "frost", "hunter")
+	var a: ArenaUnit = m.units[0]
+	var b: ArenaUnit = m.units[1]
+	var now: float = m.get_meta("now")
+	check(m.cast_ability(a, 0, b.x, b.z, now, b.id), "empieza la descarga de escarcha")
+	var end0: float = a.cast.ends_at
+	for i in 3:
+		m._damage(a, 5.0, b, now + 100.0, "shot")
+	near(a.cast.ends_at - end0, 1000.0, 0.01, "3 golpes: se atrasa 0,5 s dos veces y no más")
+
+
+func test_trinket_breaks_control_once_every_two_minutes() -> void:
+	var m := _fight_duel("rogue", "", "warrior")
+	var a: ArenaUnit = m.units[0]
+	var now: float = m.get_meta("now")
+	a.stun_until = now + 4000.0
+	a.fear_until = now + 4000.0
+	a.slow_until = now + 4000.0
+	check(m.use_trinket(a, now), "usa el abalorio aturdido")
+	check(now >= a.stun_until and now >= a.fear_until and now >= a.slow_until, "rompe aturdimiento, miedo y ralentización")
+	a.stun_until = now + 4000.0
+	check(not m.use_trinket(a, now + 1000.0), "no otra vez enseguida")
+	check(m.use_trinket(a, now + float(GameData.C.TRINKET_CD_MS)), "a los 2 minutos, sí")

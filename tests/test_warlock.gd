@@ -233,6 +233,7 @@ func test_ultimate_consumes_charge_and_does_not_replace_other_curses() -> void:
 	check(not m.cast_ability(a, 6, t.x, t.z, 100, t.id), "sin carga no lanza")
 	m.cast_ability(a, 1, t.x, t.z, 100, t.id)
 	a.ult = 100
+	a.gcd_until = 0.0
 	check(m.cast_ability(a, 6, t.x, t.z, 200, t.id), "definitiva lista")
 	check(a.ult < 20, "consume carga (puede generar por golpe)")
 	eq(t.curses.size(), 2, "coexiste con Corrupción")

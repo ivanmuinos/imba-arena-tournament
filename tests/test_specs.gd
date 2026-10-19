@@ -157,6 +157,7 @@ func test_dragon_breath_disorients_in_a_cone_and_breaks_on_damage() -> void:
 	other.cast_ability(oa, 2, oa.x, oa.z - 5.0, now, -1)
 	check(not (now < ob.incap_until), "fuera del cono no pasa nada")
 	m.units[0].cds[0] = 0.0
+	m.units[0].gcd_until = 0.0
 	_face(m, a, b)
 	m.cast_ability(a, 0, b.x, b.z, now, b.id)
 	_adv(m, 400)
@@ -183,6 +184,7 @@ func test_frostbolt_slows_and_ice_lance_shatters_rooted_targets() -> void:
 	var normal := hp0 - b.hp
 	check(normal > 0.0 and absf(normal - float(lance.dmg)) < 1.5, "daño normal (%.1f)" % normal)
 	a.cds[1] = 0.0
+	a.gcd_until = 0.0
 	b.root_until = now + 3000.0   # rooted by a nova
 	var hp1 := b.hp
 	_face(m, a, b)

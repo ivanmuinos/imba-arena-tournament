@@ -3,6 +3,8 @@ extends RefCounted
 ## Key/mouse mapping that does not depend on the scene tree.
 
 const SLOT_BY_KEY := {KEY_1: 0, KEY_2: 1, KEY_Q: 2, KEY_E: 3, KEY_SHIFT: 4, KEY_F: 5, KEY_R: 6}
+## PvP trinket (breaks crowd control), outside the ability slots.
+const TRINKET_KEY := KEY_T
 const DRAG_PX := 5.0
 const FOLLOW_RATE := 4.0
 const TURN_RATE := 2.6

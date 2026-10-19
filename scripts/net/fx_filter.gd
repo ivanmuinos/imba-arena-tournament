@@ -3,7 +3,7 @@ extends RefCounted
 ## Stealth rule for events: the server never tells a team about something that would reveal a
 ## unit it cannot see (a hit, a cast, a blink out of a bush...).
 
-const ID_EVENTS := ["hit", "heal", "power", "absorb", "charge", "swing", "label", "cast", "breath"]
+const ID_EVENTS := ["hit", "heal", "power", "absorb", "charge", "swing", "label", "cast", "breath", "trinket"]
 const NEAR := 2.0
 
 

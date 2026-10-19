@@ -37,6 +37,10 @@ var hp := 0.0
 var max_hp := 0.0
 var alive := true
 var cds: Array[float] = []
+## Global cooldown (WoW): after an ability, every other on-GCD ability waits until this.
+var gcd_until := 0.0
+## PvP trinket: breaks every loss-of-control effect, ready again at this time.
+var trinket_ready := 0.0
 var ult := 0.0
 ## {slot, start_at, ends_at, ax, az, target_id, lock} or {}
 var cast := {}

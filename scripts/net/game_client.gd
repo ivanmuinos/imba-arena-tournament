@@ -170,6 +170,10 @@ func send_jump() -> void:
 	_send({"t": "jump"})
 
 
+func send_trinket() -> void:
+	_send({"t": "trinket"})
+
+
 ## Lobby settings: {cls?, pref?, and, for the host, mode?, diff?, map?}.
 func send_set(settings: Dictionary) -> void:
 	var m := settings.duplicate()

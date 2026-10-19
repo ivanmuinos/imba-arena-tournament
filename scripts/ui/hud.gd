@@ -23,6 +23,10 @@ var _root := Control.new()
 var _roster: Array = []
 var _frames := {}
 var _slots: Array = []
+## PvP trinket button (T), after the abilities: {sweep, cd}; ready at this time (ms, client clock).
+var _trinket := {}
+var trinket_ready := 0.0
+var _span := {}  # slot -> length of the cooldown being shown (ms)
 var _plates := {}
 var _floats: Array = []
 var _feed_expiry: Array = []
@@ -522,6 +526,39 @@ func _build_bar() -> void:
 		slot.add_child(cd)
 		_bar.add_child(slot)
 		_slots.append({"root": slot, "sweep": sweep, "cd": cd, "charge": charge, "icon": icon, "ult": ult, "auto": a.get("auto", false)})
+	_build_trinket(dim_tex)
+
+
+## The PvP trinket next to the bar: gold frame, "T", a 2 minute sweep.
+func _build_trinket(dim_tex: Texture2D) -> void:
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(10, 60)
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar.add_child(gap)
+	var slot := Panel.new()
+	slot.custom_minimum_size = Vector2(60, 60)
+	slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.1, 0.05, 0.04, 0.85), Color("#ffd166"), 30, 2, 0))
+	slot.tooltip_text = "Abalorio PvP (T): rompe aturdimientos, ovejas, miedos, raíces, silencios y ralentizaciones. 2 min de reutilización."
+	var icon := Icons.rect("dispel", 56)
+	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 3)
+	var key := UiKit.label("T", 11, Color("#ffd27a"))
+	UiKit.outlined(key, 4)
+	key.position = Vector2(6, 1)
+	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sweep := TextureProgressBar.new()
+	sweep.fill_mode = TextureProgressBar.FILL_CLOCKWISE
+	sweep.texture_progress = dim_tex
+	sweep.max_value = 100.0
+	sweep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var cd := UiKit.label("", 18, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	UiKit.outlined(cd, 6)
+	cd.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cd.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cd.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for c in [icon, sweep, key, cd]:
+		slot.add_child(c)
+	_bar.add_child(slot)
+	_trinket = {"sweep": sweep, "cd": cd}
 
 
 # ---------------------------------------------------------------- state in
@@ -616,7 +653,11 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 	var cds: Array = s.you.cds
 	for i in cds.size():
 		if not abilities[i].get("ult", false):
-			ready_at[i] = now_ms + float(cds[i])
+			var at := now_ms + float(cds[i])
+			if at > ready_at[i] + 50.0:
+				_span[i] = float(cds[i])  # a new cooldown (or the global one): the sweep is relative to it
+			ready_at[i] = at
+	trinket_ready = now_ms + float(s.you.get("trinket", 0))
 	var alive: bool = not me.is_empty() and me.alive
 	var stunned: bool = (not me.is_empty() and (me.cc.has("stun") or me.cc.has("incap"))) or not alive
 	var silenced: bool = not me.is_empty() and me.cc.has("silence")
@@ -692,9 +733,13 @@ func tick(now_ms: float, dt: float, cam: Camera3D) -> void:
 		if sl.ult or sl.auto:
 			continue
 		var left := maxf(0.0, ready_at[i] - now_ms)
-		var pct: float = left / a.cd * 100.0 if a.cd > 0 else 0.0
+		var pct: float = minf(100.0, left / maxf(float(_span.get(i, a.cd)), 1.0) * 100.0)
 		(sl.sweep as TextureProgressBar).value = pct if left > 0.0 else 0.0
 		(sl.cd as Label).text = (str(ceili(left / 1000.0)) if left > 3000.0 else "%.1f" % (left / 1000.0)) if (left > 0.0 and a.cd > 1000) else ""
+	if not _trinket.is_empty():
+		var tl := maxf(0.0, trinket_ready - now_ms)
+		(_trinket.sweep as TextureProgressBar).value = tl / float(GameData.C.TRINKET_CD_MS) * 100.0
+		(_trinket.cd as Label).text = ("%d:%02d" % [floori(tl / 60000.0), floori(fmod(tl, 60000.0) / 1000.0)]) if tl > 0.0 else ""
 	for i in range(_feed_expiry.size() - 1, -1, -1):
 		if now_ms >= _feed_expiry[i].at:
 			if is_instance_valid(_feed_expiry[i].line):
