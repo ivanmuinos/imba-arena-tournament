@@ -381,8 +381,11 @@ func _refresh_overlay() -> void:
 
 
 ## Where a spell leaves the caster: in front of the chest, on the casting side.
+## Where this unit's projectiles leave from: the casting hand, or for the footballer the ball at the right foot.
 func hand_position() -> Vector3:
 	var rot: float = _body.rotation.y
+	if entry.cls == "crack":
+		return position + Vector3(sin(rot) * 0.6 + cos(rot) * 0.28, 0.25 * VS, cos(rot) * 0.6 - sin(rot) * 0.28) * Vector3(VS, 1.0, VS)
 	return position + Vector3(sin(rot) * 0.55 + cos(rot) * 0.28, 1.25 * VS, cos(rot) * 0.55 - sin(rot) * 0.28) * Vector3(VS, 1.0, VS)
 
 

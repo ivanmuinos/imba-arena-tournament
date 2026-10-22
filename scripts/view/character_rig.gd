@@ -18,7 +18,7 @@ const KAYKIT := {
 	"ronin": {"file": "Knight", "show": [], "hide": ["Knight_Helmet"], "scale": 0.84, "recolor": {"hue": 0.5, "sat": -0.2, "val": -0.25},
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Block", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"crack": {"file": "Rogue", "show": [], "scale": 0.86, "recolor": {"hue": 0.15, "sat": -0.45, "val": 0.2},
-		"clips": {"idle": "Idle", "run": "Running_B", "cast": "Throw", "attack": "Throw", "hit": "Hit_B", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
+		"clips": {"idle": "Idle", "run": "Running_B", "cast": "Unarmed_Idle", "attack": "Unarmed_Melee_Attack_Kick", "hit": "Hit_B", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"mage": {"file": "Mage", "show": ["2H_Staff"], "scale": 0.86, "hue": 0.0,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
@@ -41,12 +41,14 @@ const ATTACKS := {
 	"priest": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"druid": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
 	"ct": {"light": [["2H_Ranged_Shoot", 0.10]], "heavy": [["2H_Ranged_Shoot", 0.10]]},
-	"crack": {"light": [["Throw", 0.20]], "heavy": [["Throw", 0.20]]},
+	"crack": {"light": [["Unarmed_Melee_Attack_Kick", 0.30]], "heavy": [["Unarmed_Melee_Attack_Kick", 0.30]]},
 	"ronin": {"light": [["1H_Melee_Attack_Slice_Horizontal", 0.27], ["1H_Melee_Attack_Slice_Diagonal", 0.40]], "heavy": [["1H_Melee_Attack_Stab", 0.35]]},
 }
 ## How long before the contact frame a swing starts: the server event arrives at the moment of the hit, so the clip
 ## begins this far (seconds of clip time) before contact to show a short wind-up, the strike, then the recovery.
 const SWING_LEAD := 0.14
+## Classes whose attack is a whole-body move (the footballer's kick): their attack one-shot drives the legs too.
+const FULL_BODY_ATTACK := ["crack"]
 const HIT_STOP_S := 0.05
 const KK_LOOPS := ["Idle", "Running_A", "Running_B", "Walking_A", "Spellcasting", "Sit_Floor_Idle", "2H_Ranged_Aiming", "Block"]
 static var _tex_cache := {}
@@ -532,7 +534,7 @@ func _build_tree() -> void:
 	for pair in [["attack", _clips.attack], ["hit", _clips.hit], ["jump", "Jump_Full_Short"]]:
 		var nm: String = pair[0]
 		var os := AnimationNodeOneShot.new()
-		if nm in ["attack", "hit"]:
+		if nm == "hit" or (nm == "attack" and not cls_id in FULL_BODY_ATTACK):
 			_filter_upper_body(os)
 		os.fadein_time = 0.06
 		os.fadeout_time = 0.18
