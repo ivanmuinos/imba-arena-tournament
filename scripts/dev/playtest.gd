@@ -394,12 +394,12 @@ func run(p_main: Node, cls: String, prefix: String, p_spec := "") -> void:
 
 	# 8b. warlock showcase: curses ticking, a feared target, the drain beam (screenshots for review; info only)
 	if cls == "warlock" and mv.me.alive and mv.controller.target >= 0:
-		await _tap(KEY_Q)
+		await _tap(KEY_3)
 		await _wait(0.9)
-		await _tap(KEY_E)
+		await _tap(KEY_4)
 		await _wait(1.6)
 		await _shot("warlock_curses_fear")
-		await _tap(KEY_F)
+		await _tap(KEY_6)
 		await _wait(0.9)
 		await _shot("warlock_drain")
 		print("PLAYTEST info warlock curses=%s" % str(mv.views[mv.controller.target].snap.get("cc", {})))
@@ -416,7 +416,7 @@ func run(p_main: Node, cls: String, prefix: String, p_spec := "") -> void:
 		await _wait(0.1)
 	var ult_ready: bool = float(mv.last_state.get("you", {}).get("ult", 0.0)) >= 100.0
 	if ground_slot >= 0 and mv.me.alive and (not _abs(cls)[ground_slot].get("ult", false) or ult_ready):
-		var key: int = {0: KEY_1, 1: KEY_2, 2: KEY_Q, 3: KEY_E, 4: KEY_SHIFT, 5: KEY_F, 6: KEY_R}[ground_slot]
+		var key: int = KEY_1 + ground_slot
 		await _tap(key)
 		await _wait(0.1)
 		if mv.controller.pending_ground == ground_slot:

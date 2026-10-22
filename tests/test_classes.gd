@@ -15,6 +15,8 @@ func _duel(a_cls: String, a_spec: String, b_cls: String, b_spec := "") -> ArenaM
 	m.map.apply_state(true, 0)
 	m.C = m.C.duplicate()
 	m.C.CRIT_CHANCE = -1.0  # never crits, whatever the class bonus
+	m.block_front = 0.0  # armor / rotation fixtures measure unblocked damage
+	m.block_rear = 0.0
 	m.units[0].x = 0.0
 	m.units[0].z = 0.0
 	m.units[1].x = 0.0

@@ -4,6 +4,7 @@ extends StagedScreen
 
 signal settings(s: Dictionary)
 signal start_pressed
+signal ready_changed(on: bool)
 signal leave_pressed
 signal invite_pressed
 
@@ -18,6 +19,8 @@ var _diff: Segmented
 var _pref: Segmented
 var _tiles := {}
 var _start: MButton
+var _ready_button: MButton
+var _is_ready := false
 var _building := false
 var _info_box: VBoxContainer
 var _info_btns: HBoxContainer
@@ -133,6 +136,11 @@ func _ready() -> void:
 	_start.custom_minimum_size = Vector2(340, 58)
 	_start.pressed.connect(func(): start_pressed.emit())
 	stage.add_child(_start)
+	_ready_button = MButton.new("LISTO", "secondary")
+	_ready_button.position = Vector2(620, 660)
+	_ready_button.size = Vector2(220, 40)
+	_ready_button.pressed.connect(func(): ready_changed.emit(not _is_ready))
+	stage.add_child(_ready_button)
 
 
 func _opt(parent: Control, title: String, options: Array, initial: String) -> Segmented:
@@ -173,7 +181,8 @@ func _slot(e: Dictionary, msg: Dictionary, team: String) -> Control:
 	var sp := str(e.get("spec", ""))
 	if sp != "" and GameData.classes.get(e.cls, {}).has("specs"):
 		cls_name += " · " + str(GameData.classes[e.cls].specs[sp].name)
-	tc.add_child(UiKit.label(("Bot · " + cls_name) if bot else cls_name, 13, UiKit.MUTED))
+	var status := " · LISTO" if e.get("ready", false) else " · esperando"
+	tc.add_child(UiKit.label(("Bot · " + cls_name) if bot else cls_name + status, 13, UiKit.GREEN if not bot and e.get("ready", false) else UiKit.MUTED))
 	if not bot and e.peer == msg.host:
 		var tag := UiKit.heading("ANFITRIÓN", 12, Color("#1a0800"), 700, 2, HORIZONTAL_ALIGNMENT_CENTER)
 		tag.add_theme_stylebox_override("normal", UiKit.box(UiKit.GOLD, Color(0, 0, 0, 0), 4, 0, 5))
@@ -256,6 +265,8 @@ func show_lobby(msg: Dictionary, host_flag: bool) -> void:
 			me = m
 	if not me.is_empty():
 		_pref.select(me.pref, false)
+	_is_ready = me.get("ready", false)
+	_ready_button.text = "NO ESTOY LISTO" if _is_ready else "LISTO"
 	var my_cls := ""
 	for t in ["red", "blue"]:
 		var list: VBoxContainer = _cols[t]
@@ -268,10 +279,10 @@ func show_lobby(msg: Dictionary, host_flag: bool) -> void:
 	for id in _tiles:
 		_tiles[id].selected = id == my_cls
 	_start.visible = is_host
-	_start.disabled = false
+	_start.disabled = not msg.get("can_start", false)
 	var humans: int = msg.members.size()
 	if is_host:
-		_hint.text = "%d jugador%s en la sala. Pasales la IP y el puerto; cuando estén listos, tocá Empezar." % [humans, "" if humans == 1 else "es"]
+		_hint.text = "%d jugador%s · Todos deben marcar Listo antes de empezar · Enter: chat" % [humans, "" if humans == 1 else "es"]
 	else:
-		_hint.text = "%d jugadores en la sala. Esperando que el anfitrión empiece…" % humans
+		_hint.text = "%d jugadores · Marcá Listo y esperá al anfitrión · Enter: chat" % humans
 	_building = false

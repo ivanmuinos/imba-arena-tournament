@@ -31,6 +31,7 @@ var _headless := false
 var _ui := CanvasLayer.new()
 var _menu: MenuScreen
 var _lobby: LobbyScreen
+var _chat: ChatPanel
 var _end: EndScreen
 var _match: MatchView = null
 var _preview: Node3D = null
@@ -107,8 +108,12 @@ func _ready() -> void:
 	_menu.steam_host.connect(_start_steam_host)
 	_menu.steam_browse.connect(_open_steam_browser)
 	_lobby = LobbyScreen.new()
+	_chat = ChatPanel.new()
+	add_child(_chat)
+	_chat.submitted.connect(func(text): if client != null: client.send_chat(text))
 	_lobby.settings.connect(func(s): if client != null: client.send_set(s))
 	_lobby.start_pressed.connect(func(): if client != null: client.send_start())
+	_lobby.ready_changed.connect(func(on): if client != null: client.send_ready(on))
 	_lobby.leave_pressed.connect(_to_menu)
 	_end = EndScreen.new()
 	_end.again_pressed.connect(_again)
@@ -322,6 +327,10 @@ func _new_client(cfg: Dictionary) -> GameClient:
 	c.match_started.connect(_on_match_started)
 	c.closed.connect(_on_closed)
 	c.server_error.connect(_on_server_error)
+	if _chat != null:
+		_chat.lines.clear()
+		_chat.log_label.text = "Enter: chat de la sala"
+		c.chat_received.connect(_chat.receive)
 	if args.has("log"):
 		_log_client(c)
 	return c
@@ -480,6 +489,7 @@ func _on_match_started(msg: Dictionary) -> void:
 	_match.demo_target = args.has("target")
 	_match.gfx_choice = gfx_choice
 	_match.tutorial = _tutorial_next
+	_match.chat = _chat
 	add_child(_match)
 	_match.start(client, msg)
 	_match.finished.connect(_on_match_finished)
@@ -538,6 +548,8 @@ func _to_menu() -> void:
 
 func _show(state: String) -> void:
 	_state = state
+	if _chat != null:
+		_chat.activate(state in ["lobby", "match", "end"])
 	_menu.visible = state == "menu"
 	_lobby.visible = state == "lobby"
 	_end.visible = state == "end"
@@ -608,6 +620,8 @@ func _set_preview(map_id: String, force := false) -> void:
 # ---------------------------------------------------------------- frame
 
 func _input(event: InputEvent) -> void:
+	if _chat != null and _chat.typing():
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F3 and perf != null:
 		perf.toggle()
 		get_viewport().set_input_as_handled()

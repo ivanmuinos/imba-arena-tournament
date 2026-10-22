@@ -3,6 +3,36 @@ extends TestBase
 const STEP := 1000.0 / 60.0
 var now := 0.0
 
+func test_directional_blocks_use_defender_facing_and_skip_magic_dots_cc() -> void:
+	var m := _duel("rogue", "warrior", "", true)
+	var a: ArenaUnit = m.units[0]
+	var d: ArenaUnit = m.units[1]
+	d.rot = 0.0
+	a.x = d.x
+	a.z = d.z + 2.0
+	near(m.block_chance(d, a, now, "stab"), 0.30, 0.001, "front 30 percent")
+	a.z = d.z - 2.0
+	near(m.block_chance(d, a, now, "stab"), 0.05, 0.001, "rear 5 percent")
+	eq(m.block_chance(d, a, now, "fireball"), 0.0, "magic cannot block")
+	m._dot_tick = true
+	eq(m.block_chance(d, a, now, "stab"), 0.0, "periodic cannot block")
+	m._dot_tick = false
+	d.stun_until = now + 100
+	eq(m.block_chance(d, a, now, "stab"), 0.0, "stunned cannot block")
+	d.stun_until = 0
+	m.block_front = 1.0
+	m.block_rear = 1.0
+	var hp := d.hp
+	m._damage(d, 50, a, now, "stab")
+	eq(d.hp, hp, "guaranteed block prevents damage")
+	check(m.fx.any(func(f): return f.k == "block" and f.id == d.id), "replicated block feedback")
+	check(FxFilter.for_team(m, d.team, now).any(func(f): return f.k == "block"), "block included in defender team FX")
+	d.rot = PI
+	m.block_front = 0.30
+	m.block_rear = 0.05
+	near(m.block_chance(d, a, now, "stab"), 0.30, 0.001, "rotating defender reverses attack hemisphere")
+	eq(m.block_chance(a, d, now, "strike"), 0.0, "non-warriors cannot shield block")
+
 
 func _match(entries: Array, map_id := "test", diff := "normal") -> ArenaMatch:
 	now = 1_000_000.0
@@ -18,11 +48,14 @@ func _advance(m: ArenaMatch, ms: float) -> void:
 
 
 ## Two (or three) units with no AI, placed in the red spawn area (open ground, line of sight).
-func _duel(a: String, b: String, ally := "") -> ArenaMatch:
+func _duel(a: String, b: String, ally := "", blocks := false) -> ArenaMatch:
 	var e := [{"name": "A", "cls": a, "team": "red", "peer": 1}, {"name": "B", "cls": b, "team": "blue", "peer": 2}]
 	if ally != "":
 		e.append({"name": "H", "cls": ally, "team": "blue", "peer": 3})
 	var m := _match(e)
+	if not blocks:  # damage/cast fixtures need guaranteed hits; block test opts in
+		m.block_front = 0.0
+		m.block_rear = 0.0
 	_advance(m, 20100)  # prep -> fight
 	var s: Array = m.map.spawns.red
 	m.units[0].x = s[0].x
@@ -475,6 +508,9 @@ func test_priest_bot_keeps_a_fighting_human_ally_healed_over_a_real_fight() -> v
 	for map_id in ["test", "pillars"]:
 		var r := _team_fight(map_id, "warrior")
 		var m: ArenaMatch = r[0]
+		# This fixture measures healing under sustained damage, independently of random blocks.
+		m.block_front = 0.0
+		m.block_rear = 0.0
 		var human: ArenaUnit = r[1]
 		var pri: ArenaUnit = r[2]
 		# the human "player" fights the enemy warriors by standing still (never moves): they come to him

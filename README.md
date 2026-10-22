@@ -77,7 +77,10 @@ El cursor está libre; no hay mira. Los hechizos van al **objetivo seleccionado*
 | Mover | **W/S** adelante/atrás según hacia dónde mira el personaje · **A/D** giran (con clic derecho apretado: paso lateral) |
 | Seleccionar | clic (sin arrastrar) sobre una unidad · `Tab` enemigos de enfrente · `F1`–`F3` aliados · `Esc` limpia |
 | Atacar | clic derecho sobre un enemigo: lo selecciona, te gira hacia él y enciende el auto-ataque |
-| Habilidades | `1` `2` `Q` `E` `Shift` `F` `R` (ultimate) |
+| Paso lateral | `Q` / `E`, sin girar al personaje |
+| Habilidades | `1` `2` `3` `4` `5` `6` `7` (ultimate) |
+| Joystick | Stick izquierdo: movimiento analógico; derecho: mirar/apuntar. A: saltar/confirmar zona. X/Y/B: habilidades 1/2/3; cruceta ↑/→/↓/←: 4/5/6/7. LB/RB: aliado/enemigo; L3: mirar al objetivo; R3: cancelar. En zonas, stick derecho vertical ajusta distancia. Zona muerta: 20%. |
+| Chat de sala/partida | `Enter` o botón Chat abre; `Enter` envía, `Esc` cierra. Mientras escribís no se procesan controles de combate. Máximo 240 caracteres, un mensaje cada 800 ms. |
 | Hechizos al suelo (meteoros, trampa) | aparece un círculo bajo el cursor: clic izquierdo coloca, clic derecho / `Esc` cancela |
 | Saltar · silenciar | `Espacio` · `M` |
 | Ver qué hace una habilidad y cómo usarla | pasar el cursor sobre su ícono en la barra |
@@ -86,6 +89,10 @@ El cursor está libre; no hay mira. Los hechizos van al **objetivo seleccionado*
 Auto-ataque: **sólo guerrero, asesino y cazador** (tecla `1` o clic derecho). Necesita objetivo hostil a tiro, visible y **de frente**; se apaga si el
 objetivo muere, elegís un aliado o limpiás la selección. Mago, brujo y sacerdote **nunca** atacan solos (su `1` es un hechizo común). Errores:
 "No tenés objetivo", "Fuera de alcance", "No está a la vista", "Objetivo inválido: es un aliado".
+
+**Listo:** con dos o más humanos, todos deben marcar Listo antes de que el anfitrión (o servidor dedicado) inicie. Los bots no necesitan confirmar. Entradas/salidas, cambios de equipo/clase/opciones y fin de partida borran las confirmaciones. Solo y práctica mantienen inicio inmediato.
+
+**Bloqueo:** el guerrero bloquea pasivamente el daño físico directo con 30% desde el hemisferio frontal (180°, laterales incluidos) y 5% desde atrás, según su orientación al impactar. Se anula el daño de ese impacto, no sus efectos adicionales. Incluye golpes de guerrero/asesino, disparos físicos y golpes de Torbellino; excluye magia, DoT y entorno. No puede bloquear aturdido, incapacitado o con miedo. El servidor tira el azar y replica “BLOQUEADO” con sonido. Probabilidades ajustables en `ArenaMatch.block_front` / `block_rear`.
 
 Selección: anillo grande animado bajo el objetivo (rojo hostil / verde aliado), contorno de luz en el modelo, flecha sobre la cabeza, nameplate
 agrandada y al frente, marco de objetivo grande, flecha en el borde de la pantalla si está fuera de vista y resalte + cursor (espada/mano) al pasar el mouse.
@@ -99,11 +106,11 @@ Presión sostenida, sin mascota ni escape instantáneo; modelo KayKit CC0 con co
 |-------|-----------|-----|
 | 1 | Descarga de las sombras | 34 de daño, lanzamiento de 1,2 s |
 | 2 | Corrupción | 9 de daño/s durante 8 s |
-| Q | Agonía | 7 de daño/s durante 10 s |
-| E | Miedo | Lanzamiento de 1,2 s; huye 3 s, se rompe tras más de 40 de daño |
-| Shift | Pacto oscuro | Cuesta 15% de vida actual (no letal); absorbe 80 durante 6 s |
-| F | Drenar vida | Lanzamiento de 1,5 s; roba hasta 42 de vida al completar, no es canalización |
-| R | Putrefacción del alma | Definitiva: 25 de daño + 16/s durante 6 s |
+| 3 | Agonía | 7 de daño/s durante 10 s |
+| 4 | Miedo | Lanzamiento de 1,2 s; huye 3 s, se rompe tras más de 40 de daño |
+| 5 | Pacto oscuro | Cuesta 15% de vida actual (no letal); absorbe 80 durante 6 s |
+| 6 | Drenar vida | Lanzamiento de 1,5 s; roba hasta 42 de vida al completar, no es canalización |
+| 7 | Putrefacción del alma | Definitiva: 25 de daño + 16/s durante 6 s |
 
 Las maldiciones son independientes por brujo y hechizo: refrescar prolonga, no acumula ni retrasa el siguiente pulso.
 Disipar las elimina; siguen activas si muere su autor. El daño periódico también rompe Miedo.

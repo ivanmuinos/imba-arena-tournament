@@ -3,6 +3,72 @@ extends TestBase
 
 var _snaps := 0
 
+func test_chat_is_bounded_rate_limited_and_sender_owned() -> void:
+	var h := _hosted()
+	var guest := _remote(h.server, 2)
+	_pump(h.server, [h.client, guest], 100.0)
+	var got := []
+	h.client.chat_received.connect(func(m): got.append(m))
+	guest._send({"t": "chat", "text": " hola\n mundo ", "name": "Ana", "peer": h.client.peer_id})
+	guest._send({"t": "chat", "text": "spam"})
+	_pump(h.server, [h.client, guest], 50.0)
+	eq(got.size(), 1, "spam suppressed")
+	eq(got[0].name, "Beto", "server owns sender name")
+	eq(got[0].peer, 2, "server owns sender peer")
+	eq(got[0].text, "hola mundo", "control characters normalized")
+	eq(Wire.clean_chat({"text": "x".repeat(241)}), "", "oversize rejected")
+	eq(Wire.clean_chat({"text": 42}), "", "invalid type rejected")
+	var remote_got := []
+	guest.chat_received.connect(func(m): remote_got.append(m))
+	for c in [h.client, guest]: c.send_ready(true)
+	_pump(h.server, [h.client, guest], 50.0)
+	check(h.server.start_match(), "chat remains available in match")
+	h.client.send_chat("en partida")
+	_pump(h.server, [h.client, guest], 50.0)
+	eq(remote_got.size(), 1, "match chat reaches remote client")
+	eq(remote_got[0].text, "en partida", "message delivered")
+
+
+func test_ready_resets_after_join_leave_and_match_end() -> void:
+	var h := _hosted()
+	var guest := _remote(h.server, 2)
+	_pump(h.server, [h.client, guest], 50.0)
+	for c in [h.client, guest]: c.send_ready(true)
+	_pump(h.server, [h.client, guest], 50.0)
+	var third := _remote(h.server, 3, "C")
+	_pump(h.server, [h.client, guest, third], 50.0)
+	check(not h.server.all_ready(), "joining resets all confirmations")
+	for c in [h.client, guest, third]: c.send_ready(true)
+	_pump(h.server, [h.client, guest, third], 50.0)
+	third.close()
+	_pump(h.server, [h.client, guest], 50.0)
+	check(not h.server.all_ready(), "leaving resets remaining confirmations")
+	guest._send({"t": "ready", "on": "true"})
+	_pump(h.server, [h.client, guest], 50.0)
+	check(not h.server.players[2].ready, "ready requires boolean")
+	for c in [h.client, guest]: c.send_ready(true)
+	_pump(h.server, [h.client, guest], 50.0)
+	check(h.server.start_match(), "confirmed match starts")
+	h.server._finish_match()
+	check(not h.server.all_ready(), "rematch needs new consent")
+
+func test_humans_must_ready_and_roster_changes_clear_consent() -> void:
+	var h := _hosted()
+	var guest := _remote(h.server, 2)
+	_pump(h.server, [h.client, guest], 100.0)
+	check(not h.server.start_match(), "cannot bypass readiness on server")
+	h.client._send({"t": "ready", "on": true, "peer": 2})
+	_pump(h.server, [h.client, guest], 50.0)
+	check(not h.server.start_match(), "sender cannot ready another player")
+	guest._send({"t": "ready", "on": true})
+	_pump(h.server, [h.client, guest], 50.0)
+	guest.send_set({"pref": "red"})
+	_pump(h.server, [h.client, guest], 50.0)
+	check(not h.server.start_match(), "team change clears consent")
+	for c in [h.client, guest]: c._send({"t": "ready", "on": true})
+	_pump(h.server, [h.client, guest], 50.0)
+	check(h.server.start_match(), "ready humans start despite bot slots")
+
 
 func _pump(server: GameServer, clients: Array, ms: float) -> void:
 	var t := 0.0
@@ -278,6 +344,9 @@ func test_dedicated_server_auto_starts_after_wait() -> void:
 	_pump(s, cs, 500.0)
 	eq(s.state, "lobby", "todavía espera")
 	_pump(s, cs, 1200.0)
+	eq(s.state, "lobby", "dedicated cannot bypass ready")
+	for c in cs: c.send_ready(true)
+	_pump(s, cs, 50.0)
 	eq(s.state, "match", "arranca solo")
 	eq(s.game.units.filter(func(u): return u.peer != 0).size(), 2, "dos humanos")
 	eq(s.game.units.size(), 4, "completado con bots")
@@ -403,6 +472,13 @@ func test_host_with_remote_player_over_enet() -> void:
 	check(host_c.is_host and not friend.is_host, "sólo uno es anfitrión")
 	check(not friend.lobby.is_empty() and friend.lobby.members.size() == 2, "los dos se ven en el lobby")
 	friend.send_start()
+	friend.send_ready(true)
+	host_c.send_ready(true)
+	for i in 30:
+		s.process(10.0)
+		host_c.poll(10.0)
+		friend.poll(10.0)
+		OS.delay_msec(5)
 	host_c.send_start()
 	deadline = Time.get_ticks_msec() + 3000
 	while not (host_c.in_match and friend.in_match) and Time.get_ticks_msec() < deadline:
@@ -440,6 +516,8 @@ func test_auto_attack_message_works_for_hunters_and_is_ignored_for_casters() -> 
 		_pump(s, clients, 50.0)
 		for client in clients:
 			client.send_set({"spec": "fire"})
+		_pump(s, clients, 50.0)
+		for player in clients: player.send_ready(true)
 		_pump(s, clients, 50.0)
 		c.send_start()
 		_pump(s, clients, 20200.0)

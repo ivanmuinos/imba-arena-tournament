@@ -5,14 +5,19 @@ extends RefCounted
 
 static func controls() -> String:
 	var rows := [
-		["W A S D / flechas", "Moverte (relativo a la cámara). [b]Espacio[/b] salta."],
+		["W/S · A/D · Q/E", "Avanzar/retroceder · girar · paso lateral. Con clic derecho A/D también desplazan. [b]Espacio[/b] salta."],
 		["Clic derecho + arrastrar", "Mirar alrededor: el personaje gira con la cámara."],
 		["Clic izquierdo + arrastrar", "Orbitar la cámara sin girar al personaje."],
 		["Rueda del mouse", "Acercar / alejar la cámara."],
 		["Clic izquierdo en una unidad", "Elegir objetivo. Los enemigos tienen la barra roja."],
 		["Tab", "Cambiar al siguiente enemigo. [b]Esc[/b] suelta el objetivo o cancela un lanzamiento."],
 		["Clic derecho en un enemigo", "Elegirlo y, si tu clase tiene ataque automático, empezar a pegarle."],
-		["1  2  Q  E  Shift  F  R", "Las siete habilidades de tu campeón (R es la definitiva)."],
+		["1  2  3  4  5  6  7", "Las siete habilidades de tu campeón (7 es la definitiva)."],
+		["Joystick", "Stick izquierdo: mover · derecho: mirar/apuntar. A: saltar/confirmar zona; X/Y/B: 1/2/3; cruceta arriba/derecha/abajo/izquierda: 4/5/6/7."],
+		["LB / RB · L3 / R3", "Elegir aliado/enemigo · mirar al objetivo/cancelar. En zonas, stick derecho vertical ajusta distancia."],
+		["Enter", "Chat para todos en sala y partida; Enter envía, Esc cierra. Al escribir se pausa tu entrada de juego."],
+		["Listo", "Con varios humanos, todos deben confirmar antes de empezar. Cambiar equipo, campeón o sala borra las confirmaciones."],
+		["Bloqueo del guerrero", "30% desde el frente (180°), 5% desde atrás. Anula daño físico directo, no efectos adicionales. No bloquea magia, daño periódico, entorno ni bajo aturdimiento, incapacidad o miedo."],
 		["F1  F2  F3", "Elegir a un aliado (o clic en su cuadro) para curas y escudos."],
 		["Hechizos de zona", "Apretá la tecla, apuntá con el retículo y [b]clic izquierdo[/b] para colocar; clic derecho o Esc cancelan."],
 		["M", "Silenciar el sonido. [b]F3[/b] muestra los cuadros por segundo."],

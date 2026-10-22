@@ -4,11 +4,11 @@ extends MenuView
 ## MacroStore).
 
 const TABS := [["graficos", "Gráficos"], ["controles", "Controles"], ["audio", "Audio"], ["juego", "Juego"], ["macros", "Macros"]]
-## Fixed (not rebindable); everything else is in Keybinds.
-const KEYS := [
-	["Moverse", "W A S D  /  flechas"], ["Seleccionar", "Click izquierdo"], ["Auto-ataque", "Click derecho en un enemigo"],
-	["Girar / orbitar", "Mantener click derecho / izquierdo"], ["Zoom", "Rueda del mouse"], ["Cancelar / soltar objetivo", "Esc"],
-]
+var _binding_buttons := {}
+var _capture_action := ""
+var _capture_channel := ""
+var _binding_status: Label
+var _swap: CheckButton
 
 var _tabs: Segmented
 var _pages := {}
@@ -68,22 +68,50 @@ func _ready() -> void:
 	_invert = Segmented.new().setup([["off", "Normal"], ["on", "Invertido"]], "off")
 	_row(c, "Eje vertical de la cámara", "", _invert)
 	_invert.changed.connect(func(v): menu.st.set_value("invert", v == "on"); menu.settings_changed("invert"))
-	var grid := GridContainer.new()
-	grid.columns = 6
-	grid.add_theme_constant_override("h_separation", 12)
-	grid.add_theme_constant_override("v_separation", 2)
-	c.add_child(UiKit.caption("Fijas", UiKit.MUTED, 12))
-	c.add_child(grid)
+	_swap = CheckButton.new()
+	_swap.text = "Intercambiar sticks: movimiento ↔ cámara"
+	_swap.toggled.connect(func(v): menu.st.set_value("swap_sticks", v); menu.settings_changed("swap_sticks"))
+	c.add_child(_swap)
 	_build_bindings(c)
-	for k in KEYS:
-		var a := UiKit.label(k[0], 12, UiKit.MUTED)
-		a.custom_minimum_size = Vector2(120, 0)
-		a.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		grid.add_child(a)
-		var kk := UiKit.heading(k[1], 13, UiKit.INK, 600, 1)
-		kk.custom_minimum_size = Vector2(140, 0)
-		kk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		grid.add_child(kk)
+	c.add_child(UiKit.caption("Movimiento, mouse y mando", UiKit.MUTED, 12))
+	_binding_status = UiKit.label("Elegí un botón. Esc cancela; Supr borra. Enter: chat; rueda: zoom (fijos).", 14, UiKit.MUTED)
+	c.add_child(_binding_status)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(790, 230)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	c.add_child(scroll)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 12)
+	scroll.add_child(grid)
+	for title in ["Acción", "Teclado / mouse", "Mando (botones)"]: grid.add_child(UiKit.label(title, 14, UiKit.GOLD))
+	for action in ControlBindings.ACTIONS:
+		var label := UiKit.label(ControlBindings.ACTIONS[action], 14, UiKit.MUTED)
+		label.custom_minimum_size.x = 290
+		grid.add_child(label)
+		for channel in ["key", "pad"]:
+			var button := Button.new()
+			button.custom_minimum_size = Vector2(205, 32)
+			if channel == "key" and action in MatchView.KEYBINDS_OWNED:
+				button.disabled = true  # on the keyboard it is in Teclas, above
+				button.text = "En «Teclas»"
+				grid.add_child(button)
+				continue
+			button.pressed.connect(_start_capture.bind(action, channel))
+			grid.add_child(button)
+			_binding_buttons[action + "/" + channel] = button
+	var restore := Button.new()
+	restore.text = "Restaurar controles predeterminados"
+	restore.pressed.connect(func():
+		_capture_action = ""
+		ControlBindings.new(menu.st).reset()
+		menu.st.set_value("swap_sticks", false)
+		_swap.set_pressed_no_signal(false)
+		menu.settings_changed("bindings")
+		_refresh_pad_bindings()
+		_binding_status.text = "Controles predeterminados restaurados.")
+	c.add_child(restore)
 	# Audio
 	var a := _page(holder, "audio")
 	_slider(a, "master", "Volumen general", 0.0, 1.0, 0.01, "%d%%", 100.0)
@@ -300,16 +328,21 @@ func _update_gfx_info() -> void:
 
 
 func select_tab(id: String) -> void:
+	_capture_action = ""
 	for k in _pages:
 		_pages[k].visible = k == id
 	if _holder != null:
-		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 560.0, "audio": 200.0, "juego": 300.0, "macros": 420.0}.get(id, 300.0)
+		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 820.0, "audio": 200.0, "juego": 300.0, "macros": 420.0}.get(id, 300.0)
 		_panel.reset_size()
 	_tabs.select(id, false)
 
 
 func menu_enter() -> void:
 	var st := menu.st
+	_capture_action = ""
+	_refresh_bindings()
+	_refresh_pad_bindings()
+	_swap.set_pressed_no_signal(st.get_value("swap_sticks"))
 	_gfx.select(str(st.get_value("gfx")), false)
 	_full.select("on" if st.get_value("fullscreen") else "off", false)
 	_update_gfx_info()
@@ -324,7 +357,7 @@ func menu_enter() -> void:
 
 func _reset() -> void:
 	var fresh := SettingsStore.new()
-	for k in ["gfx", "fullscreen", "master", "music", "sfx", "sens", "invert", "companions"]:
+	for k in ["gfx", "fullscreen", "master", "music", "sfx", "sens", "invert", "companions", "bindings", "swap_sticks"]:
 		menu.st.set_value(k, fresh.get_value(k))
 	menu.settings_changed("gfx")
 	menu_enter()
@@ -337,3 +370,36 @@ func first_focus() -> Control:
 
 func hints() -> Array:
 	return [["Flechas", "Navegar"], ["Esc", "Volver"]]
+
+func _refresh_pad_bindings() -> void:
+	var bindings := ControlBindings.new(menu.st)
+	for key in _binding_buttons:
+		var parts: PackedStringArray = key.split("/")
+		_binding_buttons[key].text = bindings.label(parts[0], parts[1])
+
+func _start_capture(action: String, channel: String) -> void:
+	_capture_action = action
+	_capture_channel = channel
+	_binding_status.text = "%s: pulsá %s · Esc cancela · Supr borra" % [ControlBindings.ACTIONS[action], "una tecla / botón del mouse" if channel == "key" else "un botón del mando"]
+	var focus := get_viewport().gui_get_focus_owner()
+	if focus != null: focus.release_focus()
+
+## Routed by MenuScreen before navigation so Escape/B cannot also leave the page.
+func capture_input(event: InputEvent) -> bool:
+	if _capture_action == "" or not is_visible_in_tree(): return false
+	if not event.is_pressed() or event.is_echo(): return true
+	if event is InputEventKey and event.keycode == KEY_ESCAPE:
+		_capture_action = ""
+		_binding_status.text = "Cambio cancelado."
+		return true
+	var clear: bool = event is InputEventKey and event.keycode == KEY_DELETE
+	if not clear and ((_capture_channel == "pad" and not event is InputEventJoypadButton) or (_capture_channel == "key" and not (event is InputEventKey or event is InputEventMouseButton))): return true
+	var error := ControlBindings.new(menu.st).assign(_capture_action, _capture_channel, "" if clear else ControlBindings.token_for(event))
+	if error != "":
+		_binding_status.text = error + " · Probá otro botón o Esc."
+		return true
+	_capture_action = ""
+	menu.settings_changed("bindings")
+	_refresh_pad_bindings()
+	_binding_status.text = "Guardado. Para mover un botón ocupado, borrá primero su asignación anterior."
+	return true

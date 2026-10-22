@@ -661,6 +661,25 @@ func _enemies_within(u: ArenaUnit, x: float, z: float, r: float) -> Array[ArenaU
 
 ## True while a periodic effect (curse, burn) is dealing its tick: clients show the number but no flash, impact or sound.
 var _dot_tick := false
+## Warrior shield blocks: front hemisphere (including sides) 30%, rear 5%.
+## Host-owned configuration; independent RNG so combat rolls cannot be supplied by clients.
+var block_front := 0.30
+var block_rear := 0.05
+var block_rng := RandomNumberGenerator.new()
+
+
+func block_chance(defender: ArenaUnit, attacker: ArenaUnit, now: float, ability: String) -> float:
+	if defender.cls != "warrior" or attacker == null or attacker.team == defender.team or _dot_tick:
+		return 0.0
+	if now < defender.stun_until or now < defender.incap_until or now < defender.fear_until:
+		return 0.0
+	if not SpellSchools.explicit(ability) or SpellSchools.school_of(ability) != "physical":
+		return 0.0
+	var incoming := Vector2(attacker.x - defender.x, attacker.z - defender.z)
+	if incoming.length_squared() < 0.0001:
+		return 0.0
+	var facing := Vector2(sin(defender.rot), cos(defender.rot))
+	return clampf(block_front if facing.dot(incoming.normalized()) >= 0.0 else block_rear, 0.0, 1.0)
 
 
 ## Crit chance of a unit: the global base plus its class/spec bonus (assassins crit a lot).
@@ -675,6 +694,10 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 		return
 	if now < t.shield_until:
 		if src != null: fx.append({"k": "absorb", "id": t.id})
+		return
+	var chance := block_chance(t, src, now, ability)
+	if chance > 0.0 and block_rng.randf() < chance:
+		fx.append({"k": "block", "id": t.id, "by": src.id})
 		return
 	var crit := false
 	if src != null:

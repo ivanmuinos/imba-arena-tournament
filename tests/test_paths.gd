@@ -66,7 +66,7 @@ func test_export_presets_ship_icon_and_exclude_dev_folders() -> void:
 	var cfg := FileAccess.get_file_as_string("res://export_presets.cfg")
 	check(cfg.contains("res://assets/app_icon/icon.ico"), "Windows: ícono .ico")
 	check(cfg.contains("res://assets/app_icon/icon.icns"), "macOS: ícono .icns")
-	check(cfg.contains("exclude_filter=\"tests/*, tools/*, build/*, docs/*"), "no se exportan tests, tools ni docs")
+	check(cfg.contains("exclude_filter=\"tests/*, tools/*, build/*, compartir/*, docs/*"), "no se exportan tests, tools, compartir ni docs")
 	for f in ["icon.ico", "icon.icns", "icon.png", "icon.svg"]:
 		check(_exists_exact("res://assets/app_icon/" + f), "existe " + f)
 	var sdl := FileAccess.get_file_as_string("res://addons/godotsteam/godotsteam.gdextension")

@@ -12,7 +12,7 @@ signal match_ended
 signal player_joined(name: String)
 signal player_left(name: String)
 
-const PROTO := 4
+const PROTO := 5
 
 
 ## Game version from project.godot (config/version): client and server must match exactly.
@@ -44,6 +44,7 @@ var _transports: Array[Transport] = []
 var _route := {}  # peer id -> Transport
 var _hosts := {}  # transports whose peers are the hosting player
 var _budget := {}
+var _chat_at := {}
 var _budget_timer := 0.0
 var _acc := 0.0
 var _tick_n := 0
@@ -114,7 +115,7 @@ func process(delta_ms: float) -> void:
 		if players.size() >= int(cfg.mode) * 2:
 			_auto_timer -= delta_ms
 			if _auto_timer <= 0.0:
-				start_match()
+				start_match(true)  # ranked: matchmade, the countdown replaces the Listo check
 		else:
 			_auto_timer = RANKED_START_MS
 	elif state == "lobby" and bool(cfg.dedicated) and cfg.auto_start_ms > 0.0 and not players.is_empty():
@@ -145,6 +146,7 @@ func _on_peer_connected(t: Transport, id: int) -> void:
 func _on_peer_disconnected(id: int) -> void:
 	_route.erase(id)
 	_budget.erase(id)
+	_chat_at.erase(id)
 	if players.has(id):
 		var left_name: String = players[id].name
 		players.erase(id)
@@ -154,6 +156,7 @@ func _on_peer_disconnected(id: int) -> void:
 			if u != null:
 				game.leave(u)  # a bot takes over
 		if state == "lobby":
+			_clear_ready()
 			_send_lobby()
 		if id == host_peer:
 			host_peer = 0
@@ -174,10 +177,16 @@ func _on_message(from: int, msg: Dictionary) -> void:
 			if not players.has(from):
 				return
 			match msg.t:
+				"chat": _on_chat(from, msg)
+				"ready":
+					if state == "lobby" and typeof(msg.get("on")) == TYPE_BOOL:
+						players[from].ready = msg.on
+						_send_lobby()
 				"set": _on_set(from, msg)
 				"start":
 					if from == host_peer and state == "lobby":
-						start_match()
+						if not start_match():
+							_send(from, {"t": "error", "text": "Todos los jugadores deben marcar Listo"})
 				"leave": _on_peer_disconnected(from)
 				"input", "cast", "target", "jump", "auto", "stopcast", "practice", "trinket":
 					_on_game_message(from, msg)
@@ -204,7 +213,8 @@ func _on_hello(from: int, msg: Dictionary) -> void:
 	if _route[from].has_method("steam_id_of"):
 		sid = _route[from].steam_id_of(from)  # players that arrive through Steam are identified by their SteamID
 	var mmr := Ranked.clamp_mmr(int(msg.get("mmr", Ranked.START))) if typeof(msg.get("mmr")) in [TYPE_INT, TYPE_FLOAT] else Ranked.START
-	players[from] = {"name": _unique_name(n.name), "cls": n.cls, "spec": n.spec, "pref": n.pref, "sid": str(sid) if sid != 0 else "", "mmr": mmr}
+	players[from] = {"name": _unique_name(n.name), "cls": n.cls, "spec": n.spec, "pref": n.pref, "sid": str(sid) if sid != 0 else "", "mmr": mmr, "ready": false}
+	_clear_ready()
 	var is_host: bool = _hosts.has(_route[from])
 	if is_host:
 		host_peer = from
@@ -213,6 +223,17 @@ func _on_hello(from: int, msg: Dictionary) -> void:
 	_send(from, {"t": "welcome", "peer": from, "host": is_host, "v": PROTO, "ver": game_version()})
 	_send_lobby()
 	player_joined.emit(players[from].name)
+
+
+func _on_chat(from: int, msg: Dictionary) -> void:
+	var text := Wire.clean_chat(msg)
+	var now := Time.get_ticks_msec()
+	if text.is_empty() or now - int(_chat_at.get(from, -1000)) < 800:
+		return
+	_chat_at[from] = now
+	var out := {"t": "chat", "peer": from, "name": players[from].name, "text": text}
+	for peer in players:
+		_send(peer, out)
 
 
 func _unique_name(wanted: String) -> String:
@@ -229,6 +250,7 @@ func _on_set(from: int, msg: Dictionary) -> void:
 	if state != "lobby":
 		return
 	var p: Dictionary = players[from]
+	var before := [p.duplicate(), cfg.duplicate()]
 	var n := MatchConfig.normalize({"cls": msg.get("cls", p.cls), "spec": msg.get("spec", p.get("spec", "")), "pref": msg.get("pref", p.pref)})
 	p.cls = n.cls
 	p.spec = n.spec
@@ -239,6 +261,8 @@ func _on_set(from: int, msg: Dictionary) -> void:
 			cfg.mode = c.mode
 		cfg.diff = c.diff
 		cfg.map = c.map
+	if p != before[0] or cfg != before[1]:
+		_clear_ready()
 	_send_lobby()
 
 
@@ -318,17 +342,26 @@ func _send_lobby() -> void:
 	var preview := lobby_entries(rng)
 	var teams := {"red": [], "blue": []}
 	for e in preview:
-		teams[e.team].append({"name": e.name if e.peer != 0 else "", "cls": e.cls if e.peer != 0 else "", "spec": e.get("spec", "") if e.peer != 0 else "", "peer": e.peer, "bot": e.peer == 0})
+		teams[e.team].append({"name": e.name if e.peer != 0 else "", "cls": e.cls if e.peer != 0 else "", "spec": e.get("spec", "") if e.peer != 0 else "", "peer": e.peer, "bot": e.peer == 0, "ready": players.get(e.peer, {}).get("ready", true)})
 	var members: Array = []
 	for peer in players:
-		members.append({"peer": peer, "name": players[peer].name, "cls": players[peer].cls, "spec": players[peer].get("spec", ""), "pref": players[peer].pref, "sid": players[peer].get("sid", ""), "mmr": players[peer].get("mmr", Ranked.START)})
+		members.append({"peer": peer, "name": players[peer].name, "cls": players[peer].cls, "spec": players[peer].get("spec", ""), "pref": players[peer].pref, "sid": players[peer].get("sid", ""), "mmr": players[peer].get("mmr", Ranked.START), "ready": players[peer].ready})
 	for peer in players:
 		_send(peer, {"t": "lobby", "mode": cfg.mode, "diff": cfg.diff, "map": cfg.map, "host": host_peer, "you": peer,
-			"dedicated": cfg.dedicated, "members": members, "teams": teams, "ranked": cfg.ranked})
+			"dedicated": cfg.dedicated, "members": members, "teams": teams, "ranked": cfg.ranked, "can_start": all_ready()})
 
 
-func start_match() -> bool:
-	if state != "lobby" or players.is_empty():
+func _clear_ready() -> void:
+	for p in players.values():
+		p.ready = false
+
+
+func all_ready() -> bool:
+	return players.size() <= 1 or players.values().all(func(p): return p.get("ready", false))
+
+
+func start_match(skip_ready := false) -> bool:
+	if state != "lobby" or players.is_empty() or not (skip_ready or all_ready()):
 		return false
 	# "random": the host picks (seeded) and every client receives the resolved arena in the match message.
 	var map_id: String = cfg.map
@@ -368,6 +401,7 @@ func _finish_match() -> void:
 	_flush()
 	game = null
 	state = "lobby"
+	_clear_ready()
 	_auto_timer = cfg.auto_start_ms
 	_send_lobby()
 	match_ended.emit()
