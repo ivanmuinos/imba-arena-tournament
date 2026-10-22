@@ -91,6 +91,11 @@ const LAYERS := {
 	"smite": [["holy_chime", 1.3, -6.0, 0.0], ["arc_bright", 1.2, -12.0, 0.03]], "shieldUp": [["holy_chime", 0.9, -6.0, 0.0]],
 	"renew": [["heal", 1.1, -12.0, 0.0]], "dispel": [["arc_soft", 1.3, -6.0, 0.0], ["holy_chime", 1.4, -12.0, 0.0]],
 	"hymn": [["holy_choir", 1.0, -5.0, 0.0], ["holy_chime", 0.8, -12.0, 0.2]],
+	# wizard
+	"spark": [["arc_soft", 1.6, -6.0, 0.0]], "stunbolt": [["arc_bright", 1.0, -3.0, 0.0], ["fire_hit", 1.4, -8.0, 0.0]],
+	"disarm": [["arc_bright", 1.3, -4.0, 0.0], ["swish", 1.5, -8.0, 0.0]], "wardshield": [["arc_seal", 1.0, -5.0, 0.0]],
+	"broom": [["whoosh_long", 1.2, -3.0, 0.0], ["cloth", 1.2, -8.0, 0.0]], "confuse": [["arc_soft", 0.8, -4.0, 0.0], ["arc_blink", 1.1, -8.0, 0.1]],
+	"guardian": [["holy_choir", 1.1, -3.0, 0.0], ["arc_bright", 0.8, -6.0, 0.1]],
 	# crack
 	"kick": [["swish", 1.5, -4.0, 0.0], ["stone", 1.7, -10.0, 0.0]], "chip": [["swish", 1.2, -2.0, 0.0], ["stone", 1.4, -6.0, 0.0]],
 	"dribble": [["whoosh_long", 1.5, -5.0, 0.0], ["cloth", 1.4, -8.0, 0.0]], "onetwo": [["swish", 1.6, -5.0, 0.0], ["swish", 1.6, -5.0, 0.15]],

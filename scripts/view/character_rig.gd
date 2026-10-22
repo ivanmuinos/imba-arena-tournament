@@ -19,6 +19,8 @@ const KAYKIT := {
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Block", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"crack": {"file": "Rogue", "show": [], "scale": 0.86, "recolor": {"hue": 0.15, "sat": -0.45, "val": 0.2},
 		"clips": {"idle": "Idle", "run": "Running_B", "cast": "Unarmed_Idle", "attack": "Unarmed_Melee_Attack_Kick", "hit": "Hit_B", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
+	"wizard": {"file": "Mage", "show": [], "hide": ["Mage_Hat"], "scale": 0.84, "recolor": {"hue": 0.0, "sat": -0.85, "val": -0.45},
+		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"mage": {"file": "Mage", "show": ["2H_Staff"], "scale": 0.86, "hue": 0.0,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
@@ -41,6 +43,7 @@ const ATTACKS := {
 	"priest": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"druid": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
 	"ct": {"light": [["2H_Ranged_Shoot", 0.10]], "heavy": [["2H_Ranged_Shoot", 0.10]]},
+	"wizard": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
 	"crack": {"light": [["Unarmed_Melee_Attack_Kick", 0.30]], "heavy": [["Unarmed_Melee_Attack_Kick", 0.30]]},
 	"ronin": {"light": [["1H_Melee_Attack_Slice_Horizontal", 0.27], ["1H_Melee_Attack_Slice_Diagonal", 0.40]], "heavy": [["1H_Melee_Attack_Stab", 0.35]]},
 }
@@ -77,7 +80,7 @@ static func available(cls: String) -> bool:
 
 ## Procedural fallback model: the warlock and the druid borrow the mage's.
 static func _glb(cls: String) -> String:
-	return "mage" if cls in ["warlock", "druid"] else ("hunter" if cls == "ct" else ("warrior" if cls == "ronin" else ("rogue" if cls == "crack" else cls)))
+	return "mage" if cls in ["warlock", "druid", "wizard"] else ("hunter" if cls == "ct" else ("warrior" if cls == "ronin" else ("rogue" if cls == "crack" else cls)))
 
 
 static func _kk_ok(cls: String) -> bool:
@@ -157,6 +160,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 		_ronin_extras(inner)
 	elif cls == "crack":
 		_crack_extras(inner)
+	elif cls == "wizard":
+		_wizard_extras(inner)
 	for logical in _clips:
 		var clip: String = _clips[logical]
 		if player.has_animation(clip):
@@ -400,6 +405,36 @@ func _crack_extras(inner: Node3D) -> void:
 	_add_mesh(ball, MeshBuilder.sphere(0.17, 12, 8), white, Vector3.ZERO)
 	for v in [Vector3(0, 0.16, 0), Vector3(0.15, 0.05, 0), Vector3(-0.08, 0.04, 0.13), Vector3(-0.08, 0.04, -0.13), Vector3(0.06, -0.12, 0.08), Vector3(0.06, -0.12, -0.08)]:
 		_add_mesh(ball, MeshBuilder.sphere(0.055, 6, 4), dark, v)
+
+
+## Young duelist on the KayKit mage body (hat off, robe dyed charcoal): round glasses, a striped wool scarf in crimson
+## and ivory, and a slim wand in the casting hand with a faint glow at its tip.
+func _wizard_extras(inner: Node3D) -> void:
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var head := sk.get_node_or_null("head") as Node3D
+	var chest := sk.get_node_or_null("chest") as Node3D
+	var hand := sk.get_node_or_null("handslot_r") as Node3D
+	var frame := UnitModels.std(Color("#2a2420"), Color.BLACK, 0.0, 0.6, 0.35)
+	var glass := UnitModels.std(Color("#cfe8ff"), Color.BLACK, 0.0, 0.2, 0.05)
+	var crimson := UnitModels.std(Color("#8a1f2a"), Color.BLACK, 0.0, 0.0, 0.85)
+	var ivory := UnitModels.std(Color("#efe6d0"), Color.BLACK, 0.0, 0.0, 0.85)
+	var wood := UnitModels.std(Color("#5a3a22"), Color.BLACK, 0.0, 0.0, 0.7)
+	var tip := UnitModels.std(Color("#fff3c0"), Color("#ffe080"), 1.6)
+	if head != null:
+		# round glasses resting on the nose
+		for side in [-1.0, 1.0]:
+			_add_mesh(head, MeshBuilder.torus(0.11, 0.022, 16, 4), frame, Vector3(side * 0.2, 0.38, 0.47), Vector3(90, 0, 0))
+			_add_mesh(head, MeshBuilder.cylinder(0.1, 0.1, 0.01, 14), glass, Vector3(side * 0.2, 0.38, 0.475), Vector3(90, 0, 0))
+		_add_mesh(head, MeshBuilder.box(Vector3(0.12, 0.02, 0.02)), frame, Vector3(0, 0.4, 0.49))  # bridge
+	if chest != null:
+		# striped scarf around the neck, one end hanging down the front
+		for k in 3:
+			_add_mesh(chest, MeshBuilder.torus(0.36, 0.06, 18, 5), crimson if k % 2 == 0 else ivory, Vector3(0, 0.34 + 0.07 * k, 0.0))
+		for k in 4:
+			_add_mesh(chest, MeshBuilder.box(Vector3(0.16, 0.12, 0.05)), crimson if k % 2 == 0 else ivory, Vector3(0.16, 0.22 - 0.12 * k, 0.33))
+	if hand != null:
+		_tube(hand, [Vector3(0, -0.08, 0), Vector3(0, 0.25, 0.02), Vector3(0, 0.55, 0.03)], [0.03, 0.022, 0.014], wood)
+		_add_mesh(hand, MeshBuilder.sphere(0.05, 8, 5), tip, Vector3(0, 0.57, 0.03))
 
 
 ## A tapering tube through `points` (radius per point): one cone frustum per segment, a ball on each joint so it bends

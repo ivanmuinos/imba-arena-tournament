@@ -18,6 +18,7 @@ const TABLE := {
 	"rifle": "auto", "headshot": "hostile", "flashbang": "ground", "kevlar": "self", "knife": "self", "bash": "hostile", "awp": "hostile",
 	"slash": "auto", "tempest": "hostile", "windwall": "direction", "sweep": "hostile", "flow": "self", "upcut": "hostile", "lastbreath": "hostile",
 	"pass": "auto", "chip": "hostile", "nutmeg": "hostile", "dribble": "direction", "onetwo": "friendly", "tackle": "hostile", "golazo": "hostile",
+	"spark": "auto", "stunbolt": "hostile", "disarm": "hostile", "wardshield": "self", "broom": "direction", "confuse": "hostile", "guardian": "self",
 	"stab": "auto", "eviscerate": "hostile", "cheapshot": "hostile", "blind": "hostile", "vanish": "self", "kick": "hostile", "deathmark": "hostile",
 }
 

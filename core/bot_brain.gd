@@ -3,7 +3,7 @@ extends RefCounted
 ## Bot AI per class (port of server/bot.ts).
 
 const SKILL := {"easy": [0.1, 0.3], "normal": [0.35, 0.55], "hard": [0.75, 0.95]}
-const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "ct": 16.0, "ronin": 1.8, "crack": 11.0, "warrior": 1.6, "rogue": 1.6}
+const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "ct": 16.0, "ronin": 1.8, "crack": 11.0, "wizard": 14.0, "warrior": 1.6, "rogue": 1.6}
 ## Classes that play as the team healer (slots laid out alike: 1 cast heal, 2 protect, 4 heal over time, 5 dispel, 6 ult).
 const HEALERS := ["priest", "druid"]
 
@@ -120,7 +120,7 @@ func _priest_post(m: ArenaMatch, u: ArenaUnit, enemies: Array, now: float) -> Ve
 			break
 	if not has_sight:
 		return Vector2(near_ally.x, near_ally.z)  # rejoin the team
-	var ranged: Array = enemies.filter(func(e): return e.cls in ["mage", "warlock", "hunter", "priest", "druid", "ct", "crack"] and Rules.has_los(m.map, e, u))
+	var ranged: Array = enemies.filter(func(e): return e.cls in ["mage", "warlock", "hunter", "priest", "druid", "ct", "crack", "wizard"] and Rules.has_los(m.map, e, u))
 	if not ranged.is_empty():
 		# step behind cover: a nearby spot that no enemy caster sees but where an ally is still in sight
 		var best := Vector2.INF
@@ -384,6 +384,22 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 					stop = try_cast.call(6, target, target)
 				if not stop and los and ready.call(1) and d <= ab[1].range and dn > 6 and chance.call(0.7):
 					stop = try_cast.call(1, target, target)
+				if not stop and los and d <= ab[0].range and ready.call(0) and randf() < 0.35 + skill * 0.65:
+					try_cast.call(0, target, target)
+			"wizard":
+				var foes_close := enemies.filter(func(e): return dist.call(e) < 7.5).size()
+				if caster != null and ready.call(2) and dist.call(caster) <= ab[2].range and Rules.has_los(m.map, u, caster) and chance.call(0.9):
+					stop = try_cast.call(2, lead.call(caster, ab[2].projSpeed), caster)  # disarm whoever is casting
+				if not stop and ready.call(6) and (foes_close >= 2 or (low_hp and foes_close >= 1)):
+					stop = try_cast.call(6, u)
+				if not stop and low_hp and ready.call(3):
+					stop = try_cast.call(3, u)
+				if not stop and dn < 4.0 and ready.call(4):
+					stop = try_cast.call(4, Vector2(u.x - (nearest.x - u.x), u.z - (nearest.z - u.z)))  # broom away from the melee
+				if not stop and off != null and dist.call(off) < ab[5].range and ready.call(5) and dn > 6.0 and chance.call(0.4):
+					stop = try_cast.call(5, off, off)
+				if not stop and los and d <= ab[1].range and ready.call(1) and not ccd.call(target) and chance.call(0.7):
+					stop = try_cast.call(1, lead.call(target, ab[1].projSpeed), target)
 				if not stop and los and d <= ab[0].range and ready.call(0) and randf() < 0.35 + skill * 0.65:
 					try_cast.call(0, target, target)
 			"crack":

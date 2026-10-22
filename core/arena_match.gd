@@ -469,7 +469,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 	var id: String = spec.id
 
 	match id:
-		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath", "rifle", "headshot", "awp", "pass", "chip", "golazo":
+		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath", "rifle", "headshot", "awp", "pass", "chip", "golazo", "spark", "stunbolt", "disarm":
 			_spawn_proj(u, spec, dir, lock)
 		"corruption", "agony", "soulrot":
 			if target != null and target.alive:
@@ -640,6 +640,34 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 					a.hot_until = maxf(a.hot_until, now + float(spec.durationMs))
 					a.hot_hps = spec.hotHps
 					a.hot_by = u
+		# ---- wizard (young duelist)
+		"wardshield":
+			u.absorb = maxf(u.absorb, float(spec.absorb))
+			u.absorb_until = now + float(spec.durationMs)
+			_label(u, "ESCUDO ENCANTADO", "#bfe0ff")
+		"broom":
+			var bt := 0.3
+			u.dash_left = bt
+			u.dash_vx = dir.x * spec.dist / bt
+			u.dash_vz = dir.y * spec.dist / bt
+			u.root_until = 0.0
+			u.haste_until = maxf(u.haste_until, now + spec.ccMs)
+			_label(u, "¡A LA ESCOBA!", "#ffd98a")
+		"confuse":
+			if target != null and target.alive and Rules.has_los(map, u, target) and _dist(target, u) <= spec.range + 1:
+				_cc(target, "incap", spec.ccMs, now, "disorient")
+			else:
+				_error(u, "El objetivo escapó")
+		"guardian":
+			fx.append({"k": "hymn", "x": u.x, "z": u.z, "r": spec.aoe})
+			fx.append({"k": "scream", "x": u.x, "z": u.z, "r": spec.aoe})
+			for e in _enemies_within(u, u.x, u.z, spec.aoe):
+				e.fear_x = u.x
+				e.fear_z = u.z
+				_cc(e, "fear", spec.ccMs, now)
+			for a in units:
+				if a.alive and a.team == u.team and _dist(a, u) <= spec.aoe * 2.0:
+					_heal(a, spec.heal, u, now)
 		# ---- crack (footballer)
 		"nutmeg":
 			if target != null:
@@ -1221,9 +1249,11 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 	match spec.id:
 		"fireball", "pyro":
 			fx.append({"k": "boom", "x": t.x, "z": t.z, "r": 1.6 if spec.id == "pyro" else 0.9, "kind": spec.id})
-		"silence":
+		"silence", "disarm":
 			_interrupt(t, now)
 			_cc(t, "silence", spec.ccMs, now)
+		"stunbolt":
+			_cc(t, "stun", spec.ccMs, now)
 		"conc":
 			t.slow_until = now + spec.ccMs
 			t.slow_pct = spec.slowPct

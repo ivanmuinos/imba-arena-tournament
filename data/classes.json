@@ -1349,5 +1349,129 @@
       "yaw": -90,
       "bond": "#7fc8ff"
     }
+  },
+  "wizard": {
+    "id": "wizard",
+    "name": "Aprendiz",
+    "role": "Duelista mágico",
+    "icon": "class_wizard",
+    "hp": 470,
+    "speed": 6.6,
+    "abilities": [
+      {
+        "id": "spark",
+        "name": "Chispa",
+        "icon": "spark",
+        "desc": "Auto-ataque: chispas de la varita contra tu objetivo mientras esté a tiro y de frente: 22 de daño.",
+        "cd": 800,
+        "cast": 0,
+        "range": 20,
+        "dmg": 22,
+        "projSpeed": 44,
+        "projR": 0.25,
+        "auto": true
+      },
+      {
+        "id": "stunbolt",
+        "name": "Rayo aturdidor",
+        "icon": "stunbolt",
+        "desc": "Un rayo rojo de la varita: 18 de daño y aturde 1,5 s al que toca.",
+        "cd": 14000,
+        "cast": 0,
+        "range": 20,
+        "dmg": 18,
+        "projSpeed": 48,
+        "projR": 0.3,
+        "ccMs": 1500
+      },
+      {
+        "id": "disarm",
+        "name": "Desarme",
+        "icon": "disarm",
+        "desc": "Le volás el arma de las manos: interrumpe lo que esté lanzando y lo silencia 2 s.",
+        "cd": 16000,
+        "cast": 0,
+        "range": 20,
+        "dmg": 6,
+        "projSpeed": 56,
+        "projR": 0.25,
+        "ccMs": 2000
+      },
+      {
+        "id": "wardshield",
+        "name": "Escudo encantado",
+        "icon": "wardshield",
+        "desc": "Un escudo mágico te envuelve: absorbe 75 de daño durante 5 s.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 75,
+        "durationMs": 5000
+      },
+      {
+        "id": "broom",
+        "name": "Escoba",
+        "icon": "broom",
+        "desc": "Te subís a la escoba: salís volando 9 m hacia adelante y corrés más rápido 2 s.",
+        "cd": 14000,
+        "cast": 0,
+        "range": 0,
+        "dist": 9,
+        "ccMs": 2000
+      },
+      {
+        "id": "confuse",
+        "name": "Hechizo confusor",
+        "icon": "confuse",
+        "desc": "Lanzamiento de 1,2 s: el objetivo queda desorientado 3,5 s (se rompe con daño). Comparte rendimientos decrecientes con Polimorfia.",
+        "cd": 18000,
+        "cast": 1200,
+        "range": 20,
+        "ccMs": 3500,
+        "targeted": true
+      },
+      {
+        "id": "guardian",
+        "name": "Guardián de luz",
+        "icon": "guardian",
+        "desc": "DEFINITIVA: conjurás un guardián de luz plateada: los enemigos a 8 m huyen aterrorizados 2,5 s y los aliados cercanos se curan 45.",
+        "cd": 0,
+        "cast": 0,
+        "range": 0,
+        "aoe": 8,
+        "heal": 45,
+        "ccMs": 2500,
+        "ult": true
+      }
+    ],
+    "tags": [
+      "Daño",
+      "Control"
+    ],
+    "stats": {
+      "hp": 2,
+      "mobility": 4,
+      "damage": 3,
+      "control": 4,
+      "difficulty": 3
+    },
+    "tagline": "Varita en mano, nunca solo.",
+    "identity": "Joven hechicero de duelo: aturde, desarma y confunde para ganar cada intercambio, y se escapa en escoba. Su definitiva espanta a los que lo rodean y cura a su equipo. Poca vida: si le cortan los hechizos, cae rápido.",
+    "companion": {
+      "name": "Lechuza",
+      "model": "eagle",
+      "len": 0.9,
+      "fly": 1.5,
+      "idle": "Flying",
+      "move": "Flying",
+      "tint": {
+        "Wings": "#f2f0ea",
+        "Head": "#fbfaf6",
+        "Beak": "#3a3530",
+        "Claws": "#3a3530"
+      },
+      "yaw": -90,
+      "bond": "#ffe9a0"
+    }
   }
 }
