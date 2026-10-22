@@ -85,13 +85,13 @@ func test_move_vector_is_relative_to_camera() -> void:
 func test_slot_keys_match_the_wow_style_bar() -> void:
 	eq(InputLogic.slot_for_key(KEY_1), 0, "1 = ataque automático / primer hechizo")
 	eq(InputLogic.slot_for_key(KEY_2), 1, "2")
-	eq(InputLogic.slot_for_key(KEY_Q), 2, "Q")
-	eq(InputLogic.slot_for_key(KEY_E), 3, "E")
-	eq(InputLogic.slot_for_key(KEY_SHIFT), 4, "Shift")
-	eq(InputLogic.slot_for_key(KEY_F), 5, "F")
-	eq(InputLogic.slot_for_key(KEY_R), 6, "R = ultimate")
+	eq(InputLogic.slot_for_key(KEY_3), 2, "3")
+	eq(InputLogic.slot_for_key(KEY_4), 3, "4")
+	eq(InputLogic.slot_for_key(KEY_5), 4, "5")
+	eq(InputLogic.slot_for_key(KEY_6), 5, "6")
+	eq(InputLogic.slot_for_key(KEY_7), 6, "7 = ultimate")
 	eq(InputLogic.slot_for_key(KEY_Z), -1, "otra tecla")
-	eq(GameData.C.SLOT_KEYS, ["1", "2", "Q", "E", "Shift", "F", "R"], "etiquetas de la barra")
+	eq(GameData.C.SLOT_KEYS, ["1", "2", "3", "4", "5", "6", "7"], "etiquetas de la barra")
 
 
 # ---------------------------------------------------------------- match config

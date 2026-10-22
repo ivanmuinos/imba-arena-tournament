@@ -13,6 +13,7 @@ signal kill_received(msg: Dictionary)
 signal match_ended(msg: Dictionary)
 signal server_error(text: String)
 signal closed(reason: String)
+signal chat_received(msg: Dictionary)
 
 var transport: Transport
 var peer_id := 0
@@ -88,6 +89,7 @@ func _on_connected() -> void:
 
 func _on_message(_from: int, msg: Dictionary) -> void:
 	match msg.t:
+		"chat": chat_received.emit(msg)
 		"welcome":
 			peer_id = int(msg.peer)
 			is_host = bool(msg.host)
@@ -169,3 +171,11 @@ func send_set(settings: Dictionary) -> void:
 
 func send_start() -> void:
 	_send({"t": "start"})
+
+
+func send_ready(on: bool) -> void:
+	_send({"t": "ready", "on": on})
+
+
+func send_chat(text: String) -> void:
+	_send({"t": "chat", "text": text})

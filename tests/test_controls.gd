@@ -1,4 +1,71 @@
 extends TestBase
+
+func test_configurable_bindings_roundtrip_collision_and_defaults() -> void:
+	var st := SettingsStore.new()
+	var binds = load("res://scripts/logic/control_bindings.gd").new(st)
+	eq(binds.label("slot_0", "key"), "1", "numeric defaults")
+	eq(binds.assign("slot_0", "key", "k:%d" % KEY_Q), "Ya usado por: Paso lateral izquierdo", "collision rejected")
+	eq(binds.label("slot_0", "key"), "1", "collision leaves old binding intact")
+	eq(binds.assign("slot_0", "key", "m:4"), "La rueda sólo se usa para zoom", "wheel cannot leave held actions stuck")
+	eq(binds.assign("slot_0", "key", "k:%d" % KEY_R), "", "rebind")
+	eq(binds.assign("slot_0", "pad", "p:7"), "", "controller rebind")
+	var e := InputEventKey.new()
+	e.physical_keycode = KEY_R
+	e.pressed = true
+	eq(binds.action(e), "slot_0", "physical binding dispatch")
+	var file := "user://test_bindings.cfg"
+	check(st.save(file), "save bindings")
+	var restored := SettingsStore.new()
+	check(restored.load(file), "load bindings")
+	var again = load("res://scripts/logic/control_bindings.gd").new(restored)
+	eq(again.action(e), "slot_0", "binding survives restart")
+	again.reset()
+	eq(again.label("slot_0", "key"), "1", "restore defaults")
+	DirAccess.remove_absolute(file)
+
+func test_invalid_saved_bindings_are_sanitized() -> void:
+	var st := SettingsStore.new()
+	st.set_value("bindings", {"forward": {"key": ["k:0"]}, "slot_0": {"key": ["k:81"]}, "unknown": {"pad": ["p:999"]}})
+	var binds = load("res://scripts/logic/control_bindings.gd").new(st)
+	eq(binds.label("forward", "key"), "W / Up", "invalid data keeps defaults")
+	eq(binds.label("slot_0", "key"), "1", "saved collision keeps defaults")
+
+func test_chat_focus_blocks_gameplay_and_bounds_history() -> void:
+	var chat := ChatPanel.new()
+	tree.root.add_child(chat)
+	chat.activate(true)
+	chat.open_entry()
+	var view := MatchView.new()
+	tree.root.add_child(view)
+	view.chat = chat
+	view._active = true
+	view.controller.target = 42
+	view.controller.queued = {"slot": 1}
+	var key := InputEventKey.new()
+	key.keycode = KEY_ESCAPE
+	key.pressed = true
+	view._input(key)
+	eq(view.controller.target, 42, "typing Esc does not clear gameplay target")
+	check(view.controller.queued.is_empty(), "typing cancels queued gameplay")
+	for i in 10: chat.receive({"name": "[b]player", "text": str(i)})
+	eq(chat.lines.size(), 4, "bounded chat display")
+	check(chat.log_label.text.contains("[b]player"), "plain text markup")
+	chat.close_entry()
+	check(not view._typing(), "closing releases focus")
+	view._active = false
+	view.free()
+	chat.free()
+
+func test_number_slots_and_strafe_keys() -> void:
+	for i in 7:
+		eq(InputLogic.slot_for_key(KEY_1 + i), i, "number binds every slot")
+	eq(InputLogic.slot_for_key(KEY_Q), -1, "Q reserved for movement")
+	eq(InputLogic.slot_for_key(KEY_E), -1, "E reserved for movement")
+	eq(InputLogic.keyboard_move(false, false, false, false, false, false, true, false).strafe, -1, "Q strafes independently")
+	eq(InputLogic.stick(Vector2(0.1, 0.1)), Vector2.ZERO, "stick drift ignored")
+	near(InputLogic.stick(Vector2(0.6, 0)).x, 0.5, 0.001, "analog speed preserved")
+	for i in 7:
+		eq(InputLogic.pad_slot([JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B, JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_LEFT][i]), i, "all controller slots")
 ## WoW-style controls: mouse modes, keyboard turn/strafe, click picking, off-screen indicator,
 ## spell kinds and the new target-based casting rules.
 

@@ -7,16 +7,45 @@ Windows: descomprimí el zip y abrí ImbaArenaTournament.exe.
   Si Windows muestra "SmartScreen protegió su PC": tocá "Más información" y después "Ejecutar de todas formas".
   Si pide permiso de firewall, aceptá (es para jugar online).
 
-Mac: descomprimí el zip y arrastrá "ImbaArenaTournament" a Aplicaciones (o dejala donde quieras).
+Mac: descomprimí el zip y arrastrá "Imba Arena Tournament.app" a Aplicaciones (o dejala donde quieras).
   La primera vez: clic derecho sobre la app -> "Abrir" -> "Abrir".
   Si dice que está dañada o no se abre, abrí la Terminal y pegá:
-      xattr -dr com.apple.quarantine /ruta/a/ImbaArenaTournament.app
+      xattr -dr com.apple.quarantine "/ruta/a/Imba Arena Tournament.app"
   (podés arrastrar la app a la Terminal para que escriba la ruta).
 
 Jugar online con amigos
 -----------------------
 1. Uno crea la partida ("CREAR PARTIDA (SOY ANFITRIÓN)").
 2. Los demás ponen la IP de esa persona y el puerto (7777 por defecto) y tocan "UNIRME".
-3. Todos tienen que tener la MISMA versión del juego.
+3. Todos tienen que usar esta misma compilación del juego: reemplazá las copias anteriores de v0.6.0.
+4. Con varios humanos, todos deben marcar "Listo" antes de empezar.
+   Cambiar equipo, campeón o sala borra las confirmaciones.
 Para que funcione por internet hace falta una VPN virtual (Tailscale / ZeroTier / Radmin VPN),
 abrir el puerto UDP 7777 en el router, o un túnel UDP (playit.gg). Ver README.md del proyecto.
+
+Controles: teclado y mouse
+--------------------------
+W/S: avanzar/retroceder. A/D: girar. Q/E: paso lateral.
+Con clic derecho sostenido, A/D también desplazan y el mouse gira al personaje.
+Clic izquierdo + arrastrar: orbitar cámara. Rueda: zoom. Espacio: saltar.
+Tab: siguiente enemigo. Clic izquierdo en una unidad: elegir objetivo.
+Clic derecho en enemigo: elegirlo e iniciar ataque automático si tu clase lo tiene.
+1–7: habilidades del campeón; 7 es la definitiva.
+Habilidades de zona: tecla y clic izquierdo para colocar; clic derecho o Esc cancelan.
+Esc: cancelar lanzamiento o soltar objetivo.
+Enter: abrir chat en sala o partida y enviar. Esc: cerrar chat.
+Mientras escribís, se pausa tu entrada de juego.
+
+Controles: joystick (nombres de botones Xbox)
+--------------------------------------------
+Stick izquierdo: mover. Stick derecho: mirar/apuntar.
+A: saltar/confirmar zona. X/Y/B: habilidades 1/2/3.
+Cruceta arriba/derecha/abajo/izquierda: habilidades 4/5/6/7.
+LB/RB: elegir aliado/enemigo. L3/R3: mirar al objetivo/cancelar.
+Al apuntar una zona, el stick derecho vertical ajusta la distancia.
+
+Bloqueo del guerrero
+--------------------
+Pasivo: 30% desde el frente (180°), 5% desde atrás.
+Anula daño físico directo, no efectos adicionales; no bloquea magia, daño
+periódico ni entorno. No funciona bajo aturdimiento, incapacidad o miedo.

@@ -377,6 +377,9 @@ func _update_chrome(id: String) -> void:
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
+	if nav.current == "settings" and (_views.settings as MSettings).capture_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if nav.current == "splash":
 		var any: bool = (event is InputEventKey and event.pressed and not event.echo) or (event is InputEventMouseButton and event.pressed) or (event is InputEventJoypadButton and event.pressed)
 		if any:

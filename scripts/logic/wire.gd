@@ -4,6 +4,20 @@ extends RefCounted
 ## through here: no objects are ever decoded, numbers must be finite, ranges are clamped.
 
 const MAX_ABS_AIM := 96.0
+const CHAT_MAX := 240
+
+
+static func clean_chat(m: Dictionary) -> String:
+	if typeof(m.get("text")) != TYPE_STRING or m.text.length() > CHAT_MAX:
+		return ""
+	var text := ""
+	for ch in m.text:
+		var code: int = ch.unicode_at(0)
+		if code >= 32 and code != 127 and not (code >= 0x202a and code <= 0x202e) and not (code >= 0x2066 and code <= 0x2069):
+			text += ch
+		else:
+			text += " "
+	return " ".join(text.split(" ", false)).strip_edges()
 
 
 static func encode(msg: Dictionary) -> PackedByteArray:

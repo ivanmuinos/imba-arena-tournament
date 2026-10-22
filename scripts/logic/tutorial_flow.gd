@@ -8,7 +8,7 @@ extends RefCounted
 ## Events (strings): moved, jumped, cam_rmb, cam_lmb, zoom, click_target, tab_target, cast:<ability id>, cast_cancel, ground_cast,
 ## auto_on, los_hidden, interrupt, cc, debuff_seen, tooltip. A step with `manual` also waits for next().
 
-const KEYS := ["1", "2", "Q", "E", "Shift", "F", "R"]
+const KEYS := ["1", "2", "3", "4", "5", "6", "7"]
 ## Abilities that cut a cast. A kit without one practises plain crowd control instead.
 const INTERRUPTS := ["pummel", "kick", "counter", "silence"]
 

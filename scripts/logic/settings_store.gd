@@ -13,6 +13,7 @@ static var _shared: SettingsStore = null
 static var path := PATH
 
 var values := {
+	"bindings": {}, "swap_sticks": false,
 	"name": "", "cls": "mage", "spec": "fire", "specs": {}, "mode": 2, "map": "random", "diff": "normal", "pref": "any",
 	"addr": "127.0.0.1", "port": 7777, "gfx": "auto", "fullscreen": false,
 	"tutorial_seen": false, "master": 0.8, "music": 0.5, "sfx": 0.9, "sens": 1.0, "invert": false, "steam_friends": true,
@@ -73,7 +74,9 @@ func set_value(key: String, v: Variant) -> Variant:
 			values.port = p if p > 0 else 7777
 		"gfx":
 			values.gfx = str(v) if GFX.has(str(v)) else "auto"
-		"fullscreen", "invert", "steam_friends", "tutorial_seen":
+		"bindings":
+			values.bindings = ControlBindings.sanitize(v)
+		"fullscreen", "invert", "steam_friends", "tutorial_seen", "swap_sticks":
 			values[key] = bool(v) if typeof(v) == TYPE_BOOL else false
 		"master", "music", "sfx":
 			values[key] = clampf(float(v), 0.0, 1.0) if typeof(v) in [TYPE_INT, TYPE_FLOAT] else values[key]

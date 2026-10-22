@@ -12,6 +12,10 @@ signal gameplay_event(name: String)
 const PICK_MIN_RADIUS := 22.0  # px: far-away units stay clickable
 
 var client: GameClient
+var chat: ChatPanel
+var _pad := -1
+var _pad_aim := false
+var _ground_distance := 10.0
 var world: ArenaWorld
 var cam: CameraRig
 var fx: FxManager
@@ -352,6 +356,10 @@ func _one_fx(f: Dictionary) -> void:
 	var is_me: bool = f.has("id") and int(f.id) == my_id
 	var p2 := Vector2(pos.x, pos.z)
 	match f.k:
+		"block":
+			if v != null and v.shown:
+				hud.float_text(pos + Vector3(0, 2.6 * UnitView.VS, 0), "BLOQUEADO", Color("#a4d9ff"), true)
+				audio.play("absorb", p2)
 		"hit":
 			if f.get("dot", false):
 				# periodic damage: the number only (no flash, impact, shake or sound; those strobe on every tick)
@@ -500,10 +508,21 @@ func _unit_at(mouse: Vector2) -> int:
 	return ClickPicker.pick(cands, mouse)
 
 
+var _held_actions := {}
+
 func _input(event: InputEvent) -> void:
 	if not _active:
 		return
+	if event is InputEventKey and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
+		_release_gameplay()
+		return
+	if _typing():
+		_release_gameplay()
+		return
+	if event is InputEventJoypadMotion or event is InputEventJoypadButton:
+		_pad = event.device
 	if event is InputEventMouseMotion:
+		if event.relative.length() > 1.0: _pad_aim = false
 		if _look:
 			cam.look(event.relative)
 		else:
@@ -512,16 +531,35 @@ func _input(event: InputEvent) -> void:
 					_dragged[b] = true
 					gameplay_event.emit("cam_rmb" if b == MOUSE_BUTTON_RIGHT else "cam_lmb")
 					_begin_look(_press[b])
-	elif event is InputEventMouseButton:
-		_on_mouse_button(event)
-	elif event is InputEventKey and event.pressed and not event.echo:
-		var slot := InputLogic.slot_for_key(event.keycode)
-		if slot >= 0:
-			get_viewport().set_input_as_handled()
-			_cast(slot)
+		return
+	if event is InputEventKey and event.echo: return
+	if not (event is InputEventKey or event is InputEventMouseButton or event is InputEventJoypadButton): return
+	var bindings := ControlBindings.new()
+	var action := bindings.action(event)
+	var token := ControlBindings.token_for(event)
+	if not event.is_pressed(): _held_actions.erase(token)
+	if event is InputEventMouseButton:
+		if event.pressed and ((chat != null and chat.blocks_mouse(event.position)) or (hud != null and hud.blocks_mouse(event.position))): return
+		if event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+			_on_mouse_button(event)
 			return
-		match event.keycode:
-			KEY_ESCAPE:
+	if action == "": return
+	if event.is_pressed(): _held_actions[token] = action
+	_pad_aim = event is InputEventJoypadButton
+	if action in ["orbit", "look"]:
+		var mouse := InputEventMouseButton.new()
+		mouse.button_index = MOUSE_BUTTON_LEFT if action == "orbit" else MOUSE_BUTTON_RIGHT
+		mouse.pressed = event.is_pressed()
+		mouse.position = event.position if event is InputEventMouseButton else get_viewport().get_mouse_position()
+		_on_mouse_button(mouse)
+		return
+	if not event.is_pressed(): return
+	get_viewport().set_input_as_handled()
+	if action.begins_with("slot_"):
+		_cast(int(action.trim_prefix("slot_")))
+		return
+	match action:
+			"cancel":
 				if controller.pending_ground >= 0:
 					controller.cancel_ground()
 				elif not me.is_empty() and me.get("cast") != null:
@@ -529,23 +567,53 @@ func _input(event: InputEvent) -> void:
 				else:
 					controller.clear_target()
 					hud.set_friend(-1)
-			KEY_TAB:
+			"target":
 				get_viewport().set_input_as_handled()
 				_cycle_target()
-			KEY_SPACE:
+			"jump":
 				get_viewport().set_input_as_handled()
-				_jump()
-			KEY_M:
-				hud.error("Sonido apagado (M)" if audio.toggle_mute() else "Sonido activado (M)")
-			KEY_F1, KEY_F2, KEY_F3:
+				if event is InputEventJoypadButton and controller.pending_ground >= 0: _confirm_ground()
+				else: _jump()
+			"mute":
+				hud.error("Sonido apagado" if audio.toggle_mute() else "Sonido activado")
+			"ally":
 				var ids := hud.ally_ids()
-				var i: int = int(event.keycode - KEY_F1)
+				if not ids.is_empty(): _select(ids[(ids.find(controller.target) + 1) % ids.size()])
+			"face":
+				_face_toward(controller.target)
+			"ally_0", "ally_1", "ally_2":
+				var ids := hud.ally_ids()
+				var i := int(action.trim_prefix("ally_"))
 				if i < ids.size():
 					_select(ids[i])
 
 
+func _typing() -> bool:
+	var focus := get_viewport().gui_get_focus_owner()
+	return (chat != null and chat.typing()) or focus is LineEdit or focus is TextEdit
+
+
+func _release_gameplay() -> void:
+	_held_actions.clear()
+	_lmb = false
+	_rmb = false
+	_press.clear()
+	_dragged.clear()
+	controller.queued.clear()
+	_end_look()
+	if client != null: _send_input(Vector2.ZERO, _now_ms())
+
+
+func _pad_stick(x_axis: int, y_axis: int) -> Vector2:
+	if _pad < 0 or not Input.get_connected_joypads().has(_pad):
+		return Vector2.ZERO
+	return InputLogic.stick(Vector2(Input.get_joy_axis(_pad, x_axis), Input.get_joy_axis(_pad, y_axis)))
+
+
 func _on_mouse_button(event: InputEventMouseButton) -> void:
 	var b: int = event.button_index
+	if chat != null and event.pressed and chat.blocks_mouse(event.position):
+		return
 	if hud != null and event.pressed and hud.blocks_mouse(event.position):
 		return  # a click on the practice panel / tutorial card is not a click on the world
 	if b == MOUSE_BUTTON_WHEEL_UP and event.pressed:
@@ -686,7 +754,7 @@ func _cast(slot: int) -> void:
 	if res.auto != "":
 		_apply_auto(res.auto)
 	if res.pending_ground:
-		hud.error("Clic izquierdo para colocar · clic derecho o Esc para cancelar")
+		hud.error("Stick derecho: apuntar · A: colocar · R3: cancelar" if _pad_aim else "Clic izquierdo para colocar · clic derecho o Esc para cancelar")
 	if not res.msg.is_empty():
 		client.send_cast(res.msg)
 		if predictor.predict_movement(my_cls, slot, res.aim_dir, me, world.map, _now_ms()):
@@ -777,8 +845,23 @@ func _process(delta: float) -> void:
 		var r := controller.right_click_unit(controller.target, _ctx())
 		_apply_auto(r.auto)
 	if not me.is_empty():
-		var km := InputLogic.keyboard_move(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP), Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN),
-			Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT), Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT), _rmb, _lmb)
+		var held := _held_actions.values()
+		var km := InputLogic.keyboard_move(held.has("forward"), held.has("back"), held.has("left"), held.has("right"), _rmb, _lmb, held.has("strafe_left"), held.has("strafe_right"))
+		var typing := _typing()
+		var swap: bool = SettingsStore.shared().get_value("swap_sticks")
+		var stick := _pad_stick(JOY_AXIS_RIGHT_X if swap else JOY_AXIS_LEFT_X, JOY_AXIS_RIGHT_Y if swap else JOY_AXIS_LEFT_Y) if not typing else Vector2.ZERO
+		var look := _pad_stick(JOY_AXIS_LEFT_X if swap else JOY_AXIS_RIGHT_X, JOY_AXIS_LEFT_Y if swap else JOY_AXIS_RIGHT_Y) if not typing else Vector2.ZERO
+		if typing:
+			km = {"fwd": 0, "strafe": 0, "turn": 0}
+			_release_gameplay()
+		elif stick != Vector2.ZERO or look != Vector2.ZERO:
+			_pad_aim = true
+			cam.yaw -= look.x * InputLogic.TURN_RATE * dt
+			_face = cam.yaw
+			if controller.pending_ground >= 0:
+				_ground_distance = clampf(_ground_distance - look.y * 15.0 * dt, 1.0, 40.0)
+			else:
+				cam.pitch = clampf(cam.pitch + look.y * dt, -0.2, 1.2)
 		if drive_bot:
 			cam.yaw += sin(t * 0.7) * 0.02
 			_face = cam.yaw
@@ -791,6 +874,8 @@ func _process(delta: float) -> void:
 			cam.yaw += turn
 		cam.yaw = InputLogic.follow_yaw(cam.yaw, _face, dt, km.fwd != 0 or km.strafe != 0, _lmb or _rmb)
 		var input := InputLogic.move_vector(km.fwd, km.strafe, _face)
+		if input == Vector2.ZERO and stick != Vector2.ZERO:
+			input = InputLogic.move_vector(-stick.y, stick.x, cam.yaw)
 		if drive_bot:
 			input = _drive_step(now, t)
 		if not me.alive:
@@ -816,7 +901,7 @@ func _process(delta: float) -> void:
 		_aim_and_target(focus, now)
 		_send_input(input, now)
 		var q := controller.poll_queue(now, me.get("cast") != null)
-		if q >= 0:
+		if q >= 0 and not typing:
 			_cast(q)
 		_hud_frame(focus, now, dt)
 	for id in views:
@@ -906,6 +991,8 @@ func _aim_and_target(_focus: Vector2, now: float) -> void:
 		var spec := controller.ability(controller.pending_ground)
 		var p := _mouse_ground(mouse)
 		var pos := Vector2(predictor.m.x, predictor.m.z)
+		if _pad_aim:
+			p = pos + Vector2(sin(_face), cos(_face)) * _ground_distance
 		if spec.range > 0 and p.distance_to(pos) > spec.range:
 			p = pos + (p - pos).normalized() * spec.range
 		_ground_point = p
