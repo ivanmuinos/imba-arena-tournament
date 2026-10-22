@@ -79,6 +79,15 @@ func _pump(server: GameServer, clients: Array, ms: float) -> void:
 		t += 16.0
 
 
+## Pumps through the start room until the fight begins, plus 200 ms.
+func _to_fight(server: GameServer, clients: Array) -> void:
+	var t := 0.0
+	while (server.game == null or server.game.phase != "fight") and t < 25000.0:
+		_pump(server, clients, 16.0)
+		t += 16.0
+	_pump(server, clients, 200.0)
+
+
 ## Returns {server, client} with one local host player already in the lobby.
 func _hosted(cfg := {}, cls := "mage", pref := "red") -> Dictionary:
 	var server := GameServer.new(cfg)
@@ -217,7 +226,7 @@ func test_input_moves_your_unit_and_bad_input_is_ignored() -> void:
 	var h := _started()
 	var s: GameServer = h.server
 	var c: GameClient = h.client
-	_pump(s, [c], 20200.0)  # prep -> fight
+	_to_fight(s, [c])  # prep -> just into the fight (bots have not had time to CC you yet)
 	eq(s.game.phase, "fight", "pelea")
 	var u := s.game.unit_for_peer(c.peer_id)
 	var z0 := u.z
@@ -236,7 +245,7 @@ func test_cast_goes_through_and_sets_cooldown() -> void:
 	var h := _started()
 	var s: GameServer = h.server
 	var c: GameClient = h.client
-	_pump(s, [c], 20200.0)
+	_to_fight(s, [c])
 	var u := s.game.unit_for_peer(c.peer_id)
 	c.send_cast({"slot": 4, "ax": u.x, "az": u.z - 10.0, "target": -1})  # blink
 	_pump(s, [c], 100.0)
@@ -248,7 +257,7 @@ func test_enemy_in_bush_is_never_sent_to_the_other_team() -> void:
 	var h := _started({"map": "test"})
 	var s: GameServer = h.server
 	var c: GameClient = h.client
-	_pump(s, [c], 20200.0)
+	_to_fight(s, [c])
 	var me := s.game.unit_for_peer(c.peer_id)
 	var enemy: ArenaUnit = null
 	for u in s.game.units:
@@ -258,6 +267,14 @@ func test_enemy_in_bush_is_never_sent_to_the_other_team() -> void:
 	for u in s.game.units:
 		u.brain = null  # deterministic: nobody acts on their own
 		u.input = Vector2.ZERO
+		u.auto_on = false  # nor keeps swinging, casting or burning from the opening seconds
+		u.cast = {}
+		u.burn_until = 0.0
+		u.storm_until = 0.0
+		u.curses = {}
+	s.game.projs.clear()
+	s.game.aoes.clear()
+	s.game.traps.clear()
 	var b: Dictionary = s.game.map.bushes[0]
 	enemy.x = b.x
 	enemy.z = b.z
@@ -520,7 +537,7 @@ func test_auto_attack_message_works_for_hunters_and_is_ignored_for_casters() -> 
 		for player in clients: player.send_ready(true)
 		_pump(s, clients, 50.0)
 		c.send_start()
-		_pump(s, clients, 20200.0)
+		_to_fight(s, clients)
 		var me := s.game.unit_for_peer(c.peer_id)
 		var enemy := s.game.unit_for_peer(clients[2].peer_id)
 		for u in s.game.units:

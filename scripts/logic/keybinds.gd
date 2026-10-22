@@ -2,16 +2,19 @@ class_name Keybinds
 extends RefCounted
 ## Every rebindable action and its key, like WoW's key bindings (or Bartender's keybinding mode). Saved in
 ## user://keybinds.json. Keys are Godot key names with modifiers ("Q", "Shift", "Ctrl+1"); one key, one action: binding a
-## key takes it away from whatever had it. Movement (WASD), Esc and the mouse stay fixed.
+## key takes it away from whatever had it. Movement (WASD, Q/E strafe), Esc and the mouse are in ControlBindings.
 
 const PATH := "user://keybinds.json"
 const MACROS := 6
+const VERSION := 2
+## Version 1 bar (1, 2, Q, E, Shift, F, R): a saved slot still on its old default moves to the number keys, so Q/E strafe.
+const V1_SLOTS := {"slot_2": "Q", "slot_3": "E", "slot_4": "Shift", "slot_5": "F", "slot_6": "R"}
 
 ## [action, label shown in Controles, default key]
 const ACTIONS := [
-	["slot_0", "Habilidad 1 (básica)", "1"], ["slot_1", "Habilidad 2", "2"], ["slot_2", "Habilidad 3", "Q"],
-	["slot_3", "Habilidad 4", "E"], ["slot_4", "Habilidad 5", "Shift"], ["slot_5", "Habilidad 6", "F"],
-	["slot_6", "Definitiva", "R"], ["trinket", "Abalorio PvP", "T"], ["jump", "Saltar", "Space"],
+	["slot_0", "Habilidad 1 (básica)", "1"], ["slot_1", "Habilidad 2", "2"], ["slot_2", "Habilidad 3", "3"],
+	["slot_3", "Habilidad 4", "4"], ["slot_4", "Habilidad 5", "5"], ["slot_5", "Habilidad 6", "6"],
+	["slot_6", "Definitiva", "7"], ["trinket", "Abalorio PvP", "T"], ["jump", "Saltar", "Space"],
 	["target_next", "Siguiente objetivo", "Tab"], ["ally_1", "Aliado 1", "F1"], ["ally_2", "Aliado 2", "F2"],
 	["ally_3", "Aliado 3", "F3"], ["mute", "Silenciar", "M"], ["bind_mode", "Modo teclas (reasignar en partida)", "Ctrl+K"],
 	["macro_1", "Macro 1", "Ctrl+1"], ["macro_2", "Macro 2", "Ctrl+2"], ["macro_3", "Macro 3", "Ctrl+3"],
@@ -53,12 +56,18 @@ func load_file() -> void:
 	for a in keys:
 		if parsed.has(a):
 			keys[a] = str(parsed[a]).substr(0, 40)
+	if int(parsed.get("_v", 1)) < VERSION:
+		for a in V1_SLOTS:
+			if keys[a] == V1_SLOTS[a] and action_for(defaults()[a]) == "":
+				keys[a] = defaults()[a]
 
 
 func save() -> void:
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f != null:
-		f.store_string(JSON.stringify(keys))
+		var out := keys.duplicate()
+		out["_v"] = VERSION
+		f.store_string(JSON.stringify(out))
 
 
 func reset() -> void:

@@ -498,6 +498,7 @@ func _team_fight(map_id: String, enemy_cls: String, enemy_spec := "") -> Array:
 		{"name": "Foe2", "cls": enemy_cls, "spec": enemy_spec, "team": "blue", "peer": 0},
 	]
 	var m := ArenaMatch.new(2, e, now, "normal", map_id)
+	m.block_rng.seed = 0  # warrior blocks roll on their own generator: fix it too
 	_advance(m, 20100)
 	return [m, m.units[0], m.units[1], m.units[2], m.units[3]]
 
