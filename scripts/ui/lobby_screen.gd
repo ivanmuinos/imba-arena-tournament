@@ -73,7 +73,7 @@ func _ready() -> void:
 	oc.add_theme_constant_override("separation", 6)
 	op.add_child(oc)
 	_mode = _opt(oc, "Modo (lo elige el anfitrión)", [["2", "2v2"], ["3", "3v3"]], "2")
-	_map = _opt(oc, "Arena", [["random", "Aleatoria"], ["bridge", "Puente"], ["pillars", "Pilares"], ["tomb", "Tumba"], ["living", "Vivos"]], "random")
+	_map = _opt(oc, "Arena", [["random", "Aleatoria"], ["bridge", "Puente"], ["pillars", "Pilares"], ["tomb", "Tumba"], ["living", "Vivos"], ["spire", "Sol Eterno"]], "random")
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 24)
 	oc.add_child(row)

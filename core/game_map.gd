@@ -10,7 +10,7 @@ extends RefCounted
 ## `obstacles` is the list of *currently solid* shapes; it is rebuilt by apply_state() when gates or the
 ## living pillars change, so every rule (collision, LoS, blink...) just reads `obstacles`.
 
-const IDS := ["bridge", "pillars", "tomb", "living"]
+const IDS := ["bridge", "pillars", "tomb", "living", "spire"]
 ## Offline-only training ground ("Arena de práctica"): not part of the random pool or the lobby catalog.
 const PRACTICE_ID := "yard"
 const W := 26.0
@@ -56,6 +56,7 @@ static func create(map_id: String) -> GameMap:
 		"pillars": m._build_pillars()
 		"tomb": m._build_tomb()
 		"living": m._build_living()
+		"spire": m._build_spire()
 		"yard": m._build_yard()
 		_:
 			m.id = "test"
@@ -164,6 +165,17 @@ func _build_living() -> void:
 			dyn_pillars.append({"x": g[0] * sgn, "z": g[1] * sgn, "r": 2.6, "start": g[2], "group": g[3]})
 	dyn_pillars.append({"x": 0.0, "z": 0.0, "r": 2.4, "start": 18.0, "group": 2})
 	_powers([[0, 13], [0, -13], [17, 0], [-17, 0]])
+
+
+## Elven city plaza: a sun fountain in the centre (blocks sight), four arcane crystal spires on the diagonals and a
+## marble arch in front of each gate to break the first volley.
+func _build_spire() -> void:
+	_base()
+	statics.append(circle(0.0, 0.0, 3.2, {"fountain": true}))
+	for p in [[11.0, 9.0], [11.0, -9.0]]:
+		_mirror_add(statics, circle(p[0], p[1], 1.3, {"crystal": true}))
+	_mirror_add(statics, box(0.0, 15.0, 4.0, 0.6, 0.0, {"arch": true}))
+	_powers([[0, 9], [0, -9], [19, 0], [-19, 0]])
 
 
 ## Training yard: one open field (no start rooms, no gates), a pillar for line-of-sight practice and a second one to hide behind.

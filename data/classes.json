@@ -912,6 +912,7 @@
         "cd": 18000,
         "cast": 1300,
         "range": 20,
+        "targeted": true,
         "ccMs": 4000
       },
       {

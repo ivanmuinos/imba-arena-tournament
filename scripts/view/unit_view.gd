@@ -37,6 +37,7 @@ var _target_ring: MeshInstance3D
 var _bubble: MeshInstance3D
 var _aura: MeshInstance3D
 var _cloud: MeshInstance3D
+var _cyclone: Node3D  # druid's Cyclone: a spinning funnel of wind and leaves around the unit
 var _cast_orb: MeshInstance3D
 var _cast_mat: ShaderMaterial
 var _slow_ring: MeshInstance3D
@@ -180,6 +181,30 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 	_cloud.position.y = 1.5 * VS
 	_cloud.visible = false
 	add_child(_cloud)
+	_cyclone = Node3D.new()
+	var wind := StandardMaterial3D.new()
+	wind.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	wind.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	wind.albedo_color = Color(0.8, 1.0, 0.82, 0.35)
+	wind.cull_mode = BaseMaterial3D.CULL_DISABLED
+	for i in 6:  # rings widen as they rise: a funnel
+		var ring := MeshInstance3D.new()
+		ring.mesh = MeshBuilder.torus(0.45 + i * 0.16, 0.05, 20, 4)
+		ring.material_override = wind
+		ring.position = Vector3(sin(i * 1.7) * 0.08, (0.15 + i * 0.42) * VS, cos(i * 1.7) * 0.08)
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_cyclone.add_child(ring)
+	var leaf_mat := UnitModels.std(Color("#6fcf4a"), Color("#4f9a3a"), 0.4)
+	for i in 8:  # leaves caught in the wind
+		var leaf := MeshInstance3D.new()
+		leaf.mesh = MeshBuilder.box(Vector3(0.16, 0.03, 0.1))
+		leaf.material_override = leaf_mat
+		var a := TAU * i / 8.0
+		leaf.position = Vector3(sin(a) * (0.6 + 0.1 * (i % 3)), (0.4 + 0.3 * i) * VS, cos(a) * (0.6 + 0.1 * (i % 3)))
+		leaf.rotation = Vector3(a, a * 2.0, 0.4)
+		_cyclone.add_child(leaf)
+	_cyclone.visible = false
+	add_child(_cyclone)
 
 	_slow_ring = _ground_decal(1.1, Color("#5fc8ff"), 0.2)
 	_slow_ring.position.y = 0.16
@@ -401,6 +426,8 @@ func update(dt: float, now_s: float) -> void:
 		sm.albedo_color = Color("#c77dff") if cc.has("fear") else Color("#ffd23a")
 	_cloud.visible = cc.has("incap") and cc.get("incapKind", "") == "blind" and s.alive
 	_cloud.rotation.y = now_s * 1.5
+	_cyclone.visible = cc.has("incap") and cc.get("incapKind", "") == "cyclone" and s.alive
+	_cyclone.rotation.y = now_s * 9.0
 	_spikes.visible = cc.has("root") and s.alive
 	_ring.visible = s.alive
 	if _marker.visible:

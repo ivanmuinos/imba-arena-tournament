@@ -42,5 +42,16 @@
       "dps": 0,
       "hps": 0
     }
+  },
+  "spire": {
+    "id": "spire",
+    "name": "Plaza del Sol Eterno",
+    "icon": "ui_map_random",
+    "desc": "Una plaza élfica de mármol y oro: una fuente en el centro, agujas de cristal y arcos junto a las salas",
+    "pool": {
+      "name": "",
+      "dps": 0,
+      "hps": 0
+    }
   }
 }

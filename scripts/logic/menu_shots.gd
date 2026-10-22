@@ -16,6 +16,7 @@ const LANDMARKS := {
 	"pillars": {"look": Vector3(10, 4.0, 0), "r": 9.0, "rz": 8.0, "h": 2.4},
 	"tomb": {"look": Vector3(0, 6.0, 0), "r": 14.0, "rz": 12.0, "h": 2.2},
 	"living": {"look": Vector3(0, 3.5, 0), "r": 15.0, "rz": 12.0, "h": 2.4},
+	"spire": {"look": Vector3(0, 4.0, 0), "r": 7.5, "rz": 6.5, "h": 2.4},
 }
 
 

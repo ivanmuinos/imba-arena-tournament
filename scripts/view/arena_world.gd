@@ -15,6 +15,8 @@ const THEMES := {
 		"torch": 0xffb860, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf0e8e0},
 	"tomb": {"sky_top": 0x182848, "sky_horizon": 0x5a78b8, "fog": 0x34466a, "fog_density": 0.0024, "ambient": 0xc8d8ff, "ambient_energy": 1.0, "sun": 0xe0ecff, "sun_energy": 1.9,
 		"torch": 0x7ae8ff, "glow": 0x6ad8ff, "ember": 0xaaf8ff, "tint": 0xdce6f4},
+	"spire": {"sky_top": 0x3a2450, "sky_horizon": 0xf2a65a, "fog": 0x9a6a50, "fog_density": 0.0018, "ambient": 0xf4e2cc, "ambient_energy": 0.8, "sun": 0xffe6b0, "sun_energy": 1.8,
+		"torch": 0xffd070, "glow": 0xffc04a, "ember": 0xffe8a0, "tint": 0xfff6ec},
 	"living": {"sky_top": 0x2a1428, "sky_horizon": 0xc05068, "fog": 0x5a2c34, "fog_density": 0.0022, "ambient": 0xf0d4d4, "ambient_energy": 0.95, "sun": 0xffd0c0, "sun_energy": 2.0,
 		"torch": 0xff6a70, "glow": 0xff4a40, "ember": 0xff8a78, "tint": 0xf4dcdc},
 }
@@ -39,6 +41,7 @@ var _local_ft := 0.0
 var _ft_at := 0.0
 var _gates_open := false
 var _terrain: MeshInstance3D
+var _floaters: Array = []  # {node, base_y, phase}: crystals that bob and turn (elven plaza)
 var _terrain_mat: ShaderMaterial
 
 
@@ -53,6 +56,8 @@ func setup(p_map: GameMap) -> void:
 	_build_dynamic_pillars()
 	if map.id == "bridge":
 		_build_bridge()
+	if map.id == "spire":
+		_build_spire_plaza()
 	_build_room_decor()
 	_build_outer_decor()
 	_build_embers()
@@ -291,7 +296,7 @@ func _build_terrain() -> void:
 			var lava_floor := map.is_low(x, z)
 			var tint := 1.0 - clampf(y * 0.015, 0.0, 0.25)
 			var glow := 0.1 if not inside else (0.9 if lava_floor else 0.55)
-			if map.id == "tomb":
+			if map.id == "tomb" or map.id == "spire":
 				glow = 0.25
 			cols.append(Color(tint / 1.6, tint / 1.6, tint / 1.6, glow))
 	var indices := PackedInt32Array()
@@ -309,7 +314,7 @@ func _build_terrain() -> void:
 	arr[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
-	var tex := Textures.ground_calm() if map.id == "tomb" else Textures.ground(false)
+	var tex := Textures.ground_calm() if map.id == "tomb" or map.id == "spire" else Textures.ground(false)
 	_terrain_mat = ShaderMaterial.new()
 	_terrain_mat.shader = load("res://assets/shaders/terrain.gdshader")
 	_terrain_mat.set_shader_parameter("ash_tex", tex[0])
@@ -404,7 +409,9 @@ func _build_statics() -> void:
 		if o.get("wall", false):
 			continue
 		var y := h(o.x, o.z)
-		if o.k == "c":
+		if o.get("fountain", false) or o.get("crystal", false) or o.get("arch", false):
+			_spire_static(o, y)
+		elif o.k == "c":
 			if o.get("statue", false):
 				var n := _place_kit("statue", Vector3(o.x, y - 0.1, o.z), PI, Vector3(0.95, 0.95, 0.95))
 				if n != null:
@@ -538,6 +545,9 @@ func _build_yard_decor() -> void:
 
 
 func _build_outer_decor() -> void:
+	if map.id == "spire":
+		_build_spire_outer()
+		return
 	# Cliffs behind the walls and dead ember trees / rocks scattered outside the play area.
 	for k in 36:
 		var a := TAU * k / 36.0
@@ -596,6 +606,131 @@ func _build_embers() -> void:
 	add_child(embers)
 
 
+# ---------------------------------------------------------------- elven plaza ("spire")
+
+const MARBLE := Color("#a89e90")
+const GOLD := Color("#e0aa3e")
+const CRIMSON := Color("#a8202c")
+const ARCANE := Color("#ff7ad8")
+
+
+func _mi(mesh: Mesh, mat: Material, pos: Vector3, parent: Node3D = null, rot := Vector3.ZERO, scl := Vector3.ONE) -> MeshInstance3D:
+	var m := MeshInstance3D.new()
+	m.mesh = mesh
+	m.material_override = mat
+	m.position = pos
+	m.rotation_degrees = rot
+	m.scale = scl
+	(parent if parent != null else self).add_child(m)
+	return m
+
+
+func _marble() -> StandardMaterial3D:
+	return UnitModels.std(MARBLE, Color.BLACK, 0.0, 0.0, 0.55)
+
+
+func _gold() -> StandardMaterial3D:
+	return UnitModels.std(GOLD, GOLD, 0.15, 0.85, 0.3)
+
+
+## Marble floor with gold inlays: a round plaza over the arena centre and a paved strip to each gate.
+func _build_spire_plaza() -> void:
+	var plaza := _mi(MeshBuilder.cylinder(19.0, 19.0, 0.12, 64), _marble(), Vector3(0, 0.03, 0))
+	plaza.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for r in [[18.4, 19.0], [9.0, 9.4], [5.0, 5.3]]:
+		var ring := _mi(MeshBuilder.ring(r[0], r[1], 72), _gold(), Vector3(0, 0.1, 0))
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for k in 8:  # sun rays between the inner rings
+		var a := TAU * k / 8.0
+		var ray := _mi(MeshBuilder.box(Vector3(0.3, 0.04, 3.6)), _gold(), Vector3(sin(a) * 7.2, 0.1, cos(a) * 7.2), null, Vector3(0, rad_to_deg(a), 0))
+		ray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for sgn in [1.0, -1.0]:
+		var strip := _mi(MeshBuilder.box(Vector3(GameMap.GATE_HW * 2.0, 0.1, GameMap.A - 18.0)), _marble(), Vector3(0, 0.03, sgn * (GameMap.A + 18.0) / 2.0))
+		strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+func _spire_static(o: Dictionary, y: float) -> void:
+	if o.get("fountain", false):
+		# sun fountain: a marble basin of glowing golden water and a gold spire crowned by a floating sun crystal
+		_mi(MeshBuilder.cylinder(o.r, o.r + 0.2, 0.9, 40), _marble(), Vector3(o.x, y + 0.45, o.z))
+		var water := UnitModels.std(Color("#ffd98a"), Color("#ffb84a"), 1.6, 0.0, 0.1)
+		_mi(MeshBuilder.cylinder(o.r - 0.3, o.r - 0.3, 0.06, 40), water, Vector3(o.x, y + 0.88, o.z))
+		_mi(MeshBuilder.torus(o.r, 0.12, 40, 6), _gold(), Vector3(o.x, y + 0.92, o.z))
+		_mi(MeshBuilder.cylinder(0.35, 0.8, 2.6, 12), _marble(), Vector3(o.x, y + 2.0, o.z))
+		_mi(MeshBuilder.cylinder(0.0, 0.45, 3.2, 12), _gold(), Vector3(o.x, y + 4.9, o.z))
+		_floater(Vector3(o.x, y + 7.4, o.z), Color("#ffd060"), 0.7)
+		_add_light(Vector3(o.x, y + 3.0, o.z), Color("#ffc860"), 3.5, 20.0, true)
+	elif o.get("crystal", false):
+		# arcane spire: a stepped marble pedestal with gold trim and a magenta crystal hovering above it
+		_mi(MeshBuilder.cylinder(o.r * 0.9, o.r + 0.15, 1.2, 8), _marble(), Vector3(o.x, y + 0.6, o.z))
+		_mi(MeshBuilder.torus(o.r * 0.92, 0.07, 16, 5), _gold(), Vector3(o.x, y + 1.2, o.z))
+		_mi(MeshBuilder.cylinder(0.25, o.r * 0.7, 3.6, 8), _marble(), Vector3(o.x, y + 3.0, o.z))
+		_floater(Vector3(o.x, y + 5.8, o.z), ARCANE, 0.55)
+		_add_light(Vector3(o.x, y + 5.5, o.z), ARCANE, 2.2, 12.0, true)
+	else:
+		# marble arch with gold capitals and a crimson banner hanging under it
+		var root := Node3D.new()
+		root.position = Vector3(o.x, y, o.z)
+		root.rotation.y = _shape_rot(o)
+		add_child(root)
+		for side in [-1.0, 1.0]:
+			_mi(MeshBuilder.cylinder(0.5, 0.6, 6.0, 12), _marble(), Vector3(side * (o.hx - 0.6), 3.0, 0), root)
+			_mi(MeshBuilder.cylinder(0.75, 0.55, 0.4, 12), _gold(), Vector3(side * (o.hx - 0.6), 6.1, 0), root)
+		_mi(MeshBuilder.box(Vector3(o.hx * 2.0 + 0.6, 0.7, o.hz * 2.0 + 0.4)), _marble(), Vector3(0, 6.6, 0), root)
+		_mi(MeshBuilder.box(Vector3(o.hx * 2.0 + 0.8, 0.15, o.hz * 2.0 + 0.5)), _gold(), Vector3(0, 7.0, 0), root)
+		_mi(MeshBuilder.cylinder(0.0, 0.5, 1.4, 4), _gold(), Vector3(0, 7.8, 0), root)
+		var banner := UnitModels.std(CRIMSON, Color.BLACK, 0.0, 0.0, 0.8)
+		_mi(MeshBuilder.box(Vector3(o.hx * 2.0 - 2.0, 4.6, 0.12)), banner, Vector3(0, 3.8, 0), root)
+		_mi(MeshBuilder.sphere(0.45, 10, 6), _gold(), Vector3(0, 4.6, 0.12), root, Vector3.ZERO, Vector3(1.0, 1.0, 0.3))  # sun emblem
+		_mi(MeshBuilder.sphere(0.45, 10, 6), _gold(), Vector3(0, 4.6, -0.12), root, Vector3.ZERO, Vector3(1.0, 1.0, 0.3))
+
+
+## A slowly turning crystal (two cones point to point) that bobs in the air, glowing.
+func _floater(pos: Vector3, color: Color, size: float) -> void:
+	var n := Node3D.new()
+	n.position = pos
+	add_child(n)
+	var mat := UnitModels.std(color, color, 2.2, 0.0, 0.15)
+	_mi(MeshBuilder.cylinder(0.0, size, size * 1.6, 6), mat, Vector3(0, size * 0.8, 0), n)
+	_mi(MeshBuilder.cylinder(size, 0.0, size * 1.6, 6), mat, Vector3(0, -size * 0.8, 0), n)
+	_floaters.append({"node": n, "base_y": pos.y, "phase": _rand.next() * TAU})
+
+
+## Around the plaza: white marble towers with crimson spires, golden-leaved trees and crimson banners on poles.
+func _build_spire_outer() -> void:
+	for k in 22:
+		var a := TAU * k / 22.0
+		var px := cos(a) * (GameMap.W + 13.0)
+		var pz := sin(a) * (GameMap.R + 11.0)
+		var tall := 6.0 + _rand.next() * 5.0
+		var r := 1.2 + _rand.next() * 0.9
+		var gy := _full_h(px, pz) - 1.0
+		_mi(MeshBuilder.cylinder(r * 0.8, r, tall, 10), _marble(), Vector3(px, gy + tall / 2.0, pz))
+		_mi(MeshBuilder.torus(r * 0.85, 0.15, 16, 5), _gold(), Vector3(px, gy + tall + 0.1, pz))
+		_mi(MeshBuilder.cylinder(0.0, r * 0.95, tall * 0.45, 10), UnitModels.std(Color("#b8323a"), Color.BLACK, 0.0, 0.0, 0.5), Vector3(px, gy + tall + tall * 0.225, pz))
+		_mi(MeshBuilder.cylinder(0.0, 0.18, 2.2, 6), _gold(), Vector3(px, gy + tall + tall * 0.45 + 1.0, pz))
+	var bark := UnitModels.std(Color("#e8dccb"), Color.BLACK, 0.0, 0.0, 0.8)
+	var leaves := [UnitModels.std(Color("#f0b030"), Color("#ffb020"), 0.12, 0.0, 0.7), UnitModels.std(Color("#e88a28"), Color.BLACK, 0.0, 0.0, 0.7),
+		UnitModels.std(Color("#f7d060"), Color("#ffd040"), 0.1, 0.0, 0.7)]
+	for k in 46:
+		var x := (_rand.next() * 2.0 - 1.0) * (GameMap.W + 9.0)
+		var z := (_rand.next() * 2.0 - 1.0) * (GameMap.R + 8.0)
+		if absf(x) < GameMap.W + 2.5 and absf(z) < GameMap.R + 2.5:
+			continue
+		var sc := 0.8 + _rand.next() * 0.7
+		var gy := _full_h(x, z) - 0.2
+		_mi(MeshBuilder.cylinder(0.18 * sc, 0.32 * sc, 4.0 * sc, 7), bark, Vector3(x, gy + 2.0 * sc, z))
+		for b in 3:
+			var off := Vector3((_rand.next() - 0.5) * 1.6, 0, (_rand.next() - 0.5) * 1.6) * sc
+			_mi(MeshBuilder.sphere(1.5 * sc, 10, 6), leaves[(k + b) % 3], Vector3(x, gy + 4.6 * sc + b * 0.6 * sc, z) + off)
+	for sgn in [1.0, -1.0]:  # banners on poles along the long walls
+		for zz in [-14.0, 0.0, 14.0]:
+			var x: float = sgn * (GameMap.W + 1.6)
+			_mi(MeshBuilder.cylinder(0.08, 0.1, 7.0, 6), _gold(), Vector3(x, 3.5, zz))
+			_mi(MeshBuilder.box(Vector3(0.1, 3.2, 1.4)), UnitModels.std(CRIMSON, Color.BLACK, 0.0, 0.0, 0.8), Vector3(x, 4.8, zz))
+			_mi(MeshBuilder.sphere(0.22, 8, 5), _gold(), Vector3(x, 7.1, zz))
+
+
 # ---------------------------------------------------------------- per-frame state
 
 ## No bushes in the new arenas; kept so callers need not care.
@@ -648,6 +783,10 @@ func update(dt: float, now_s: float) -> void:
 				(pv.dust as CPUParticles3D).restart()
 				(pv.dust as CPUParticles3D).emitting = true
 			pv.state = info.state
+	for f in _floaters:
+		var fn: Node3D = f.node
+		fn.position.y = f.base_y + sin(now_s * 1.4 + f.phase) * 0.25
+		fn.rotation.y = now_s * 0.6 + f.phase
 	for l in _lights:
 		var lt: OmniLight3D = l.light
 		lt.light_energy = l.base * (0.85 + 0.15 * sin(now_s * 7.0 + l.phase) * sin(now_s * 3.1 + l.phase * 2.0))

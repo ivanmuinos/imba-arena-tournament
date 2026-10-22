@@ -30,7 +30,7 @@ func _same_shape(a: Dictionary, b: Dictionary) -> bool:
 
 
 func test_catalog_has_four_maps_plus_hidden_test_map() -> void:
-	eq(GameMap.IDS, ["bridge", "pillars", "tomb", "living"], "los cuatro mapas")
+	eq(GameMap.IDS, ["bridge", "pillars", "tomb", "living", "spire"], "los cinco mapas")
 	for id in GameMap.IDS:
 		check(GameData.maps.has(id), "%s tiene datos (nombre/zona)" % id)
 		var m := GameMap.create(id)
@@ -226,7 +226,7 @@ func test_random_pick_is_deterministic_and_covers_all_maps() -> void:
 		eq(a, GameMap.pick_id(s), "mismo seed, mismo mapa")
 		check(a in GameMap.IDS, "mapa válido")
 		seen[a] = true
-	eq(seen.size(), 4, "salen los cuatro")
+	eq(seen.size(), GameMap.IDS.size(), "salen todos")
 
 
 func test_bots_finish_matches_on_every_map() -> void:

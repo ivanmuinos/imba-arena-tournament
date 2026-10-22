@@ -14,6 +14,10 @@ var _abil_row: HBoxContainer
 var _slots: Array = []
 var _tiles := {}
 var _tip: UiTip
+## Band of the 1280 px menu canvas the roster row is centred in: right of the specialization cards, to the right margin.
+const ROSTER_X0 := 284.0
+const ROSTER_X1 := 1208.0
+
 var _confirm: MButton
 var _panel: Control
 var _cls := ""
@@ -45,11 +49,14 @@ func _ready() -> void:
 	_tags.add_theme_constant_override("separation", 8)
 	_tags.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_tags)
-	# right panel
+	# right column: stats/abilities panel with the confirm button right under it (the roster below gets the full width)
+	var right := VBoxContainer.new()
+	right.position = Vector2(800, 84)
+	right.add_theme_constant_override("separation", 14)
+	add_child(right)
 	var p := UiKit.glass(UiKit.LINE, 14, 22)
-	p.position = Vector2(800, 84)
 	p.custom_minimum_size = Vector2(408, 0)
-	add_child(p)
+	right.add_child(p)
 	_panel = p
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 9)
@@ -84,23 +91,24 @@ func _ready() -> void:
 	role.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	role.name = "RoleLine"
 	col.add_child(role)
-	# roster
+	# roster: one row centred in its band; tiles narrow down when there are many champions
+	var n := GameData.classes.size()
+	var gap := 12.0
+	var tile_w := minf(104.0, (ROSTER_X1 - ROSTER_X0 - gap * (n - 1)) / n)
 	var rrow := HBoxContainer.new()
-	rrow.position = Vector2(72, 566)
-	rrow.add_theme_constant_override("separation", 12)
+	rrow.position = Vector2(ROSTER_X0 + (ROSTER_X1 - ROSTER_X0 - (tile_w * n + gap * (n - 1))) / 2.0, 548)
+	rrow.add_theme_constant_override("separation", int(gap))
 	add_child(rrow)
 	for id in GameData.classes:
 		var t := RosterTile.new(id)
-		t.custom_minimum_size = Vector2(104, 112)
+		t.custom_minimum_size = Vector2(tile_w, 112)
 		t.pressed.connect(select.bind(id, true))
 		rrow.add_child(t)
 		_tiles[id] = t
 	_confirm = MButton.new("CONFIRMAR", "primary", "ui_check")
-	_confirm.position = Vector2(800, 596)
-	_confirm.size = Vector2(408, 66)
 	_confirm.custom_minimum_size = Vector2(408, 66)
 	_confirm.pressed.connect(_on_confirm)
-	add_child(_confirm)
+	right.add_child(_confirm)
 	_tip = UiTip.new()
 	_tip.z_index = 20
 	add_child(_tip)

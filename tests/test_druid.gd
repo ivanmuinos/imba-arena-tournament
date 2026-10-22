@@ -130,3 +130,15 @@ func test_druid_bot_heals_shields_and_cyclones() -> void:
 		m.fx.clear()
 	for id in ["rejuv", "regrowth", "ironbark"]:
 		check(seen.has(id), "el bot usa " + id + " (" + str(seen.keys()) + ")")
+
+
+func test_cyclone_cast_keeps_its_target_until_it_lands() -> void:
+	var m := _match()
+	var d: ArenaUnit = m.units[0]
+	var e: ArenaUnit = m.units[2]
+	check(m.cast_ability(d, _slot("cyclone"), e.x, e.z, 1000, e.id), "empieza el lanzamiento")
+	eq(int(d.cast.get("target_id", -1)), e.id, "recuerda a quién apunta")
+	for i in 100:
+		m.tick(1000 + i * (1000.0 / 60.0))
+	eq(e.incap_kind, "cyclone", "al terminar el lanzamiento, el enemigo queda en el ciclón")
+	check(not m.errors.any(func(x): return str(x).contains("escapó")), "sin 'El objetivo escapó'")

@@ -248,10 +248,10 @@ func _druid_extras(inner: Node3D) -> void:
 	var chest := sk.get_node_or_null("chest") as Node3D
 	var hand := sk.get_node_or_null("handslot_r") as Node3D
 	var hand_l := sk.get_node_or_null("handslot_l") as Node3D
-	var antler := UnitModels.std(Color("#8a6a44"), Color.BLACK, 0.0, 0.8)
-	var bark := UnitModels.std(Color("#5a3e26"), Color.BLACK, 0.0, 0.9)
-	var leaf := UnitModels.std(Color("#4f9a3a"), Color.BLACK, 0.0, 0.7)
-	var leaf_dark := UnitModels.std(Color("#2f6a2a"), Color.BLACK, 0.0, 0.75)
+	var antler := UnitModels.std(Color("#8a6a44"), Color.BLACK, 0.0, 0.0, 0.8)
+	var bark := UnitModels.std(Color("#5a3e26"), Color.BLACK, 0.0, 0.0, 0.9)
+	var leaf := UnitModels.std(Color("#4f9a3a"), Color.BLACK, 0.0, 0.0, 0.7)
+	var leaf_dark := UnitModels.std(Color("#2f6a2a"), Color.BLACK, 0.0, 0.0, 0.75)
 	var glow := UnitModels.std(Color("#9cf06a"), Color("#8ef05a"), 1.2)
 	if head != null:
 		# crown of leaves around the head
