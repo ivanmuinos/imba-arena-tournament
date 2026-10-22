@@ -181,7 +181,7 @@ static func _outline_mat() -> ShaderMaterial:
 	return _outline
 
 
-## Occult identity on the KayKit mage body: horned hood, glowing fel eyes and hands, shoulder spikes, a long shadow cloak,
+## Occult identity on the KayKit mage body: horned hood, glowing fel hands, shoulder spikes, a long shadow cloak,
 ## a skull staff burning with fel fire and a dark grimoire. Everything is bone-bound to the licensed skeleton.
 func _warlock_extras(inner: Node3D) -> void:
 	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
@@ -200,9 +200,8 @@ func _warlock_extras(inner: Node3D) -> void:
 		_add_mesh(head, MeshBuilder.cylinder(0.0, 0.4, 0.8, 8), shadow, Vector3(0, 0.95, -0.7), Vector3(-30, 0, 0))
 		for side in [-1.0, 1.0]:
 			# one continuous horn (out of the hood, then up and back), not two loose cones that read as bent legs
-			_tube(head, [Vector3(side * 0.42, 0.92, -0.15), Vector3(side * 0.68, 1.12, -0.22), Vector3(side * 0.82, 1.4, -0.34),
-				Vector3(side * 0.8, 1.68, -0.5), Vector3(side * 0.68, 1.88, -0.66)], [0.15, 0.12, 0.09, 0.055, 0.0], bone)
-			_add_mesh(head, MeshBuilder.sphere(0.075, 6, 4), fel, Vector3(side * 0.2, 0.36, 0.56), Vector3.ZERO, Vector3(1.2, 0.8, 0.6))  # fel eyes
+			_tube(head, [Vector3(side * 0.3, 0.98, -0.2), Vector3(side * 0.46, 1.16, -0.26), Vector3(side * 0.55, 1.4, -0.37),
+				Vector3(side * 0.54, 1.64, -0.5), Vector3(side * 0.45, 1.82, -0.64)], [0.14, 0.11, 0.085, 0.05, 0.0], bone)
 	if chest != null:
 		for side in [-1.0, 1.0]:
 			_add_mesh(chest, MeshBuilder.sphere(0.3, 10, 6), iron, Vector3(side * 0.56, 0.1, 0.0), Vector3.ZERO, Vector3(1.1, 0.7, 1.0))
