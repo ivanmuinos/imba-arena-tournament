@@ -981,5 +981,127 @@
       "yaw": -90,
       "bond": "#7ddc5a"
     }
+  },
+  "ct": {
+    "id": "ct",
+    "name": "Antiterrorista",
+    "role": "Tirador a distancia",
+    "icon": "class_ct",
+    "hp": 500,
+    "speed": 6.8,
+    "crit": 0.12,
+    "abilities": [
+      {
+        "id": "rifle",
+        "name": "Fusil",
+        "icon": "rifle",
+        "desc": "Auto-ataque: tiro a tiro contra tu objetivo mientras esté a tiro y de frente: 30 de daño por bala, llega casi al instante.",
+        "cd": 700,
+        "cast": 0,
+        "range": 24,
+        "dmg": 30,
+        "projSpeed": 80,
+        "projR": 0.15,
+        "physical": true,
+        "auto": true
+      },
+      {
+        "id": "headshot",
+        "name": "Tiro a la cabeza",
+        "icon": "headshot",
+        "desc": "Apuntás 0,9 s y disparás a la cabeza: 72 de daño. Moverte cancela.",
+        "cd": 9000,
+        "cast": 900,
+        "range": 28,
+        "dmg": 72,
+        "projSpeed": 110,
+        "projR": 0.15,
+        "physical": true
+      },
+      {
+        "id": "flashbang",
+        "name": "Granada cegadora",
+        "icon": "flashbang",
+        "desc": "Tirás una granada al suelo: ciega 2,5 s a los enemigos a 5 m de donde explota (se rompe con daño).",
+        "cd": 22000,
+        "cast": 0,
+        "range": 16,
+        "aoe": 5,
+        "ccMs": 2500
+      },
+      {
+        "id": "kevlar",
+        "name": "Chaleco de kevlar",
+        "icon": "kevlar",
+        "desc": "Te ponés el chaleco: absorbe 80 de daño durante 8 s.",
+        "cd": 25000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 80,
+        "durationMs": 8000
+      },
+      {
+        "id": "knife",
+        "name": "Cuchillo en mano",
+        "icon": "knife",
+        "desc": "Guardás el fusil y corrés más rápido 4 s; te sacás ralentizaciones y raíces.",
+        "cd": 15000,
+        "cast": 0,
+        "range": 0,
+        "ccMs": 4000
+      },
+      {
+        "id": "bash",
+        "name": "Culatazo",
+        "icon": "bash",
+        "desc": "Golpe con la culata a un enemigo pegado a vos: si está lanzando, lo interrumpe y lo silencia 2 s.",
+        "cd": 15000,
+        "cast": 0,
+        "range": 4,
+        "melee": true,
+        "physical": true,
+        "ccMs": 2000
+      },
+      {
+        "id": "awp",
+        "name": "Francotirador",
+        "icon": "awp",
+        "desc": "DEFINITIVA: apuntás 1,5 s con el rifle de francotirador: un disparo de 150 de daño desde muy lejos.",
+        "cd": 0,
+        "cast": 1500,
+        "range": 34,
+        "dmg": 150,
+        "projSpeed": 120,
+        "projR": 0.2,
+        "physical": true,
+        "ult": true
+      }
+    ],
+    "tags": [
+      "Daño",
+      "Distancia"
+    ],
+    "stats": {
+      "hp": 3,
+      "mobility": 3,
+      "damage": 4,
+      "control": 2,
+      "difficulty": 3
+    },
+    "tagline": "Tiro a tiro, a la cabeza.",
+    "identity": "Fusilero de fuerzas especiales: castiga a distancia con balas que llegan al instante y críticos frecuentes. La granada cegadora y el culatazo le compran tiempo; el chaleco lo hace aguantar. Sin curaciones: si lo agarran mal parado, cae.",
+    "companion": {
+      "name": "Perro K9",
+      "model": "wolf",
+      "len": 1.3,
+      "idle": "Idle",
+      "move": "Walking",
+      "walk": 1.8,
+      "tint": {
+        "Wolf": "#2a2420"
+      },
+      "yaw": -90,
+      "bond": "#5fa8ff"
+    }
   }
 }

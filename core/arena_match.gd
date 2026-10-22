@@ -8,7 +8,7 @@ extends RefCounted
 const FIRST_PREP_MS := 10000.0
 const ROUND_PREP_MS := 10000.0
 ## Abilities that may be used in the start room (buffs/shields).
-const PREP_OK := ["pwshield", "renew", "shieldwall", "rejuv", "ironbark"]
+const PREP_OK := ["pwshield", "renew", "shieldwall", "rejuv", "ironbark", "kevlar"]
 const BETWEEN_MS := 4000.0
 const OVER_MS := 7000.0
 const INTERRUPT_LOCK_MS := 4000.0
@@ -337,7 +337,7 @@ func cast_ability(u: ArenaUnit, slot: int, ax: float, az: float, now: float, tar
 		lock = locked.id
 		ax = locked.x
 		az = locked.z
-	elif locked != null and spec.id in ["meteor", "trap", "volley"]:
+	elif locked != null and spec.id in ["meteor", "trap", "volley", "flashbang"]:
 		ax = locked.x + locked.vx * 0.3
 		az = locked.z + locked.vz * 0.3
 	if target >= 0 and slot != 0 and (spec.get("melee", false) or spec.id == "charge") and u.ability(0).get("auto", false):
@@ -467,7 +467,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 	var id: String = spec.id
 
 	match id:
-		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath":
+		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath", "rifle", "headshot", "awp":
 			_spawn_proj(u, spec, dir, lock)
 		"corruption", "agony", "soulrot":
 			if target != null and target.alive:
@@ -516,7 +516,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				_cc(target, "incap", spec.ccMs, now, "poly")
 			else:
 				_error(u, "El objetivo escapó")
-		"counter", "pummel", "kick":
+		"counter", "pummel", "kick", "bash":
 			if target != null and target.alive:
 				if not target.cast.is_empty():
 					_interrupt(target, now)
@@ -638,6 +638,22 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 					a.hot_until = maxf(a.hot_until, now + float(spec.durationMs))
 					a.hot_hps = spec.hotHps
 					a.hot_by = u
+		# ---- counter-terrorist
+		"flashbang":
+			var fp := {"x": u.x + dir.x * aim_dist, "z": u.z + dir.y * aim_dist}
+			Rules.collide(fp, map, 0.3)
+			fx.append({"k": "flash", "x": fp.x, "z": fp.z, "r": spec.aoe})
+			for e in _enemies_within(u, fp.x, fp.z, spec.aoe):
+				_cc(e, "incap", spec.ccMs, now, "blind")
+		"kevlar":
+			u.absorb = maxf(u.absorb, float(spec.absorb))
+			u.absorb_until = now + float(spec.durationMs)
+			_label(u, "KEVLAR", "#8fb4d8")
+		"knife":
+			u.haste_until = maxf(u.haste_until, now + spec.ccMs)
+			u.root_until = 0.0
+			u.slow_until = 0.0
+			_label(u, "CUCHILLO EN MANO", "#d8e0ea")
 		# ---- rogue
 		"cheapshot":
 			if target != null: _cc(target, "stun", spec.ccMs * (1.6 if from_stealth else 1.0), now)
@@ -1115,6 +1131,8 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 				_damage(t, float(spec.dmg) * float(spec.shatter), p.owner, now, spec.id)
 				_label(t, "¡ASTILLADO!", "#bff4ff")
 				return
+		"headshot", "awp":
+			_label(t, "¡A LA CABEZA!", "#ff5a4a")
 		"volley":
 			var v := Vector2(p.vx, p.vz).normalized()
 			t.dash_left = 0.12

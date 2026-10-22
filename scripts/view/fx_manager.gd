@@ -38,6 +38,9 @@ const PROJ_STYLE := {
 	"frostbolt": {"color": COL_ICE, "size": 0.38, "arrow": false, "trail": 22},
 	"icelance": {"color": Color("#d8f6ff"), "size": 0.22, "arrow": true, "trail": 14},
 	"wrath": {"color": Color("#8fe86a"), "size": 0.3, "arrow": false, "trail": 14},
+	"rifle": {"color": Color("#ffe9a0"), "size": 0.1, "arrow": true, "trail": 22},
+	"headshot": {"color": Color("#fff2c0"), "size": 0.13, "arrow": true, "trail": 30},
+	"awp": {"color": Color("#ffffff"), "size": 0.16, "arrow": true, "trail": 44},
 }
 
 var world: ArenaWorld
@@ -606,6 +609,15 @@ func boom(x: float, z: float, r: float, kind: String) -> void:
 		burst(Vector3(x, y + 0.6, z), 70, 11.0, COL_FIRE, 0.7, 0.9, 9.0)
 		burst(Vector3(x, y + 0.4, z), 20, 2.0, COL_SMOKE, 1.4, 1.6, -1.0)
 	shake.emit(0.7 if meteor else 0.15, x, z)
+
+
+## Flashbang: a white blast on the ground and a spray of bright sparks.
+func flash(x: float, z: float, r: float) -> void:
+	var y := _y(x, z)
+	_flash_ground(Vector3(x, y + 0.15, z), "holy", 0.6, r)
+	impact("holy", Vector3(x, y + 0.6, z), 1.4, false)
+	burst(Vector3(x, y + 0.6, z), 50, r * 2.4, Color("#ffffff"), 0.35, 0.35, 2.0)
+	shake.emit(0.25, x, z)
 
 
 func nova(x: float, z: float, r: float) -> void:

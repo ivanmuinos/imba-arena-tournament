@@ -327,6 +327,7 @@ const CAST_SOUND := {
 	"blind": "blind", "vanish": "vanish", "deathmark": "deathmark",
 	"shadowbolt": "shadowbolt", "corruption": "corruption", "agony": "agony", "fear": "scream", "darkpact": "darkpact", "drainlife": "drainlife", "soulrot": "soulrot",
 	"frostbolt": "frostbolt", "icelance": "icelance", "blizzard": "blizzard",
+	"rifle": "rifle", "headshot": "headshot", "flashbang": "flashbang", "kevlar": "kevlar", "knife": "knife", "bash": "interrupt", "awp": "awp",
 	"wrath": "wrath", "regrowth": "regrowth", "ironbark": "ironbark", "cyclone": "cyclone", "rejuv": "renew", "naturescure": "dispel", "tranquility": "tranquility",
 }
 
@@ -418,6 +419,8 @@ func _one_fx(f: Dictionary) -> void:
 		"boom":
 			fx.boom(f.x, f.z, f.r, f.kind)
 			audio.play("bigBoom" if f.kind in ["meteor", "pyro"] else "boom", Vector2(f.x, f.z))
+		"flash":
+			fx.flash(f.x, f.z, f.r)
 		"nova":
 			fx.nova(f.x, f.z, f.r)
 			audio.play("nova", Vector2(f.x, f.z))

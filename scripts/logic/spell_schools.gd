@@ -16,6 +16,7 @@ const OF := {
 	"smite": "holy", "heal": "holy", "pwshield": "holy", "dispel": "holy", "hymn": "holy",
 	"scream": "shadow", "silence": "shadow", "blind": "shadow", "vanish": "shadow", "deathmark": "shadow",
 	"renew": "nature",
+	"rifle": "physical", "headshot": "physical", "flashbang": "holy", "kevlar": "physical", "knife": "physical", "bash": "physical", "awp": "physical",
 	"wrath": "nature", "regrowth": "nature", "ironbark": "nature", "cyclone": "nature", "rejuv": "nature", "naturescure": "nature", "tranquility": "nature",
 }
 

@@ -13,6 +13,8 @@ const KAYKIT := {
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Raise", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"druid": {"file": "Mage", "show": [], "hide": ["Mage_Hat"], "scale": 0.86, "recolor": {"hue": -0.4, "sat": -0.2, "val": -0.2},
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
+	"ct": {"file": "Rogue", "show": [], "scale": 0.86, "recolor": {"hue": 0.55, "sat": -0.55, "val": -0.35},
+		"clips": {"idle": "2H_Ranged_Aiming", "run": "Running_A", "cast": "2H_Ranged_Aiming", "attack": "2H_Ranged_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"mage": {"file": "Mage", "show": ["2H_Staff"], "scale": 0.86, "hue": 0.0,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
@@ -34,6 +36,7 @@ const ATTACKS := {
 	"mage": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"priest": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"druid": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
+	"ct": {"light": [["2H_Ranged_Shoot", 0.10]], "heavy": [["2H_Ranged_Shoot", 0.10]]},
 }
 ## How long before the contact frame a swing starts: the server event arrives at the moment of the hit, so the clip
 ## begins this far (seconds of clip time) before contact to show a short wind-up, the strike, then the recovery.
@@ -66,7 +69,7 @@ static func available(cls: String) -> bool:
 
 ## Procedural fallback model: the warlock and the druid borrow the mage's.
 static func _glb(cls: String) -> String:
-	return "mage" if cls in ["warlock", "druid"] else cls
+	return "mage" if cls in ["warlock", "druid"] else ("hunter" if cls == "ct" else cls)
 
 
 static func _kk_ok(cls: String) -> bool:
@@ -140,6 +143,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 		_warlock_extras(inner)
 	elif cls == "druid":
 		_druid_extras(inner)
+	elif cls == "ct":
+		_ct_extras(inner)
 	for logical in _clips:
 		var clip: String = _clips[logical]
 		if player.has_animation(clip):
@@ -280,6 +285,51 @@ func _druid_extras(inner: Node3D) -> void:
 		_add_mesh(hand, MeshBuilder.sphere(0.16, 8, 5), leaf, Vector3(0.0, 1.12, 0.06), Vector3.ZERO, Vector3(1.2, 0.4, 0.9))
 	if hand_l != null:
 		_add_mesh(hand_l, MeshBuilder.sphere(0.08, 6, 4), glow, Vector3.ZERO)
+
+
+## Special-forces look on the KayKit rogue body: a ballistic helmet with goggles, a tactical vest with pouches, a
+## rifle (stock, receiver, magazine, barrel and sight) held in both hands. Bone-bound like the other kits.
+func _ct_extras(inner: Node3D) -> void:
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var head := sk.get_node_or_null("head") as Node3D
+	if head == null:  # the rogue rig has no head attachment (the mage's does): add one
+		var att := BoneAttachment3D.new()
+		att.name = "head"
+		att.bone_name = "head"
+		sk.add_child(att)
+		head = att
+	var chest := sk.get_node_or_null("chest") as Node3D
+	var hand := sk.get_node_or_null("handslot_r") as Node3D
+	var olive := UnitModels.std(Color("#3e4a3a"), Color.BLACK, 0.0, 0.0, 0.85)
+	var vest_mat := UnitModels.std(Color("#2c3440"), Color.BLACK, 0.0, 0.0, 0.9)
+	var gun := UnitModels.std(Color("#1e2024"), Color.BLACK, 0.0, 0.6, 0.45)
+	var wood := UnitModels.std(Color("#5a3e26"), Color.BLACK, 0.0, 0.0, 0.7)
+	var lens := UnitModels.std(Color("#7fd0ff"), Color("#3fa8ff"), 0.6, 0.3, 0.1)
+	if head != null:
+		# helmet: a dome over the head with a rim, a goggle band and two lenses resting on the front
+		_add_mesh(head, MeshBuilder.sphere(0.66, 14, 8), olive, Vector3(0, 0.76, -0.04), Vector3.ZERO, Vector3(1.08, 0.72, 1.08))
+		_add_mesh(head, MeshBuilder.torus(0.66, 0.06, 24, 5), olive, Vector3(0, 0.64, -0.04), Vector3.ZERO, Vector3(1.08, 1.0, 1.08))
+		_add_mesh(head, MeshBuilder.torus(0.67, 0.035, 24, 4), vest_mat, Vector3(0, 0.8, -0.04), Vector3(-6, 0, 0), Vector3(1.08, 1.0, 1.08))
+		for side in [-1.0, 1.0]:
+			_add_mesh(head, MeshBuilder.cylinder(0.11, 0.11, 0.08, 10), lens, Vector3(side * 0.17, 0.88, 0.6), Vector3(80, 0, 0))
+	if chest != null:
+		# vest over the torso with two magazine pouches
+		_add_mesh(chest, MeshBuilder.box(Vector3(0.74, 0.42, 0.56)), vest_mat, Vector3(0, -0.02, 0.02))
+		for side in [-1.0, 1.0]:
+			_add_mesh(chest, MeshBuilder.box(Vector3(0.16, 0.2, 0.1)), olive, Vector3(side * 0.17, -0.1, 0.32))
+	if hand != null:
+		# rifle, laid out like the KayKit crossbow it replaces (that mesh's transform in the hand slot: its +z is the muzzle)
+		var gun_root := Node3D.new()
+		gun_root.transform = Transform3D(Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)), Vector3(-0.1, -0.01, 0))
+		hand.add_child(gun_root)
+		hand = gun_root
+		_add_mesh(hand, MeshBuilder.box(Vector3(0.12, 0.2, 0.7)), gun, Vector3(0, 0.05, 0.25))           # receiver
+		_add_mesh(hand, MeshBuilder.box(Vector3(0.1, 0.18, 0.4)), wood, Vector3(0, 0.0, -0.3))           # stock
+		_add_mesh(hand, MeshBuilder.box(Vector3(0.08, 0.26, 0.12)), gun, Vector3(0, -0.14, 0.3), Vector3(-15, 0, 0))  # magazine
+		var barrel := _add_mesh(hand, MeshBuilder.cylinder(0.03, 0.035, 0.7, 8), gun, Vector3(0, 0.08, 0.9))
+		barrel.rotation_degrees = Vector3(90, 0, 0)
+		_add_mesh(hand, MeshBuilder.box(Vector3(0.06, 0.07, 0.22)), gun, Vector3(0, 0.2, 0.2))           # sight
+		_add_mesh(hand, MeshBuilder.box(Vector3(0.1, 0.12, 0.3)), wood, Vector3(0, -0.02, 0.62))        # handguard
 
 
 ## A tapering tube through `points` (radius per point): one cone frustum per segment, a ball on each joint so it bends

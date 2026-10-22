@@ -533,7 +533,7 @@ func update(dt: float, now_s: float) -> void:
 	if entry.cls in ["mage", "priest", "warlock", "druid"]:
 		weapon.rotation.x = -_cast_pose * 0.9
 		weapon.position.y = _cast_pose * 0.3
-	elif entry.cls == "hunter":
+	elif entry.cls == "hunter" or entry.cls == "ct":
 		weapon.rotation.y = _cast_pose * 0.6
 	# Melee swing: wind up, then slash forward.
 	if _swing_t > 0.0:

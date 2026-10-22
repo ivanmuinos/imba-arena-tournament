@@ -2,7 +2,7 @@ class_name MChampions
 extends MenuView
 ## Champion select: lit 3D pedestal, role tags, stat bars, ability row with tooltips, portrait roster.
 
-const CLASS_SOUND := {"warlock": "vanish", "mage": "fireball", "hunter": "shot", "warrior": "heavySwing", "priest": "heal", "rogue": "vanish", "druid": "renew"}
+const CLASS_SOUND := {"warlock": "vanish", "mage": "fireball", "hunter": "shot", "warrior": "heavySwing", "priest": "heal", "rogue": "vanish", "druid": "renew", "ct": "shot"}
 const STATS := [["hp", "Vida", "ui_stat_hp"], ["mobility", "Movilidad", "ui_stat_speed"], ["damage", "Daño", "ui_stat_dmg"], ["control", "Control", "ui_stat_cc"], ["difficulty", "Dificultad", "ui_stat_diff"]]
 
 var _show: ClassShowcase
@@ -199,6 +199,7 @@ func select(id: String, from_user := false) -> void:
 	var tint: Color = Color(str(spec.spec_color)) if spec.has("spec_color") else UiKit.class_color(id)
 	_build_spec_cards(id, sid)
 	_name.text = str(spec.name).to_upper()
+	_name.add_theme_font_size_override("font_size", 72 if _name.text.length() <= 9 else 40)  # long names stay clear of the pedestal
 	_name.add_theme_color_override("font_color", tint.lightened(0.35))
 	_tagline.text = str(spec.tagline)
 	_tagline.position.y = 250 if sid == "" else 250

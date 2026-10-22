@@ -91,6 +91,10 @@ const LAYERS := {
 	"smite": [["holy_chime", 1.3, -6.0, 0.0], ["arc_bright", 1.2, -12.0, 0.03]], "shieldUp": [["holy_chime", 0.9, -6.0, 0.0]],
 	"renew": [["heal", 1.1, -12.0, 0.0]], "dispel": [["arc_soft", 1.3, -6.0, 0.0], ["holy_chime", 1.4, -12.0, 0.0]],
 	"hymn": [["holy_choir", 1.0, -5.0, 0.0], ["holy_chime", 0.8, -12.0, 0.2]],
+	# counter-terrorist
+	"rifle": [["metal", 1.7, -4.0, 0.0], ["fire_hit", 1.5, -8.0, 0.0]], "headshot": [["metal", 1.4, -2.0, 0.0], ["fire_hit", 1.2, -5.0, 0.0]],
+	"flashbang": [["earth_big", 1.6, -3.0, 0.0], ["arc_bright", 1.5, -6.0, 0.0]], "kevlar": [["cloth", 0.8, -6.0, 0.0], ["metal", 0.6, -10.0, 0.05]],
+	"knife": [["blade", 1.3, -5.0, 0.0]], "awp": [["earth_big", 1.2, -1.0, 0.0], ["metal", 0.9, -4.0, 0.0]],
 	# nature (druid)
 	"wrath": [["arc_soft", 1.1, -6.0, 0.0], ["swish", 1.2, -12.0, 0.0]], "regrowth": [["heal", 0.9, -8.0, 0.0]],
 	"ironbark": [["stone", 0.8, -6.0, 0.0], ["earth_big", 1.2, -14.0, 0.05]], "cyclone": [["whoosh_long", 0.8, -4.0, 0.0], ["whoosh_long", 1.1, -8.0, 0.15]],

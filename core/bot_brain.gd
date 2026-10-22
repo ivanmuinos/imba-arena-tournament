@@ -3,7 +3,7 @@ extends RefCounted
 ## Bot AI per class (port of server/bot.ts).
 
 const SKILL := {"easy": [0.1, 0.3], "normal": [0.35, 0.55], "hard": [0.75, 0.95]}
-const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "warrior": 1.6, "rogue": 1.6}
+const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "ct": 16.0, "warrior": 1.6, "rogue": 1.6}
 ## Classes that play as the team healer (slots laid out alike: 1 cast heal, 2 protect, 4 heal over time, 5 dispel, 6 ult).
 const HEALERS := ["priest", "druid"]
 
@@ -120,7 +120,7 @@ func _priest_post(m: ArenaMatch, u: ArenaUnit, enemies: Array, now: float) -> Ve
 			break
 	if not has_sight:
 		return Vector2(near_ally.x, near_ally.z)  # rejoin the team
-	var ranged: Array = enemies.filter(func(e): return e.cls in ["mage", "warlock", "hunter", "priest", "druid"] and Rules.has_los(m.map, e, u))
+	var ranged: Array = enemies.filter(func(e): return e.cls in ["mage", "warlock", "hunter", "priest", "druid", "ct"] and Rules.has_los(m.map, e, u))
 	if not ranged.is_empty():
 		# step behind cover: a nearby spot that no enemy caster sees but where an ally is still in sight
 		var best := Vector2.INF
@@ -364,6 +364,28 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 						stop = try_cast.call(1, target, target)
 					elif ready.call(0) and randf() < 0.35 + skill * 0.65:
 						try_cast.call(0, lead.call(target, ab[0].projSpeed), target)
+			"ct":
+				# butt-stroke a caster on top of us, flash a healer or two foes, vest up when focused, snipe a weak target
+				var foes_near := enemies.filter(func(e): return dist.call(e) < 9.0)
+				var flash_on: ArenaUnit = null
+				for e in enemies:
+					if not ccd.call(e) and in_reach.call(e, 2) and (e.cls in HEALERS or enemies.filter(func(o): return Vector2(o.x - e.x, o.z - e.z).length() < 5.0).size() >= 2):
+						flash_on = e
+						break
+				if caster != null and in_reach.call(caster, 5) and ready.call(5) and chance.call(0.9):
+					stop = try_cast.call(5, caster, caster)
+				if not stop and low_hp and ready.call(3) and not foes_near.is_empty():
+					stop = try_cast.call(3, u)
+				if not stop and (now < u.slow_until or now < u.root_until or (low_hp and dn < 5)) and ready.call(4):
+					stop = try_cast.call(4, u)
+				if not stop and flash_on != null and ready.call(2) and chance.call(0.5):
+					stop = try_cast.call(2, Vector2(flash_on.x, flash_on.z))
+				if not stop and los and ready.call(6) and d <= ab[6].range and dn > 7 and target.hp / target.max_hp < 0.6:
+					stop = try_cast.call(6, target, target)
+				if not stop and los and ready.call(1) and d <= ab[1].range and dn > 6 and chance.call(0.7):
+					stop = try_cast.call(1, target, target)
+				if not stop and los and d <= ab[0].range and ready.call(0) and randf() < 0.35 + skill * 0.65:
+					try_cast.call(0, target, target)
 			"warrior":
 				if caster != null and in_reach.call(caster, 5) and ready.call(5) and chance.call(0.9) and try_cast.call(5, caster, caster): pass
 				elif ready.call(6) and enemies.any(func(e): return dist.call(e) < 4.2) and chance.call(0.8) and try_cast.call(6, u): pass
