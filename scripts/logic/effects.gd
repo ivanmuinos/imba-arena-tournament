@@ -49,7 +49,7 @@ static func debuffs_of(cc: Dictionary) -> Array:
 			out.append(_fx(id, id, names[id], cc[id], Color("#b18ae8"), false, false))
 	if cc.has("incap"):
 		var kind: String = cc.get("incapKind", "freeze")
-		var d: Array = ["fx_disorient", "Desorientado", "#ffb060"] if kind == "disorient" else ["fx_poly", "Polimorfia", "#f0e6ff"] if kind == "poly" else (["fx_blind", "Cegado", "#b0a8c0"] if kind == "blind" else ["fx_freeze", "Congelado", "#9be7ff"])
+		var d: Array = ["fx_disorient", "Ciclón", "#9fe8a0"] if kind == "cyclone" else ["fx_disorient", "Desorientado", "#ffb060"] if kind == "disorient" else ["fx_poly", "Polimorfia", "#f0e6ff"] if kind == "poly" else (["fx_blind", "Cegado", "#b0a8c0"] if kind == "blind" else ["fx_freeze", "Congelado", "#9be7ff"])
 		out.append(_fx("incap", d[0], d[1], cc.incap, Color(d[2]), true, false))
 	if cc.has("fear"): out.append(_fx("fear", "fx_fear", "Aterrorizado", cc.fear, Color("#c77dff"), true, false))
 	if cc.has("stun"): out.append(_fx("stun", "fx_stun", "Aturdido", cc.stun, Color("#ffd166"), true, false))

@@ -60,7 +60,7 @@ func _portrait(cls: String) -> void:
 	var cam := Camera3D.new()
 	cam.fov = 30
 	vp.add_child(cam)
-	if cls == "warlock" or cls == "priest":  # horns and the staff skull are taller than the other heads: pull back
+	if cls in ["warlock", "priest", "druid"]:  # horns, antlers and the staff skull are taller than the other heads: pull back
 		cam.look_at_from_position(Vector3(0.15, 1.55, 5.4), Vector3(0, 1.2, 0))
 	else:
 		cam.look_at_from_position(Vector3(0.15, 1.45, 4.2), Vector3(0, 1.1, 0))

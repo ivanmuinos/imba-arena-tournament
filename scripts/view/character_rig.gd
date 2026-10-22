@@ -11,6 +11,8 @@ static var outlines := true
 const KAYKIT := {
 	"warlock": {"file": "Mage", "show": ["2H_Staff", "Spellbook_open"], "hide": ["Mage_Hat"], "scale": 0.86, "recolor": {"hue": 0.10, "sat": 0.15, "val": -0.35},
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Raise", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
+	"druid": {"file": "Mage", "show": [], "hide": ["Mage_Hat"], "scale": 0.86, "recolor": {"hue": -0.4, "sat": -0.2, "val": -0.2},
+		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"mage": {"file": "Mage", "show": ["2H_Staff"], "scale": 0.86, "hue": 0.0,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
@@ -31,6 +33,7 @@ const ATTACKS := {
 	"hunter": {"light": [["2H_Ranged_Shoot", 0.13]], "heavy": [["2H_Ranged_Shoot", 0.13]]},
 	"mage": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"priest": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
+	"druid": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
 }
 ## How long before the contact frame a swing starts: the server event arrives at the moment of the hit, so the clip
 ## begins this far (seconds of clip time) before contact to show a short wind-up, the strike, then the recovery.
@@ -58,7 +61,12 @@ var _clips := {}  # logical animation -> clip name (identity for the procedural 
 
 
 static func available(cls: String) -> bool:
-	return _kk_ok(cls) or ResourceLoader.exists("res://assets/models/%s.glb" % ("mage" if cls == "warlock" else cls))
+	return _kk_ok(cls) or ResourceLoader.exists("res://assets/models/%s.glb" % _glb(cls))
+
+
+## Procedural fallback model: the warlock and the druid borrow the mage's.
+static func _glb(cls: String) -> String:
+	return "mage" if cls in ["warlock", "druid"] else cls
 
 
 static func _kk_ok(cls: String) -> bool:
@@ -130,6 +138,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 		_priest_extras(inner)
 	if cls == "warlock":
 		_warlock_extras(inner)
+	elif cls == "druid":
+		_druid_extras(inner)
 	for logical in _clips:
 		var clip: String = _clips[logical]
 		if player.has_animation(clip):
@@ -147,7 +157,7 @@ func setup(cls: String, team: Color) -> void:
 	if _kk_ok(cls):
 		_setup_kaykit(cls, team)
 		return
-	var scene := load("res://assets/models/%s.glb" % ("mage" if cls == "warlock" else cls)) as PackedScene
+	var scene := load("res://assets/models/%s.glb" % _glb(cls)) as PackedScene
 	root = scene.instantiate()
 	player = root.find_children("*", "AnimationPlayer", true, false)[0]
 	for a in player.get_animation_list():
@@ -228,6 +238,48 @@ func _warlock_extras(inner: Node3D) -> void:
 		_add_mesh(hand, MeshBuilder.sphere(0.08, 6, 4), fel, Vector3(0.0, 0.05, 0.0))   # fel glow in the grip
 	if hand_l != null:
 		_add_mesh(hand_l, MeshBuilder.sphere(0.09, 6, 4), fel, Vector3(0, 0.0, 0.0))
+
+
+## Nature identity on the KayKit mage body: branching antlers growing out of a leafy crown, a mantle of leaves on the
+## shoulders and a gnarled wooden staff with a glowing seed. Bone-bound like the warlock's.
+func _druid_extras(inner: Node3D) -> void:
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var head := sk.get_node_or_null("head") as Node3D
+	var chest := sk.get_node_or_null("chest") as Node3D
+	var hand := sk.get_node_or_null("handslot_r") as Node3D
+	var hand_l := sk.get_node_or_null("handslot_l") as Node3D
+	var antler := UnitModels.std(Color("#8a6a44"), Color.BLACK, 0.0, 0.8)
+	var bark := UnitModels.std(Color("#5a3e26"), Color.BLACK, 0.0, 0.9)
+	var leaf := UnitModels.std(Color("#4f9a3a"), Color.BLACK, 0.0, 0.7)
+	var leaf_dark := UnitModels.std(Color("#2f6a2a"), Color.BLACK, 0.0, 0.75)
+	var glow := UnitModels.std(Color("#9cf06a"), Color("#8ef05a"), 1.2)
+	if head != null:
+		# crown of leaves around the head
+		for i in 9:
+			var a := TAU * i / 9.0
+			_add_mesh(head, MeshBuilder.sphere(0.17, 8, 5), leaf if i % 2 == 0 else leaf_dark,
+				Vector3(sin(a) * 0.6, 0.95, cos(a) * 0.5 - 0.05), Vector3(0, rad_to_deg(a), 0), Vector3(1.0, 0.45, 1.4))
+		for side in [-1.0, 1.0]:
+			# antlers: a main beam up and back, with two tines branching forward/up off it
+			_tube(head, [Vector3(side * 0.3, 0.98, -0.1), Vector3(side * 0.48, 1.25, -0.16), Vector3(side * 0.62, 1.55, -0.28), Vector3(side * 0.7, 1.85, -0.42)],
+				[0.085, 0.07, 0.055, 0.0], antler)
+			_tube(head, [Vector3(side * 0.48, 1.25, -0.16), Vector3(side * 0.66, 1.38, 0.02), Vector3(side * 0.74, 1.52, 0.12)], [0.055, 0.04, 0.0], antler)
+			_tube(head, [Vector3(side * 0.62, 1.55, -0.28), Vector3(side * 0.86, 1.7, -0.22), Vector3(side * 0.98, 1.86, -0.2)], [0.045, 0.032, 0.0], antler)
+	if chest != null:
+		# leaf mantle over the shoulders
+		for side in [-1.0, 1.0]:
+			for k in 3:
+				_add_mesh(chest, MeshBuilder.sphere(0.24, 8, 5), leaf if k != 1 else leaf_dark,
+					Vector3(side * (0.36 + 0.14 * k), 0.24 - 0.05 * k, -0.04 + 0.08 * (k - 1)), Vector3(0, 0, -side * (15 + 20 * k)), Vector3(1.2, 0.5, 1.0))
+	if hand != null:
+		# gnarled staff: a crooked shaft that splits into a cradle holding a glowing seed
+		_tube(hand, [Vector3(0.0, -0.8, 0.0), Vector3(0.04, -0.1, 0.02), Vector3(-0.03, 0.6, 0.0), Vector3(0.02, 1.1, 0.0)], [0.06, 0.055, 0.05, 0.05], bark)
+		for side in [-1.0, 1.0]:
+			_tube(hand, [Vector3(0.02, 1.1, 0.0), Vector3(side * 0.16, 1.3, 0.02), Vector3(side * 0.1, 1.5, 0.0)], [0.045, 0.035, 0.0], bark)
+		_add_mesh(hand, MeshBuilder.sphere(0.13, 10, 6), glow, Vector3(0.02, 1.33, 0.0))
+		_add_mesh(hand, MeshBuilder.sphere(0.16, 8, 5), leaf, Vector3(0.0, 1.12, 0.06), Vector3.ZERO, Vector3(1.2, 0.4, 0.9))
+	if hand_l != null:
+		_add_mesh(hand_l, MeshBuilder.sphere(0.08, 6, 4), glow, Vector3.ZERO)
 
 
 ## A tapering tube through `points` (radius per point): one cone frustum per segment, a ball on each joint so it bends

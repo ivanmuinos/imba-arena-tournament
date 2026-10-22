@@ -91,6 +91,10 @@ const LAYERS := {
 	"smite": [["holy_chime", 1.3, -6.0, 0.0], ["arc_bright", 1.2, -12.0, 0.03]], "shieldUp": [["holy_chime", 0.9, -6.0, 0.0]],
 	"renew": [["heal", 1.1, -12.0, 0.0]], "dispel": [["arc_soft", 1.3, -6.0, 0.0], ["holy_chime", 1.4, -12.0, 0.0]],
 	"hymn": [["holy_choir", 1.0, -5.0, 0.0], ["holy_chime", 0.8, -12.0, 0.2]],
+	# nature (druid)
+	"wrath": [["arc_soft", 1.1, -6.0, 0.0], ["swish", 1.2, -12.0, 0.0]], "regrowth": [["heal", 0.9, -8.0, 0.0]],
+	"ironbark": [["stone", 0.8, -6.0, 0.0], ["earth_big", 1.2, -14.0, 0.05]], "cyclone": [["whoosh_long", 0.8, -4.0, 0.0], ["whoosh_long", 1.1, -8.0, 0.15]],
+	"tranquility": [["holy_choir", 0.85, -6.0, 0.0], ["heal", 0.7, -10.0, 0.2]],
 	# shadow
 	"blind": [["shadow_cast", 1.0, -5.0, 0.0], ["swish", 0.8, -10.0, 0.0]], "vanish": [["shadow_cast", 0.8, -6.0, 0.0], ["whoosh_long", 1.2, -8.0, 0.0]],
 	"deathmark": [["shadow_swell", 0.8, -6.0, 0.0], ["metal", 0.7, -14.0, 0.1]], "scream": [["shadow_swell", 0.9, -3.0, 0.0], ["shadow_low", 0.8, -6.0, 0.05]],

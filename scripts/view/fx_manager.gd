@@ -37,6 +37,7 @@ const PROJ_STYLE := {
 	"smite": {"color": Color("#ffe08a"), "size": 0.3, "arrow": false, "trail": 14},
 	"frostbolt": {"color": COL_ICE, "size": 0.38, "arrow": false, "trail": 22},
 	"icelance": {"color": Color("#d8f6ff"), "size": 0.22, "arrow": true, "trail": 14},
+	"wrath": {"color": Color("#8fe86a"), "size": 0.3, "arrow": false, "trail": 14},
 }
 
 var world: ArenaWorld

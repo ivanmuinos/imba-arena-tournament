@@ -8,7 +8,7 @@ extends RefCounted
 const FIRST_PREP_MS := 10000.0
 const ROUND_PREP_MS := 10000.0
 ## Abilities that may be used in the start room (buffs/shields).
-const PREP_OK := ["pwshield", "renew", "shieldwall"]
+const PREP_OK := ["pwshield", "renew", "shieldwall", "rejuv", "ironbark"]
 const BETWEEN_MS := 4000.0
 const OVER_MS := 7000.0
 const INTERRUPT_LOCK_MS := 4000.0
@@ -467,7 +467,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 	var id: String = spec.id
 
 	match id:
-		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt":
+		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath":
 			_spawn_proj(u, spec, dir, lock)
 		"corruption", "agony", "soulrot":
 			if target != null and target.alive:
@@ -595,7 +595,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				target.hot_hps = spec.heal
 				target.hot_by = u
 				_label(target, "RENOVAR", "#5cff8a")
-		"dispel":
+		"dispel", "naturescure":
 			if target != null:
 				target.curses.clear()
 				for f in ["stun_until", "root_until", "silence_until", "incap_until", "fear_until", "slow_until", "mortal_until", "marked_until", "burn_until"]:
@@ -612,6 +612,32 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			for a in units:
 				if a.alive and a.team == u.team and _dist(a, u) <= spec.aoe:
 					_heal(a, spec.heal, u, now)
+		# ---- druid
+		"regrowth":
+			if target != null: _heal(target, spec.heal, u, now)
+		"rejuv":
+			if target != null:
+				target.hot_until = now + float(spec.durationMs)
+				target.hot_hps = spec.heal
+				target.hot_by = u
+				_label(target, "REJUVENECIMIENTO", "#7ddc5a")
+		"ironbark":
+			if target != null:
+				target.wall_until = maxf(target.wall_until, now + spec.ccMs)
+				_label(target, "CORTEZA FÉRREA", "#b08a4a")
+		"cyclone":
+			if target != null and target.alive and Rules.has_los(map, u, target) and _dist(target, u) <= spec.range + 1:
+				_cc(target, "incap", spec.ccMs, now, "cyclone")
+			else:
+				_error(u, "El objetivo escapó")
+		"tranquility":
+			fx.append({"k": "hymn", "x": u.x, "z": u.z, "r": spec.aoe})
+			for a in units:
+				if a.alive and a.team == u.team and _dist(a, u) <= spec.aoe:
+					_heal(a, spec.heal, u, now)
+					a.hot_until = maxf(a.hot_until, now + float(spec.durationMs))
+					a.hot_hps = spec.hotHps
+					a.hot_by = u
 		# ---- rogue
 		"cheapshot":
 			if target != null: _cc(target, "stun", spec.ccMs * (1.6 if from_stealth else 1.0), now)
@@ -816,7 +842,7 @@ const CC_LABEL := {
 	"stun": ["ATURDIDO", "#ffd166"], "root": ["ENRAIZADO", "#7fdbff"], "silence": ["SILENCIADO", "#c77dff"],
 	"incap": ["INCAPACITADO", "#ffffff"], "fear": ["ATERRORIZADO", "#c77dff"],
 }
-const INCAP_LABEL := {"disorient": ["DESORIENTADO", "#ffb060"], "poly": ["¡OVEJA!", "#ffffff"], "freeze": ["CONGELADO", "#9be7ff"], "blind": ["CEGADO", "#b0a8c0"]}
+const INCAP_LABEL := {"disorient": ["DESORIENTADO", "#ffb060"], "poly": ["¡OVEJA!", "#ffffff"], "freeze": ["CONGELADO", "#9be7ff"], "blind": ["CEGADO", "#b0a8c0"], "cyclone": ["CICLÓN", "#9fe8a0"]}
 
 
 func _cc(t: ArenaUnit, cat: String, base_ms: float, now: float, incap_kind := "poly") -> void:

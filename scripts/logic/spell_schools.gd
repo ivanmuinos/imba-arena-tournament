@@ -16,6 +16,7 @@ const OF := {
 	"smite": "holy", "heal": "holy", "pwshield": "holy", "dispel": "holy", "hymn": "holy",
 	"scream": "shadow", "silence": "shadow", "blind": "shadow", "vanish": "shadow", "deathmark": "shadow",
 	"renew": "nature",
+	"wrath": "nature", "regrowth": "nature", "ironbark": "nature", "cyclone": "nature", "rejuv": "nature", "naturescure": "nature", "tranquility": "nature",
 }
 
 const PALETTE := {

@@ -503,7 +503,7 @@ func update(dt: float, now_s: float) -> void:
 	var casting := 1.0 if s.cast != null else 0.0
 	_cast_pose += (casting - _cast_pose) * (1.0 - exp(-10.0 * dt))
 	var weapon: Node3D = _model.weapon
-	if entry.cls in ["mage", "priest", "warlock"]:
+	if entry.cls in ["mage", "priest", "warlock", "druid"]:
 		weapon.rotation.x = -_cast_pose * 0.9
 		weapon.position.y = _cast_pose * 0.3
 	elif entry.cls == "hunter":

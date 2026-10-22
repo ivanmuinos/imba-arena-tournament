@@ -861,5 +861,124 @@
     "crit": 0.1,
     "identity": "Cañón de cristal: el mayor golpe inicial desde el sigilo y mucho crítico, pero la menor vida. Si cae en una trampa, muere en segundos; si engancha a un mago, lo liquida.",
     "companion": {"name": "Gato negro", "model": "cat", "len": 0.6, "idle": "Idle", "move": "Walking", "walk": 1.1, "tint": {"Grey": "#232129"}, "yaw": -90, "bond": "#b070ff"}
+  },
+  "druid": {
+    "id": "druid",
+    "name": "Druida",
+    "role": "Sanador y control",
+    "icon": "class_druid",
+    "hp": 470,
+    "speed": 6.6,
+    "abilities": [
+      {
+        "id": "wrath",
+        "name": "Cólera",
+        "icon": "wrath",
+        "desc": "Rayo de naturaleza instantáneo contra tu objetivo: 22 de daño. No es un auto-ataque.",
+        "cd": 800,
+        "cast": 0,
+        "range": 20,
+        "dmg": 22,
+        "projSpeed": 36,
+        "projR": 0.3
+      },
+      {
+        "id": "regrowth",
+        "name": "Recrecimiento",
+        "icon": "regrowth",
+        "desc": "Lanzamiento de 1,5 s: cura 38 al aliado elegido (F1-F3) o a vos.",
+        "cd": 1000,
+        "cast": 1500,
+        "range": 24,
+        "heal": 38,
+        "friendly": true
+      },
+      {
+        "id": "ironbark",
+        "name": "Corteza férrea",
+        "icon": "ironbark",
+        "desc": "La piel de un aliado (o la tuya) se vuelve corteza: recibe 60% menos de daño durante 6 s.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 24,
+        "ccMs": 6000,
+        "friendly": true
+      },
+      {
+        "id": "cyclone",
+        "name": "Ciclón",
+        "icon": "cyclone",
+        "desc": "Lanzamiento de 1,3 s: un ciclón saca de combate al enemigo 4 s (se rompe con daño). Comparte rendimientos decrecientes con Polimorfia y Ceguera.",
+        "cd": 18000,
+        "cast": 1300,
+        "range": 20,
+        "ccMs": 4000
+      },
+      {
+        "id": "rejuv",
+        "name": "Rejuvenecimiento",
+        "icon": "rejuv",
+        "desc": "Cura 7 por segundo durante 9 s. Reemplaza a otra curación en el tiempo (Renovar) si ya la tiene.",
+        "cd": 4000,
+        "cast": 0,
+        "range": 24,
+        "heal": 7,
+        "durationMs": 9000,
+        "friendly": true
+      },
+      {
+        "id": "naturescure",
+        "name": "Curación natural",
+        "icon": "naturescure",
+        "desc": "Quita maldiciones, quemaduras, aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 24,
+        "friendly": true
+      },
+      {
+        "id": "tranquility",
+        "name": "Tranquilidad",
+        "icon": "tranquility",
+        "desc": "DEFINITIVA: cura 55 a todos los aliados cercanos y les deja 6 de curación por segundo durante 6 s.",
+        "cd": 0,
+        "cast": 0,
+        "range": 0,
+        "aoe": 18,
+        "heal": 55,
+        "hotHps": 6,
+        "durationMs": 6000,
+        "ult": true
+      }
+    ],
+    "tags": [
+      "Sanador",
+      "Control"
+    ],
+    "stats": {
+      "hp": 3,
+      "mobility": 3,
+      "damage": 2,
+      "control": 3,
+      "difficulty": 4
+    },
+    "tagline": "La naturaleza protege a los suyos.",
+    "identity": "Sanador de curaciones en el tiempo: mantiene al equipo con Rejuvenecimiento, salva a un aliado con Corteza férrea y saca a un enemigo de la pelea con el Ciclón. Menos explosivo que el sacerdote, más difícil de cortar.",
+    "companion": {
+      "name": "Búho",
+      "model": "eagle",
+      "len": 1.0,
+      "fly": 1.4,
+      "idle": "Flying",
+      "move": "Flying",
+      "tint": {
+        "Wings": "#6b4e2e",
+        "Head": "#b89466",
+        "Beak": "#e0b040",
+        "Claws": "#3a2a18"
+      },
+      "yaw": -90,
+      "bond": "#7ddc5a"
+    }
   }
 }

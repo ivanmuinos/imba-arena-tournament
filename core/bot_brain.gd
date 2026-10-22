@@ -3,7 +3,9 @@ extends RefCounted
 ## Bot AI per class (port of server/bot.ts).
 
 const SKILL := {"easy": [0.1, 0.3], "normal": [0.35, 0.55], "hard": [0.75, 0.95]}
-const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "warrior": 1.6, "rogue": 1.6}
+const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "warrior": 1.6, "rogue": 1.6}
+## Classes that play as the team healer (slots laid out alike: 1 cast heal, 2 protect, 4 heal over time, 5 dispel, 6 ult).
+const HEALERS := ["priest", "druid"]
 
 var diff: String
 var skill: float
@@ -69,10 +71,11 @@ func _priest_heal(m: ArenaMatch, u: ArenaUnit, now: float, ab: Array, ready: Cal
 			cursed_dps = dps
 	if cursed != null and ready.call(5) and try_cast.call(5, cursed, cursed): return "instant"
 	if ready.call(6) and (hurt >= 2 or (lowest != null and pct.call(lowest) < 0.3)) and try_cast.call(6, u): return "instant"
-	if dn < 5 and ready.call(3) and chance.call(0.8) and try_cast.call(3, u): return "instant"
+	if u.cls == "priest" and dn < 5 and ready.call(3) and chance.call(0.8) and try_cast.call(3, u): return "instant"  # psychic scream
 	if lowest == null:
 		return ""
-	if pct.call(lowest) < 0.6 and ready.call(2) and lowest.absorb <= 0 and try_cast.call(2, lowest, lowest): return "instant"
+	var guarded := lowest.absorb > 0 if u.cls == "priest" else now < lowest.wall_until  # shield / ironbark already on
+	if pct.call(lowest) < 0.6 and ready.call(2) and not guarded and try_cast.call(2, lowest, lowest): return "instant"
 	if pct.call(lowest) < 0.85 and now >= lowest.hot_until and ready.call(4) and try_cast.call(4, lowest, lowest): return "instant"
 	# Flash Heal: avoid hard-casting with a melee on you, unless someone is about to die.
 	if pct.call(lowest) < 0.7 and (dn > 5 or pct.call(lowest) < 0.45) and ready.call(1) and try_cast.call(1, lowest, lowest): return "cast"
@@ -117,7 +120,7 @@ func _priest_post(m: ArenaMatch, u: ArenaUnit, enemies: Array, now: float) -> Ve
 			break
 	if not has_sight:
 		return Vector2(near_ally.x, near_ally.z)  # rejoin the team
-	var ranged: Array = enemies.filter(func(e): return e.cls in ["mage", "warlock", "hunter", "priest"] and Rules.has_los(m.map, e, u))
+	var ranged: Array = enemies.filter(func(e): return e.cls in ["mage", "warlock", "hunter", "priest", "druid"] and Rules.has_los(m.map, e, u))
 	if not ranged.is_empty():
 		# step behind cover: a nearby spot that no enemy caster sees but where an ally is still in sight
 		var best := Vector2.INF
@@ -228,7 +231,7 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 			mv = m.map.waypoint(Vector2(u.x, u.z), seek) - Vector2(u.x, u.z)
 			u.aim_x = seek.x
 			u.aim_z = seek.y
-		if u.cls == "priest":
+		if u.cls in HEALERS:
 			# No enemy in sight is the best moment to top the team up.
 			var ally := _ally_to_reach(m, u, ab[1].range)
 			if ally != null:
@@ -262,7 +265,7 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 		elif not melee and d < pref - 4:
 			mv = -to
 		mv += Vector2(-to.y, to.x) * strafe * (0.25 if melee else 0.8)
-		if u.cls == "priest":
+		if u.cls in HEALERS:
 			# A healer positions on its team, not on the enemy: walk to whoever needs healing and is out of reach.
 			var ally := _ally_to_reach(m, u, ab[1].range)
 			if ally != null:
@@ -302,7 +305,7 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 				for e in enemies:
 					if ccd.call(e) or e.curses.size() >= 3 or not in_reach.call(e, 3):
 						continue
-					if e.cls == "priest" and dist.call(e) < 17.0:
+					if e.cls in HEALERS and dist.call(e) < 17.0:
 						fear_target = e
 						break
 					if (e.cls == "warrior" or e.cls == "rogue") and dist.call(e) < 7.5 and fear_target == null:
@@ -380,8 +383,11 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 					if not ccd.call(target) and ready.call(2) and chance.call(0.7) and try_cast.call(2, target, target): pass
 					elif ready.call(1) and try_cast.call(1, target, target): pass
 					elif ready.call(0) and randf() < 0.35 + skill * 0.65: try_cast.call(0, target, target)
-			"priest":
-				var heal := _priest_heal(m, u, now, ab, ready, try_cast, chance, dn)
+			"priest", "druid":
+				# druid: cyclone a second enemy (not the one being focused) when the team is not in trouble
+				if u.cls == "druid" and off != null and ready.call(3) and in_reach.call(off, 3) and u.hp / u.max_hp > 0.5 and chance.call(0.35):
+					stop = try_cast.call(3, off, off)
+				var heal := "cast" if stop else _priest_heal(m, u, now, ab, ready, try_cast, chance, dn)
 				if heal == "cast":
 					stop = true
 				elif heal == "" and los and d <= ab[0].range and ready.call(0) and randf() < 0.35 + skill * 0.65:

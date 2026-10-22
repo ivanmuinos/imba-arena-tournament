@@ -318,7 +318,7 @@ func _finish() -> void:
 	finished.emit(end, rows)
 
 
-const CC_WORDS := ["ATURDIDO", "OVEJA", "CONGELADO", "SILENCIADO", "ENRAIZADO", "ATERRORIZADO", "CEGADO"]
+const CC_WORDS := ["ATURDIDO", "OVEJA", "CONGELADO", "SILENCIADO", "ENRAIZADO", "ATERRORIZADO", "CEGADO", "CICLÓN"]
 const CAST_SOUND := {
 	"fireball": "fireball", "pyro": "pyro", "shot": "shot", "aimed": "aimed", "conc": "conc", "silence": "silence", "volley": "volley",
 	"poly": "poly", "counter": "counter", "disengage": "disengage", "trap": "trapSet", "meteor": "meteorFall", "strike": "swing", "stab": "swing",
@@ -327,6 +327,7 @@ const CAST_SOUND := {
 	"blind": "blind", "vanish": "vanish", "deathmark": "deathmark",
 	"shadowbolt": "shadowbolt", "corruption": "corruption", "agony": "agony", "fear": "scream", "darkpact": "darkpact", "drainlife": "drainlife", "soulrot": "soulrot",
 	"frostbolt": "frostbolt", "icelance": "icelance", "blizzard": "blizzard",
+	"wrath": "wrath", "regrowth": "regrowth", "ironbark": "ironbark", "cyclone": "cyclone", "rejuv": "renew", "naturescure": "dispel", "tranquility": "tranquility",
 }
 
 
