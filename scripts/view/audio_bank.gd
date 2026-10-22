@@ -91,6 +91,11 @@ const LAYERS := {
 	"smite": [["holy_chime", 1.3, -6.0, 0.0], ["arc_bright", 1.2, -12.0, 0.03]], "shieldUp": [["holy_chime", 0.9, -6.0, 0.0]],
 	"renew": [["heal", 1.1, -12.0, 0.0]], "dispel": [["arc_soft", 1.3, -6.0, 0.0], ["holy_chime", 1.4, -12.0, 0.0]],
 	"hymn": [["holy_choir", 1.0, -5.0, 0.0], ["holy_chime", 0.8, -12.0, 0.2]],
+	# ki fighter
+	"punch": [["swish", 1.6, -5.0, 0.0], ["stone", 1.8, -12.0, 0.03]], "kiblast": [["arc_bright", 0.9, -3.0, 0.0], ["whoosh_long", 1.6, -8.0, 0.0]],
+	"flashstep": [["arc_blink", 1.4, -4.0, 0.0]], "kiguard": [["arc_seal", 0.8, -4.0, 0.0]],
+	"awaken": [["earth_big", 1.4, -3.0, 0.0], ["holy_choir", 1.3, -6.0, 0.05], ["arc_bright", 0.7, -6.0, 0.1]],
+	"kiwave": [["whoosh_long", 0.6, -1.0, 0.0], ["arc_bright", 0.6, -2.0, 0.0], ["earth_big", 1.0, -3.0, 0.1]],
 	# wizard
 	"spark": [["arc_soft", 1.6, -6.0, 0.0]], "stunbolt": [["arc_bright", 1.0, -3.0, 0.0], ["fire_hit", 1.4, -8.0, 0.0]],
 	"disarm": [["arc_bright", 1.3, -4.0, 0.0], ["swish", 1.5, -8.0, 0.0]], "wardshield": [["arc_seal", 1.0, -5.0, 0.0]],

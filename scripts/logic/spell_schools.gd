@@ -20,6 +20,7 @@ const OF := {
 	"slash": "physical", "tempest": "physical", "windwall": "frost", "sweep": "physical", "flow": "frost", "upcut": "physical", "lastbreath": "physical", "tornado": "frost",
 	"pass": "physical", "chip": "physical", "nutmeg": "physical", "dribble": "physical", "onetwo": "physical", "tackle": "physical", "golazo": "physical",
 	"spark": "arcane", "stunbolt": "fire", "disarm": "arcane", "wardshield": "arcane", "broom": "arcane", "confuse": "arcane", "guardian": "holy",
+	"punch": "physical", "kiblast": "arcane", "flashstep": "arcane", "kiguard": "arcane", "awaken": "holy", "palm": "arcane", "kiwave": "arcane",
 	"wrath": "nature", "regrowth": "nature", "ironbark": "nature", "cyclone": "nature", "rejuv": "nature", "naturescure": "nature", "tranquility": "nature",
 }
 

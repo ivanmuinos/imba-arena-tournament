@@ -16,6 +16,12 @@ var _art: TextureRect
 var _tint: Color
 
 
+## Shrinks the name so it fits a tile `width` px wide (the roster narrows its tiles when there are many champions).
+func fit_name(width: float) -> void:
+	var size := clampi(floori(width / (_name.text.length() * 0.62)), 7, 13)
+	_name.add_theme_font_size_override("font_size", size)
+
+
 func _init(cls_ := "") -> void:
 	cls = cls_
 	_tint = UiKit.class_color(cls)
@@ -41,7 +47,7 @@ func _init(cls_ := "") -> void:
 	_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_art)
 	var title := str(GameData.classes[cls].name).to_upper()
-	_name = UiKit.heading(title, 13 if title.length() <= 10 else 10, UiKit.INK, 700, 1, HORIZONTAL_ALIGNMENT_CENTER)  # long names fit narrow tiles
+	_name = UiKit.heading(title, 13, UiKit.INK, 700, 1, HORIZONTAL_ALIGNMENT_CENTER)
 	_name.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	_name.offset_top = -26
 	_name.offset_bottom = -4

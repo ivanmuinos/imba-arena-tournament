@@ -1473,5 +1473,115 @@
       "yaw": -90,
       "bond": "#ffe9a0"
     }
+  },
+  "ki": {
+    "id": "ki",
+    "name": "Guerrero Ki",
+    "role": "Peleador cuerpo a cuerpo",
+    "icon": "class_ki",
+    "hp": 540,
+    "speed": 7.0,
+    "abilities": [
+      {
+        "id": "punch",
+        "name": "Combo de puños",
+        "icon": "punch",
+        "desc": "Auto-ataque: una lluvia de puños a tu objetivo mientras esté al alcance: 20 de daño.",
+        "cd": 800,
+        "cast": 0,
+        "range": 2.2,
+        "dmg": 20,
+        "melee": true,
+        "physical": true,
+        "auto": true
+      },
+      {
+        "id": "kiblast",
+        "name": "Ráfaga de ki",
+        "icon": "kiblast",
+        "desc": "Disparás una bola de ki: 32 de daño.",
+        "cd": 3000,
+        "cast": 0,
+        "range": 20,
+        "dmg": 32,
+        "projSpeed": 46,
+        "projR": 0.35
+      },
+      {
+        "id": "flashstep",
+        "name": "Paso instantáneo",
+        "icon": "flashstep",
+        "desc": "Desaparecés y aparecés detrás de un enemigo a 16 m.",
+        "cd": 14000,
+        "cast": 0,
+        "range": 16,
+        "targeted": true
+      },
+      {
+        "id": "kiguard",
+        "name": "Guardia de ki",
+        "icon": "kiguard",
+        "desc": "Concentrás el ki: absorbe 65 de daño durante 4 s.",
+        "cd": 16000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 65,
+        "durationMs": 4000
+      },
+      {
+        "id": "awaken",
+        "name": "Despertar",
+        "icon": "awaken",
+        "desc": "Liberás tu poder con un aura dorada: durante 8 s corrés más rápido y todos tus golpes son críticos.",
+        "cd": 45000,
+        "cast": 0,
+        "range": 0,
+        "ccMs": 8000
+      },
+      {
+        "id": "palm",
+        "name": "Palma de ki",
+        "icon": "palm",
+        "desc": "Golpe de palma a un enemigo pegado a vos: 12 de daño, si está lanzando lo interrumpe y lo silencia 1,5 s, y lo empuja 6 m.",
+        "cd": 14000,
+        "cast": 0,
+        "range": 3,
+        "dmg": 12,
+        "melee": true,
+        "ccMs": 1500
+      },
+      {
+        "id": "kiwave",
+        "name": "Onda de ki",
+        "icon": "kiwave",
+        "desc": "DEFINITIVA: cargás 1,5 s y soltás un rayo de ki de 26 m: 140 de daño a todos los enemigos en la línea. Moverte cancela.",
+        "cd": 0,
+        "cast": 1500,
+        "range": 26,
+        "dmg": 140,
+        "targeted": true,
+        "ult": true
+      }
+    ],
+    "tags": [
+      "Daño",
+      "Movilidad"
+    ],
+    "stats": {
+      "hp": 4,
+      "mobility": 4,
+      "damage": 4,
+      "control": 2,
+      "difficulty": 3
+    },
+    "tagline": "Siempre hay un nivel más.",
+    "identity": "Artista marcial que pelea cuerpo a cuerpo y a distancia con su ki: aparece detrás de quien huye, se despierta para un ataque con todo y remata con un rayo que cruza la arena. Aguanta bien, pero sin curaciones.",
+    "companion": {
+      "name": "Nube voladora",
+      "kind": "fairy",
+      "fly": 1.0,
+      "glow": "#ffd860",
+      "bond": "#ffb030"
+    }
   }
 }

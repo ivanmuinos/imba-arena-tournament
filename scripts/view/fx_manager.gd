@@ -42,6 +42,7 @@ const PROJ_STYLE := {
 	"tornado": {"color": Color("#c8f4ff"), "size": 0.8, "arrow": false, "trail": 26},
 	"pass": {"color": Color("#ffffff"), "size": 0.25, "arrow": false, "trail": 10},
 	"spark": {"color": Color("#ffe9a0"), "size": 0.18, "arrow": false, "trail": 14},
+	"kiblast": {"color": Color("#8fd8ff"), "size": 0.4, "arrow": false, "trail": 20},
 	"stunbolt": {"color": Color("#ff3a3a"), "size": 0.26, "arrow": true, "trail": 22},
 	"disarm": {"color": Color("#ff9a3a"), "size": 0.22, "arrow": true, "trail": 18},
 	"chip": {"color": Color("#ffffff"), "size": 0.3, "arrow": false, "trail": 18},
@@ -616,6 +617,38 @@ func boom(x: float, z: float, r: float, kind: String) -> void:
 		burst(Vector3(x, y + 0.6, z), 70, 11.0, COL_FIRE, 0.7, 0.9, 9.0)
 		burst(Vector3(x, y + 0.4, z), 20, 2.0, COL_SMOKE, 1.4, 1.6, -1.0)
 	shake.emit(0.7 if meteor else 0.15, x, z)
+
+
+## Ki wave: a thick glowing beam along the line that flares and fades.
+func beam(x: float, z: float, dx: float, dz: float, r: float) -> void:
+	var y := _y(x, z)
+	var m := MeshInstance3D.new()
+	m.mesh = MeshBuilder.cylinder(0.75, 0.75, r, 16)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(0.55, 0.85, 1.0, 0.9)
+	m.material_override = mat
+	m.position = Vector3(x + dx * r * 0.5, y + 1.1, z + dz * r * 0.5)
+	m.rotation = Vector3(PI / 2.0, atan2(dx, dz), 0)
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(m)
+	var tw := m.create_tween()
+	tw.tween_property(m, "scale", Vector3(1.6, 1.0, 1.6), 0.15)
+	tw.parallel().tween_property(mat, "albedo_color:a", 0.0, 0.7)
+	tw.tween_callback(m.queue_free)
+	for i in 10:
+		var k := (i + 0.5) / 10.0
+		burst(Vector3(x + dx * r * k, y + 1.1, z + dz * r * k), 4, 3.0, Color("#d8f4ff"), 0.5, 0.3, 0.0)
+	shake.emit(0.5, x, z)
+
+
+## Awakening: a golden flare around the fighter.
+func awaken(x: float, z: float) -> void:
+	var y := _y(x, z)
+	impact("holy", Vector3(x, y + 1.0, z), 1.6, true)
+	burst(Vector3(x, y + 0.3, z), 50, 4.0, Color("#ffd84a"), 0.8, 0.35, -6.0)
 
 
 ## Steel Tempest: a quick streak of wind along the thrust.

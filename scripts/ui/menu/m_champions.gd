@@ -2,7 +2,7 @@ class_name MChampions
 extends MenuView
 ## Champion select: lit 3D pedestal, role tags, stat bars, ability row with tooltips, portrait roster.
 
-const CLASS_SOUND := {"warlock": "vanish", "mage": "fireball", "hunter": "shot", "warrior": "heavySwing", "priest": "heal", "rogue": "vanish", "druid": "renew", "ct": "shot", "ronin": "heavySwing", "crack": "golazo", "wizard": "guardian"}
+const CLASS_SOUND := {"warlock": "vanish", "mage": "fireball", "hunter": "shot", "warrior": "heavySwing", "priest": "heal", "rogue": "vanish", "druid": "renew", "ct": "shot", "ronin": "heavySwing", "crack": "golazo", "wizard": "guardian", "ki": "awaken"}
 const STATS := [["hp", "Vida", "ui_stat_hp"], ["mobility", "Movilidad", "ui_stat_speed"], ["damage", "Daño", "ui_stat_dmg"], ["control", "Control", "ui_stat_cc"], ["difficulty", "Dificultad", "ui_stat_diff"]]
 
 var _show: ClassShowcase
@@ -102,6 +102,7 @@ func _ready() -> void:
 	for id in GameData.classes:
 		var t := RosterTile.new(id)
 		t.custom_minimum_size = Vector2(tile_w, 112)
+		t.fit_name(tile_w)
 		t.pressed.connect(select.bind(id, true))
 		rrow.add_child(t)
 		_tiles[id] = t

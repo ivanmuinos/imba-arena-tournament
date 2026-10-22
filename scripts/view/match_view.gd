@@ -327,6 +327,7 @@ const CAST_SOUND := {
 	"blind": "blind", "vanish": "vanish", "deathmark": "deathmark",
 	"shadowbolt": "shadowbolt", "corruption": "corruption", "agony": "agony", "fear": "scream", "darkpact": "darkpact", "drainlife": "drainlife", "soulrot": "soulrot",
 	"frostbolt": "frostbolt", "icelance": "icelance", "blizzard": "blizzard",
+	"punch": "punch", "kiblast": "kiblast", "flashstep": "flashstep", "kiguard": "kiguard", "awaken": "awaken", "palm": "interrupt", "kiwave": "kiwave",
 	"spark": "spark", "stunbolt": "stunbolt", "disarm": "disarm", "wardshield": "wardshield", "broom": "broom", "confuse": "confuse", "guardian": "guardian",
 	"pass": "kick", "chip": "chip", "nutmeg": "dribble", "dribble": "dribble", "onetwo": "onetwo", "tackle": "interrupt", "golazo": "golazo",
 	"slash": "slash", "tempest": "tempest", "windwall": "windwall", "sweep": "sweep", "flow": "flow", "upcut": "interrupt", "lastbreath": "lastbreath",
@@ -426,6 +427,11 @@ func _one_fx(f: Dictionary) -> void:
 			fx.flash(f.x, f.z, f.r)
 		"tempest":
 			fx.tempest(f.x, f.z, f.dx, f.dz, f.r)
+		"beam":
+			fx.beam(f.x, f.z, f.dx, f.dz, f.r)
+		"awaken":
+			if v != null and v.shown:
+				fx.awaken(pos.x, pos.z)
 		"windwall":
 			fx.windwall(f.x, f.z, f.dx, f.dz, f.hw, f.ms)
 		"absorb_wall":

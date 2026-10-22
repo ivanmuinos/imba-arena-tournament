@@ -3,7 +3,7 @@ extends RefCounted
 ## Bot AI per class (port of server/bot.ts).
 
 const SKILL := {"easy": [0.1, 0.3], "normal": [0.35, 0.55], "hard": [0.75, 0.95]}
-const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "ct": 16.0, "ronin": 1.8, "crack": 11.0, "wizard": 14.0, "warrior": 1.6, "rogue": 1.6}
+const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "ct": 16.0, "ronin": 1.8, "crack": 11.0, "wizard": 14.0, "ki": 1.8, "warrior": 1.6, "rogue": 1.6}
 ## Classes that play as the team healer (slots laid out alike: 1 cast heal, 2 protect, 4 heal over time, 5 dispel, 6 ult).
 const HEALERS := ["priest", "druid"]
 
@@ -252,7 +252,7 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 			if dist.call(e) < dist.call(nearest):
 				nearest = e
 		var dn: float = dist.call(nearest)
-		var melee := u.cls in ["warrior", "rogue", "ronin"]
+		var melee := u.cls in ["warrior", "rogue", "ronin", "ki"]
 		var pref: float = PREF_RANGE[u.cls]
 		u.aim_x = target.x
 		u.aim_z = target.z
@@ -308,7 +308,7 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 					if e.cls in HEALERS and dist.call(e) < 17.0:
 						fear_target = e
 						break
-					if e.cls in ["warrior", "rogue", "ronin"] and dist.call(e) < 7.5 and fear_target == null:
+					if e.cls in ["warrior", "rogue", "ronin", "ki"] and dist.call(e) < 7.5 and fear_target == null:
 						fear_target = e
 				if not stop and fear_target != null and ready.call(3):
 					stop = try_cast.call(3, fear_target, fear_target)
@@ -386,6 +386,14 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 					stop = try_cast.call(1, target, target)
 				if not stop and los and d <= ab[0].range and ready.call(0) and randf() < 0.35 + skill * 0.65:
 					try_cast.call(0, target, target)
+			"ki":
+				if caster != null and in_reach.call(caster, 5) and ready.call(5) and chance.call(0.9) and try_cast.call(5, caster, caster): pass
+				elif ready.call(6) and los and d <= ab[6].range and d > 4.0 and target.hp / target.max_hp < 0.6 and chance.call(0.8) and try_cast.call(6, target, target): stop = true
+				elif ready.call(4) and d < 6.0 and target.hp / target.max_hp > 0.4 and chance.call(0.5) and try_cast.call(4, u): pass
+				elif low_hp and ready.call(3) and dn < 6 and try_cast.call(3, u): pass
+				elif d > 5.0 and in_reach.call(target, 2) and ready.call(2) and chance.call(0.8) and try_cast.call(2, target, target): pass
+				elif d > 3.0 and los and ready.call(1) and d <= ab[1].range and try_cast.call(1, lead.call(target, ab[1].projSpeed), target): pass
+				elif in_reach.call(target, 0) and ready.call(0) and randf() < 0.35 + skill * 0.65: try_cast.call(0, target, target)
 			"wizard":
 				var foes_close := enemies.filter(func(e): return dist.call(e) < 7.5).size()
 				if caster != null and ready.call(2) and dist.call(caster) <= ab[2].range and Rules.has_los(m.map, u, caster) and chance.call(0.9):

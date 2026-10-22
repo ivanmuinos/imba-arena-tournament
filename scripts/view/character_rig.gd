@@ -21,6 +21,8 @@ const KAYKIT := {
 		"clips": {"idle": "Idle", "run": "Running_B", "cast": "Unarmed_Idle", "attack": "Unarmed_Melee_Attack_Kick", "hit": "Hit_B", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"wizard": {"file": "Mage", "show": [], "hide": ["Mage_Hat"], "scale": 0.84, "recolor": {"hue": 0.0, "sat": -0.85, "val": -0.45},
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
+	"ki": {"file": "Rogue", "show": [], "scale": 0.86, "recolor": {"hue": -0.4, "sat": 0.7, "val": 0.3},
+		"clips": {"idle": "Unarmed_Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Unarmed_Melee_Attack_Punch_A", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"mage": {"file": "Mage", "show": ["2H_Staff"], "scale": 0.86, "hue": 0.0,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
@@ -43,6 +45,7 @@ const ATTACKS := {
 	"priest": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"druid": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
 	"ct": {"light": [["2H_Ranged_Shoot", 0.10]], "heavy": [["2H_Ranged_Shoot", 0.10]]},
+	"ki": {"light": [["Unarmed_Melee_Attack_Punch_A", 0.25], ["Unarmed_Melee_Attack_Punch_B", 0.25]], "heavy": [["Unarmed_Melee_Attack_Kick", 0.30]]},
 	"wizard": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
 	"crack": {"light": [["Unarmed_Melee_Attack_Kick", 0.30]], "heavy": [["Unarmed_Melee_Attack_Kick", 0.30]]},
 	"ronin": {"light": [["1H_Melee_Attack_Slice_Horizontal", 0.27], ["1H_Melee_Attack_Slice_Diagonal", 0.40]], "heavy": [["1H_Melee_Attack_Stab", 0.35]]},
@@ -80,7 +83,7 @@ static func available(cls: String) -> bool:
 
 ## Procedural fallback model: the warlock and the druid borrow the mage's.
 static func _glb(cls: String) -> String:
-	return "mage" if cls in ["warlock", "druid", "wizard"] else ("hunter" if cls == "ct" else ("warrior" if cls == "ronin" else ("rogue" if cls == "crack" else cls)))
+	return "mage" if cls in ["warlock", "druid", "wizard"] else ("hunter" if cls == "ct" else ("warrior" if cls == "ronin" else ("rogue" if cls in ["crack", "ki"] else cls)))
 
 
 static func _kk_ok(cls: String) -> bool:
@@ -162,6 +165,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 		_crack_extras(inner)
 	elif cls == "wizard":
 		_wizard_extras(inner)
+	elif cls == "ki":
+		_ki_extras(inner)
 	for logical in _clips:
 		var clip: String = _clips[logical]
 		if player.has_animation(clip):
@@ -435,6 +440,35 @@ func _wizard_extras(inner: Node3D) -> void:
 	if hand != null:
 		_tube(hand, [Vector3(0, -0.08, 0), Vector3(0, 0.25, 0.02), Vector3(0, 0.55, 0.03)], [0.03, 0.022, 0.014], wood)
 		_add_mesh(hand, MeshBuilder.sphere(0.05, 8, 5), tip, Vector3(0, 0.57, 0.03))
+
+
+## Martial artist on the KayKit rogue body (outfit dyed orange): tall spiky black hair, a dark undershirt collar and
+## blue wristbands.
+func _ki_extras(inner: Node3D) -> void:
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var head := sk.get_node_or_null("head") as Node3D
+	if head == null:  # the rogue rig has no head attachment: add one
+		var att := BoneAttachment3D.new()
+		att.name = "head"
+		att.bone_name = "head"
+		sk.add_child(att)
+		head = att
+	var chest := sk.get_node_or_null("chest") as Node3D
+	var hair := UnitModels.std(Color("#141414"), Color.BLACK, 0.0, 0.0, 0.6)
+	var navy := UnitModels.std(Color("#2a4aa8"), Color.BLACK, 0.0, 0.0, 0.8)
+	if head != null:
+		# a hair cap and spikes fanning out in every direction
+		_add_mesh(head, MeshBuilder.sphere(0.7, 14, 8), hair, Vector3(0, 0.8, -0.16), Vector3.ZERO, Vector3(1.06, 0.78, 1.06))
+		var spikes := [[0, 1.45, -0.1, 0, 0], [0.35, 1.32, 0.05, 0, -35], [-0.35, 1.32, 0.05, 0, 35], [0.55, 1.05, -0.1, 0, -70], [-0.55, 1.05, -0.1, 0, 70],
+			[0.25, 1.25, -0.45, -40, -25], [-0.25, 1.25, -0.45, -40, 25], [0, 1.0, -0.7, -80, 0], [0.12, 1.2, 0.35, 35, -10], [-0.15, 1.15, 0.38, 40, 15]]
+		for sp in spikes:
+			_add_mesh(head, MeshBuilder.cylinder(0.0, 0.2, 0.7, 6), hair, Vector3(sp[0] * 0.95, sp[1], sp[2] - 0.05), Vector3(sp[3], 0, sp[4]))
+	if chest != null:
+		_add_mesh(chest, MeshBuilder.torus(0.3, 0.07, 16, 5), navy, Vector3(0, 0.36, 0.02))  # undershirt collar
+	for slot in ["handslot_l", "handslot_r"]:
+		var h := sk.get_node_or_null(slot) as Node3D
+		if h != null:
+			_add_mesh(h, MeshBuilder.cylinder(0.12, 0.12, 0.16, 10), navy, Vector3(0, -0.12, 0))  # wristband
 
 
 ## A tapering tube through `points` (radius per point): one cone frustum per segment, a ball on each joint so it bends

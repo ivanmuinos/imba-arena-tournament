@@ -15,7 +15,7 @@ const GREEN := Color("#6dde8a")
 const PANEL := Color(0.055, 0.035, 0.03, 0.82)
 const LINE := Color(1.0, 0.62, 0.3, 0.30)
 const LINE_STRONG := Color(1.0, 0.72, 0.38, 0.85)
-const CLASS_COLORS := {"warlock": Color("#c45be0"), "mage": Color("#9a74ff"), "hunter": Color("#74cf62"), "warrior": Color("#c4ccd8"), "priest": Color("#ffe48c"), "rogue": Color("#5fd4ff"), "druid": Color("#ff9a3c"), "ct": Color("#6f9ad8"), "ronin": Color("#7fd8ff"), "crack": Color("#9fd4ff"), "wizard": Color("#e8c46a")}
+const CLASS_COLORS := {"warlock": Color("#c45be0"), "mage": Color("#9a74ff"), "hunter": Color("#74cf62"), "warrior": Color("#c4ccd8"), "priest": Color("#ffe48c"), "rogue": Color("#5fd4ff"), "druid": Color("#ff9a3c"), "ct": Color("#6f9ad8"), "ronin": Color("#7fd8ff"), "crack": Color("#9fd4ff"), "wizard": Color("#e8c46a"), "ki": Color("#ff9a2a")}
 
 static var _theme: Theme = null
 static var _fonts := {}

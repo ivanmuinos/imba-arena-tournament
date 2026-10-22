@@ -469,7 +469,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 	var id: String = spec.id
 
 	match id:
-		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath", "rifle", "headshot", "awp", "pass", "chip", "golazo", "spark", "stunbolt", "disarm":
+		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath", "rifle", "headshot", "awp", "pass", "chip", "golazo", "spark", "stunbolt", "disarm", "kiblast":
 			_spawn_proj(u, spec, dir, lock)
 		"corruption", "agony", "soulrot":
 			if target != null and target.alive:
@@ -640,6 +640,43 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 					a.hot_until = maxf(a.hot_until, now + float(spec.durationMs))
 					a.hot_hps = spec.hotHps
 					a.hot_by = u
+		# ---- ki fighter
+		"punch":
+			if target != null: _damage(target, spec.dmg, u, now, id)
+		"flashstep":
+			if target != null:
+				var fp := {"x": target.x - sin(target.rot) * 1.3, "z": target.z - cos(target.rot) * 1.3}
+				Rules.collide(fp, map)
+				fx.append({"k": "blink", "x0": u.x, "z0": u.z, "x1": fp.x, "z1": fp.z})
+				u.x = fp.x
+				u.z = fp.z
+				u.dash_left = 0.0
+				u.rot = atan2(target.x - u.x, target.z - u.z)
+		"kiguard":
+			u.absorb = maxf(u.absorb, float(spec.absorb))
+			u.absorb_until = now + float(spec.durationMs)
+			_label(u, "GUARDIA DE KI", "#9fe8ff")
+		"awaken":
+			u.haste_until = maxf(u.haste_until, now + spec.ccMs)
+			u.crit_until = maxf(u.crit_until, now + spec.ccMs)
+			fx.append({"k": "awaken", "id": u.id, "ms": spec.ccMs})
+			_label(u, "¡DESPERTAR!", "#ffd84a")
+		"palm":
+			if target != null:
+				_damage(target, spec.dmg, u, now, id)
+				if not target.cast.is_empty():
+					_interrupt(target, now)
+					_cc(target, "silence", spec.ccMs, now)
+				var push := Vector2(target.x - u.x, target.z - u.z).normalized()
+				target.dash_left = 0.2
+				target.dash_vx = push.x * 30.0
+				target.dash_vz = push.y * 30.0
+		"kiwave":
+			var beam: Vector2 = dir * float(spec.range)
+			fx.append({"k": "beam", "x": u.x, "z": u.z, "dx": dir.x, "dz": dir.y, "r": spec.range})
+			for e in _enemies_within(u, u.x + beam.x * 0.5, u.z + beam.y * 0.5, spec.range * 0.5 + 1.5):
+				if Rules.segment_circle(u.x, u.z, u.x + beam.x, u.z + beam.y, e.x, e.z, Rules.PLAYER_R + 1.0) >= 0.0:
+					_damage(e, spec.dmg, u, now, id)
 		# ---- wizard (young duelist)
 		"wardshield":
 			u.absorb = maxf(u.absorb, float(spec.absorb))
