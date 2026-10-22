@@ -57,9 +57,13 @@ static func def_for(cls: String, spec := "") -> Dictionary:
 	return GameData.kit(cls, GameData.normalize_spec(cls, spec)).get("companion", {})
 
 
+## Off for every player until companions perform well enough (the menu row is hidden too); flip to bring them back.
+const AVAILABLE := false
+
+
 ## Menu setting "Compañeros" (on unless the player turned them off).
 static func enabled() -> bool:
-	return bool(SettingsStore.shared().get_value("companions"))
+	return AVAILABLE and bool(SettingsStore.shared().get_value("companions"))
 
 
 ## Spot beside the owner. `rot` follows the unit views: facing (sin rot, cos rot) on the ground plane.

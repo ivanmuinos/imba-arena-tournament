@@ -1,14 +1,21 @@
 ; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
 
 config/name="Imba Arena Tournament"
-config/version="0.6.0"
 config/description="Imba Arena Tournament: arenas PvP 2v2/3v3"
-config/icon="res://assets/app_icon/icon.svg"
+config/version="0.6.0"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
+config/icon="res://assets/app_icon/icon.svg"
 
 [display]
 
@@ -17,10 +24,5 @@ window/size/viewport_height=900
 
 [rendering]
 
-rendering_device/fallback_to_opengl3=true
-rendering_device/fallback_to_vulkan=true
-rendering_device/fallback_to_d3d12=true
-
-renderer/rendering_method="forward_plus"
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=2

@@ -30,6 +30,9 @@ var _macro_text: TextEdit
 var _macro_err: Label
 var _capturing := ""  # action waiting for its new key ("" = none)
 var _bind_buttons := {}  # action -> MButton
+var _bind_labels := {}  # action -> Label (ability slots show the champion's ability names)
+var _pad_labels := {}  # ControlBindings action -> Label
+var _bind_caption: Label
 
 
 func _ready() -> void:
@@ -90,6 +93,7 @@ func _ready() -> void:
 		var label := UiKit.label(ControlBindings.ACTIONS[action], 14, UiKit.MUTED)
 		label.custom_minimum_size.x = 290
 		grid.add_child(label)
+		_pad_labels[action] = label
 		for channel in ["key", "pad"]:
 			var button := Button.new()
 			button.custom_minimum_size = Vector2(205, 32)
@@ -129,6 +133,7 @@ func _ready() -> void:
 	_pets = Segmented.new().setup([["on", "Mostrar"], ["off", "Ocultar"]], "on")
 	_row(j, "Compañeros", "La mascota de cada clase (lobo, toro, hada...). Es sólo visual; se aplica en la próxima partida.", _pets)
 	_pets.changed.connect(func(v): menu.st.set_value("companions", v == "on"); menu.settings_changed("companions"))
+	_pets.get_parent().visible = CompanionView.AVAILABLE
 	var reset := MButton.new("Restablecer valores", "secondary")
 	reset.custom_minimum_size = Vector2(260, 44)
 	reset.pressed.connect(_reset)
@@ -209,7 +214,8 @@ func _check_macro() -> void:
 
 ## Every rebindable action (Keybinds.ACTIONS) with a button: click it, then press the new key (Esc: no key).
 func _build_bindings(parent: Control) -> void:
-	parent.add_child(UiKit.caption("Teclas (clic y apretá la nueva · Esc: sin tecla · en partida también con el modo teclas)", UiKit.MUTED, 12))
+	_bind_caption = UiKit.caption("", UiKit.MUTED, 12)
+	parent.add_child(_bind_caption)
 	var grid := GridContainer.new()
 	grid.columns = 6
 	grid.add_theme_constant_override("h_separation", 10)
@@ -218,7 +224,9 @@ func _build_bindings(parent: Control) -> void:
 	for a in Keybinds.ACTIONS:
 		var l := UiKit.label(str(a[1]).replace(" (reasignar en partida)", "").replace(" (básica)", ""), 12, UiKit.MUTED)
 		l.custom_minimum_size = Vector2(140, 0)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		grid.add_child(l)
+		_bind_labels[a[0]] = l
 		var b := MButton.new("", "secondary")
 		b.custom_minimum_size = Vector2(110, 28)
 		b.add_theme_font_size_override("font_size", 13)
@@ -239,6 +247,16 @@ func _build_bindings(parent: Control) -> void:
 func _refresh_bindings() -> void:
 	for a in _bind_buttons:
 		(_bind_buttons[a] as MButton).text = Keybinds.shared().label(a)
+	var kit := GameData.kit(str(menu.st.get_value("cls")), str(menu.st.get_value("spec")))
+	_bind_caption.text = "Teclas de %s%s (clic y apretá la nueva · Esc: sin tecla · en partida también con el modo teclas)" % [
+		kit.name, " · " + str(kit.spec_name) if kit.has("spec_name") else ""]
+	for i in 7:
+		var a := "slot_%d" % i
+		var name := slot_name(i)
+		if _bind_labels.has(a):
+			(_bind_labels[a] as Label).text = name
+		if _pad_labels.has(a):
+			(_pad_labels[a] as Label).text = name
 	if _macro_list.size() > 0:
 		_select_macro(_macro_sel)
 
@@ -403,3 +421,12 @@ func capture_input(event: InputEvent) -> bool:
 	_refresh_pad_bindings()
 	_binding_status.text = "Guardado. Para mover un botón ocupado, borrá primero su asignación anterior."
 	return true
+
+
+## "Bola de fuego" for the selected champion (and spec); the ultimate says so.
+func slot_name(i: int) -> String:
+	var abilities := GameData.abilities(str(menu.st.get_value("cls")), str(menu.st.get_value("spec")))
+	if i >= abilities.size():
+		return Keybinds.action_label("slot_%d" % i)
+	var n := str(abilities[i].name)
+	return ("Definitiva: " + n) if i == abilities.size() - 1 else n

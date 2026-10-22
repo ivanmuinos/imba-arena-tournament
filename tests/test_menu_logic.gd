@@ -362,3 +362,20 @@ func test_first_launch_offers_the_tutorial_once_and_it_can_be_skipped() -> void:
 	m2._input(_key(KEY_SPACE))
 	check(not (m2._views.hub as MHub).offer_visible(), "las ejecuciones con argumentos (capturas, pruebas) no la muestran")
 	_drop(m2)
+
+
+func test_key_settings_name_the_abilities_of_your_champion() -> void:
+	var m := _menu()
+	var s: MSettings = m._views.settings
+	m.st.set_value("cls", "mage")
+	m.st.set_value("spec", "fire")
+	s.menu_enter()
+	var fire := GameData.abilities("mage", "fire")
+	eq((s._bind_labels.slot_0 as Label).text, str(fire[0].name), "la tecla 1 dice qué habilidad es")
+	eq((s._bind_labels.slot_6 as Label).text, "Definitiva: " + str(fire[6].name), "la definitiva")
+	check(s._bind_caption.text.contains("Fuego"), "dice de qué campeón son")
+	m.st.set_value("cls", "rogue")
+	s.menu_enter()
+	eq((s._bind_labels.slot_1 as Label).text, str(GameData.abilities("rogue", str(m.st.get_value("spec")))[1].name), "cambia con el campeón")
+	eq((s._pad_labels.slot_1 as Label).text, (s._bind_labels.slot_1 as Label).text, "también en la tabla del mando")
+	_drop(m)

@@ -109,3 +109,7 @@ func test_no_reactions_while_hidden_or_dead() -> void:
 	c.track(0.1, 0.1, Vector3.ZERO, 0.0, Vector2.ZERO, true, true, 0.0)
 	near(Vector2(c.position.x, c.position.z).distance_to(CompanionView.follow_point(Vector2.ZERO, 0.0, true)), 0.0, 0.01, "oculto (sigilo) no reacciona")
 	c.free()
+
+
+func test_companions_are_switched_off_for_now() -> void:
+	check(not CompanionView.enabled(), "las mascotas están apagadas hasta que rindan")
