@@ -3,7 +3,7 @@ extends RefCounted
 ## Bot AI per class (port of server/bot.ts).
 
 const SKILL := {"easy": [0.1, 0.3], "normal": [0.35, 0.55], "hard": [0.75, 0.95]}
-const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "ct": 16.0, "ronin": 1.8, "warrior": 1.6, "rogue": 1.6}
+const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "ct": 16.0, "ronin": 1.8, "crack": 11.0, "warrior": 1.6, "rogue": 1.6}
 ## Classes that play as the team healer (slots laid out alike: 1 cast heal, 2 protect, 4 heal over time, 5 dispel, 6 ult).
 const HEALERS := ["priest", "druid"]
 
@@ -120,7 +120,7 @@ func _priest_post(m: ArenaMatch, u: ArenaUnit, enemies: Array, now: float) -> Ve
 			break
 	if not has_sight:
 		return Vector2(near_ally.x, near_ally.z)  # rejoin the team
-	var ranged: Array = enemies.filter(func(e): return e.cls in ["mage", "warlock", "hunter", "priest", "druid", "ct"] and Rules.has_los(m.map, e, u))
+	var ranged: Array = enemies.filter(func(e): return e.cls in ["mage", "warlock", "hunter", "priest", "druid", "ct", "crack"] and Rules.has_los(m.map, e, u))
 	if not ranged.is_empty():
 		# step behind cover: a nearby spot that no enemy caster sees but where an ally is still in sight
 		var best := Vector2.INF
@@ -386,6 +386,19 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 					stop = try_cast.call(1, target, target)
 				if not stop and los and d <= ab[0].range and ready.call(0) and randf() < 0.35 + skill * 0.65:
 					try_cast.call(0, target, target)
+			"crack":
+				var buddy: ArenaUnit = null
+				for a in m.units:
+					if a != u and a.alive and a.team == u.team and dist.call(a) < ab[4].range and dist.call(a) > 6.0:
+						buddy = a
+						break
+				if caster != null and in_reach.call(caster, 5) and ready.call(5) and chance.call(0.9) and try_cast.call(5, caster, caster): pass
+				elif dn < 3.5 and not ccd.call(nearest) and ready.call(2) and chance.call(0.8) and try_cast.call(2, nearest, nearest): pass  # nutmeg whoever gets close
+				elif low_hp and dn < 6 and buddy != null and ready.call(4) and try_cast.call(4, buddy, buddy): pass  # one-two out of trouble
+				elif low_hp and dn < 6 and ready.call(3) and try_cast.call(3, Vector2(u.x - (nearest.x - u.x), u.z - (nearest.z - u.z))): pass
+				elif los and ready.call(6) and d <= ab[6].range and target.hp / target.max_hp < 0.55 and dn > 5 and try_cast.call(6, target, target): stop = true
+				elif los and ready.call(1) and d <= ab[1].range and chance.call(0.7) and try_cast.call(1, target, target): pass
+				elif los and d <= ab[0].range and ready.call(0) and randf() < 0.35 + skill * 0.65: try_cast.call(0, target, target)
 			"ronin":
 				var shooters := enemies.filter(func(e): return e.cls in ["mage", "warlock", "hunter", "ct", "druid", "priest"] and not e.cast.is_empty() and dist.call(e) < 22.0)
 				if caster != null and in_reach.call(caster, 5) and ready.call(5) and chance.call(0.9) and try_cast.call(5, caster, caster): pass

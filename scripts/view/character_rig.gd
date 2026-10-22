@@ -17,6 +17,8 @@ const KAYKIT := {
 		"clips": {"idle": "2H_Ranged_Aiming", "run": "Running_A", "cast": "2H_Ranged_Aiming", "attack": "2H_Ranged_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"ronin": {"file": "Knight", "show": [], "hide": ["Knight_Helmet"], "scale": 0.84, "recolor": {"hue": 0.5, "sat": -0.2, "val": -0.25},
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Block", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
+	"crack": {"file": "Rogue", "show": [], "scale": 0.86, "recolor": {"hue": 0.15, "sat": -0.45, "val": 0.2},
+		"clips": {"idle": "Idle", "run": "Running_B", "cast": "Throw", "attack": "Throw", "hit": "Hit_B", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"mage": {"file": "Mage", "show": ["2H_Staff"], "scale": 0.86, "hue": 0.0,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
@@ -39,6 +41,7 @@ const ATTACKS := {
 	"priest": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"druid": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
 	"ct": {"light": [["2H_Ranged_Shoot", 0.10]], "heavy": [["2H_Ranged_Shoot", 0.10]]},
+	"crack": {"light": [["Throw", 0.20]], "heavy": [["Throw", 0.20]]},
 	"ronin": {"light": [["1H_Melee_Attack_Slice_Horizontal", 0.27], ["1H_Melee_Attack_Slice_Diagonal", 0.40]], "heavy": [["1H_Melee_Attack_Stab", 0.35]]},
 }
 ## How long before the contact frame a swing starts: the server event arrives at the moment of the hit, so the clip
@@ -72,7 +75,7 @@ static func available(cls: String) -> bool:
 
 ## Procedural fallback model: the warlock and the druid borrow the mage's.
 static func _glb(cls: String) -> String:
-	return "mage" if cls in ["warlock", "druid"] else ("hunter" if cls == "ct" else ("warrior" if cls == "ronin" else cls))
+	return "mage" if cls in ["warlock", "druid"] else ("hunter" if cls == "ct" else ("warrior" if cls == "ronin" else ("rogue" if cls == "crack" else cls)))
 
 
 static func _kk_ok(cls: String) -> bool:
@@ -150,6 +153,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 		_ct_extras(inner)
 	elif cls == "ronin":
 		_ronin_extras(inner)
+	elif cls == "crack":
+		_crack_extras(inner)
 	for logical in _clips:
 		var clip: String = _clips[logical]
 		if player.has_animation(clip):
@@ -375,6 +380,24 @@ func _ronin_extras(inner: Node3D) -> void:
 		_add_mesh(hand, MeshBuilder.cylinder(0.045, 0.05, 0.38, 8), wrap, Vector3(0, 0.0, 0))          # wrapped hilt
 		_add_mesh(hand, MeshBuilder.torus(0.09, 0.03, 12, 4), gold, Vector3(0, 0.21, 0))                 # guard
 		_tube(hand, [Vector3(0, 0.22, 0), Vector3(0, 0.75, 0.03), Vector3(0, 1.25, 0.09), Vector3(0, 1.6, 0.17)], [0.035, 0.032, 0.028, 0.0], steel)
+
+
+## Footballer on the KayKit rogue body (its outfit recoloured sky blue): a white collar and a ball resting by the right
+## foot. No number, no crest.
+func _crack_extras(inner: Node3D) -> void:
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var chest := sk.get_node_or_null("chest") as Node3D
+	var white := UnitModels.std(Color("#f2f4f8"), Color.BLACK, 0.0, 0.0, 0.8)
+	var dark := UnitModels.std(Color("#1a1c22"), Color.BLACK, 0.0, 0.0, 0.6)
+	if chest != null:
+		_add_mesh(chest, MeshBuilder.torus(0.26, 0.06, 18, 5), white, Vector3(0, 0.36, 0.02))  # collar
+	# the ball, by the right foot (on the character root, so it stays on the ground while the body animates)
+	var ball := Node3D.new()
+	ball.position = Vector3(0.32, 0.17, 0.32)
+	inner.add_child(ball)
+	_add_mesh(ball, MeshBuilder.sphere(0.17, 12, 8), white, Vector3.ZERO)
+	for v in [Vector3(0, 0.16, 0), Vector3(0.15, 0.05, 0), Vector3(-0.08, 0.04, 0.13), Vector3(-0.08, 0.04, -0.13), Vector3(0.06, -0.12, 0.08), Vector3(0.06, -0.12, -0.08)]:
+		_add_mesh(ball, MeshBuilder.sphere(0.055, 6, 4), dark, v)
 
 
 ## A tapering tube through `points` (radius per point): one cone frustum per segment, a ball on each joint so it bends

@@ -17,6 +17,7 @@ const TABLE := {
 	"wrath": "hostile", "regrowth": "friendly", "ironbark": "friendly", "cyclone": "hostile", "rejuv": "friendly", "naturescure": "friendly", "tranquility": "self",
 	"rifle": "auto", "headshot": "hostile", "flashbang": "ground", "kevlar": "self", "knife": "self", "bash": "hostile", "awp": "hostile",
 	"slash": "auto", "tempest": "hostile", "windwall": "direction", "sweep": "hostile", "flow": "self", "upcut": "hostile", "lastbreath": "hostile",
+	"pass": "auto", "chip": "hostile", "nutmeg": "hostile", "dribble": "direction", "onetwo": "friendly", "tackle": "hostile", "golazo": "hostile",
 	"stab": "auto", "eviscerate": "hostile", "cheapshot": "hostile", "blind": "hostile", "vanish": "self", "kick": "hostile", "deathmark": "hostile",
 }
 

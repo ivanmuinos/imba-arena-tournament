@@ -91,6 +91,10 @@ const LAYERS := {
 	"smite": [["holy_chime", 1.3, -6.0, 0.0], ["arc_bright", 1.2, -12.0, 0.03]], "shieldUp": [["holy_chime", 0.9, -6.0, 0.0]],
 	"renew": [["heal", 1.1, -12.0, 0.0]], "dispel": [["arc_soft", 1.3, -6.0, 0.0], ["holy_chime", 1.4, -12.0, 0.0]],
 	"hymn": [["holy_choir", 1.0, -5.0, 0.0], ["holy_chime", 0.8, -12.0, 0.2]],
+	# crack
+	"kick": [["swish", 1.5, -4.0, 0.0], ["stone", 1.7, -10.0, 0.0]], "chip": [["swish", 1.2, -2.0, 0.0], ["stone", 1.4, -6.0, 0.0]],
+	"dribble": [["whoosh_long", 1.5, -5.0, 0.0], ["cloth", 1.4, -8.0, 0.0]], "onetwo": [["swish", 1.6, -5.0, 0.0], ["swish", 1.6, -5.0, 0.15]],
+	"golazo": [["earth_big", 1.0, -2.0, 0.0], ["holy_choir", 1.25, -6.0, 0.25]],
 	# ronin
 	"slash": [["blade", 1.2, -4.0, 0.0], ["swish", 1.3, -6.0, 0.0]], "tempest": [["swish", 1.5, -2.0, 0.0], ["blade", 1.4, -6.0, 0.03]],
 	"windwall": [["whoosh_long", 0.7, -2.0, 0.0], ["whoosh_long", 1.0, -6.0, 0.2]], "sweep": [["whoosh_long", 1.4, -4.0, 0.0], ["blade", 1.2, -6.0, 0.1]],

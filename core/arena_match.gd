@@ -469,7 +469,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 	var id: String = spec.id
 
 	match id:
-		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath", "rifle", "headshot", "awp":
+		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath", "rifle", "headshot", "awp", "pass", "chip", "golazo":
 			_spawn_proj(u, spec, dir, lock)
 		"corruption", "agony", "soulrot":
 			if target != null and target.alive:
@@ -518,7 +518,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				_cc(target, "incap", spec.ccMs, now, "poly")
 			else:
 				_error(u, "El objetivo escapó")
-		"counter", "pummel", "kick", "bash", "upcut":
+		"counter", "pummel", "kick", "bash", "upcut", "tackle":
 			if target != null and target.alive:
 				if not target.cast.is_empty():
 					_interrupt(target, now)
@@ -640,6 +640,37 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 					a.hot_until = maxf(a.hot_until, now + float(spec.durationMs))
 					a.hot_hps = spec.hotHps
 					a.hot_by = u
+		# ---- crack (footballer)
+		"nutmeg":
+			if target != null:
+				_damage(target, spec.dmg, u, now, id)
+				var behind := {"x": target.x - sin(target.rot) * 1.4, "z": target.z - cos(target.rot) * 1.4}
+				Rules.collide(behind, map)
+				fx.append({"k": "blink", "x0": u.x, "z0": u.z, "x1": behind.x, "z1": behind.z})
+				u.x = behind.x
+				u.z = behind.z
+				u.dash_left = 0.0
+				_cc(target, "incap", spec.ccMs, now, "disorient")
+				_label(target, "¡CAÑO!", "#7fc8ff")
+		"dribble":
+			var t := 0.24
+			u.dash_left = t
+			u.dash_vx = dir.x * spec.dist / t
+			u.dash_vz = dir.y * spec.dist / t
+			u.slow_until = 0.0
+			u.haste_until = maxf(u.haste_until, now + spec.ccMs)
+			_label(u, "GAMBETA", "#7fc8ff")
+		"onetwo":
+			if target != null:
+				if target != u:
+					var to := Vector2(target.x - u.x, target.z - u.z)
+					var stop := maxf(0.0, to.length() - 1.4)
+					u.dash_left = stop / 30.0
+					u.dash_vx = to.normalized().x * 30.0
+					u.dash_vz = to.normalized().y * 30.0
+					target.haste_until = maxf(target.haste_until, now + spec.ccMs)
+				u.haste_until = maxf(u.haste_until, now + spec.ccMs)
+				_label(target, "¡PARED!", "#7fc8ff")
 		# ---- ronin
 		"tempest":
 			var reach: Vector2 = dir * float(spec.range)
@@ -1208,6 +1239,14 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 				return
 		"headshot", "awp":
 			_label(t, "¡A LA CABEZA!", "#ff5a4a")
+		"golazo":
+			var kv := Vector2(p.vx, p.vz).normalized()
+			t.dash_left = 0.2
+			t.dash_vx = kv.x * 18
+			t.dash_vz = kv.y * 18
+			_cc(t, "stun", spec.ccMs, now)
+			_label(t, "¡GOLAZO!", "#ffd166")
+			fx.append({"k": "boom", "x": t.x, "z": t.z, "r": 1.2, "kind": "golazo"})
 		"tornado":
 			_cc(t, "stun", spec.ccMs, now)
 			_label(t, "¡AL AIRE!", "#9fe8ff")

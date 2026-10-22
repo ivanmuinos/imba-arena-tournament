@@ -40,6 +40,9 @@ const PROJ_STYLE := {
 	"wrath": {"color": Color("#8fe86a"), "size": 0.3, "arrow": false, "trail": 14},
 	"rifle": {"color": Color("#ffe9a0"), "size": 0.1, "arrow": true, "trail": 22},
 	"tornado": {"color": Color("#c8f4ff"), "size": 0.8, "arrow": false, "trail": 26},
+	"pass": {"color": Color("#ffffff"), "size": 0.25, "arrow": false, "trail": 10},
+	"chip": {"color": Color("#ffffff"), "size": 0.3, "arrow": false, "trail": 18},
+	"golazo": {"color": Color("#fff2b0"), "size": 0.5, "arrow": false, "trail": 34},
 	"headshot": {"color": Color("#fff2c0"), "size": 0.13, "arrow": true, "trail": 30},
 	"awp": {"color": Color("#ffffff"), "size": 0.16, "arrow": true, "trail": 44},
 }

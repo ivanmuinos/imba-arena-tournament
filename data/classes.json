@@ -1224,5 +1224,130 @@
       "yaw": -90,
       "bond": "#7fd8ff"
     }
+  },
+  "crack": {
+    "id": "crack",
+    "name": "El Crack",
+    "role": "Habilidoso a media distancia",
+    "icon": "class_crack",
+    "hp": 490,
+    "speed": 7.4,
+    "abilities": [
+      {
+        "id": "pass",
+        "name": "Pase",
+        "icon": "pass",
+        "desc": "Auto-ataque: le pegás pelotazos a tu objetivo mientras esté a tiro y de frente: 20 de daño.",
+        "cd": 850,
+        "cast": 0,
+        "range": 16,
+        "dmg": 20,
+        "projSpeed": 38,
+        "projR": 0.25,
+        "physical": true,
+        "auto": true
+      },
+      {
+        "id": "chip",
+        "name": "Tiro colocado",
+        "icon": "chip",
+        "desc": "Le pegás de lleno, al ángulo: 50 de daño.",
+        "cd": 6000,
+        "cast": 0,
+        "range": 20,
+        "dmg": 50,
+        "projSpeed": 52,
+        "projR": 0.3,
+        "physical": true
+      },
+      {
+        "id": "nutmeg",
+        "name": "Caño",
+        "icon": "nutmeg",
+        "desc": "Le tirás la pelota entre las piernas a un rival pegado a vos: 10 de daño, aparecés detrás y queda desorientado 2 s (se rompe con daño).",
+        "cd": 14000,
+        "cast": 0,
+        "range": 3.5,
+        "dmg": 10,
+        "ccMs": 2000,
+        "targeted": true,
+        "physical": true
+      },
+      {
+        "id": "dribble",
+        "name": "Gambeta",
+        "icon": "dribble",
+        "desc": "Arrancás 7 m hacia adelante y corrés más rápido 2 s; te sacás las ralentizaciones.",
+        "cd": 10000,
+        "cast": 0,
+        "range": 0,
+        "dist": 7,
+        "ccMs": 2000
+      },
+      {
+        "id": "onetwo",
+        "name": "Pared",
+        "icon": "onetwo",
+        "desc": "Tirás una pared con un aliado a 18 m: llegás a su lado de un pique y los dos corren más rápido 3 s.",
+        "cd": 16000,
+        "cast": 0,
+        "range": 18,
+        "ccMs": 3000,
+        "friendly": true
+      },
+      {
+        "id": "tackle",
+        "name": "Barrida",
+        "icon": "tackle",
+        "desc": "Barrida a un rival pegado a vos: si está lanzando, lo interrumpe y lo silencia 1,5 s.",
+        "cd": 14000,
+        "cast": 0,
+        "range": 3,
+        "melee": true,
+        "physical": true,
+        "ccMs": 1500
+      },
+      {
+        "id": "golazo",
+        "name": "Golazo",
+        "icon": "golazo",
+        "desc": "DEFINITIVA: 1 s para acomodarte y la clavás: un pelotazo de 120 de daño que empuja y aturde 1 s.",
+        "cd": 0,
+        "cast": 1000,
+        "range": 24,
+        "dmg": 120,
+        "projSpeed": 60,
+        "projR": 0.5,
+        "ccMs": 1000,
+        "physical": true,
+        "ult": true
+      }
+    ],
+    "tags": [
+      "Daño",
+      "Movilidad"
+    ],
+    "stats": {
+      "hp": 2,
+      "mobility": 5,
+      "damage": 3,
+      "control": 3,
+      "difficulty": 3
+    },
+    "tagline": "Con la pelota al pie, no lo para nadie.",
+    "identity": "Gambeteador de media distancia: castiga con pelotazos, se escapa con la gambeta y la pared, y deja desparramado al que se le acerca con un caño. Poca vida: si lo agarran, no tiene cómo aguantar.",
+    "companion": {
+      "name": "Perro de la cancha",
+      "model": "wolf",
+      "len": 1.2,
+      "idle": "Idle",
+      "move": "Walking",
+      "walk": 1.8,
+      "tint": {
+        "Wolf": "#c89a5a"
+      },
+      "yaw": -90,
+      "bond": "#7fc8ff"
+    }
   }
 }

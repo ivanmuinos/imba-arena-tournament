@@ -2,7 +2,7 @@ class_name MChampions
 extends MenuView
 ## Champion select: lit 3D pedestal, role tags, stat bars, ability row with tooltips, portrait roster.
 
-const CLASS_SOUND := {"warlock": "vanish", "mage": "fireball", "hunter": "shot", "warrior": "heavySwing", "priest": "heal", "rogue": "vanish", "druid": "renew", "ct": "shot", "ronin": "heavySwing"}
+const CLASS_SOUND := {"warlock": "vanish", "mage": "fireball", "hunter": "shot", "warrior": "heavySwing", "priest": "heal", "rogue": "vanish", "druid": "renew", "ct": "shot", "ronin": "heavySwing", "crack": "golazo"}
 const STATS := [["hp", "Vida", "ui_stat_hp"], ["mobility", "Movilidad", "ui_stat_speed"], ["damage", "Daño", "ui_stat_dmg"], ["control", "Control", "ui_stat_cc"], ["difficulty", "Dificultad", "ui_stat_diff"]]
 
 var _show: ClassShowcase
