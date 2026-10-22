@@ -199,8 +199,9 @@ func _warlock_extras(inner: Node3D) -> void:
 		_add_mesh(head, MeshBuilder.sphere(0.62, 14, 8), shadow, Vector3(0, 0.44, -0.5), Vector3.ZERO, Vector3(1.25, 1.05, 0.8))
 		_add_mesh(head, MeshBuilder.cylinder(0.0, 0.4, 0.8, 8), shadow, Vector3(0, 0.95, -0.7), Vector3(-30, 0, 0))
 		for side in [-1.0, 1.0]:
-			_add_mesh(head, MeshBuilder.cylinder(0.0, 0.16, 0.8, 6), bone, Vector3(side * 0.62, 1.12, -0.12), Vector3(0, 0, -side * 32))
-			_add_mesh(head, MeshBuilder.cylinder(0.0, 0.1, 0.45, 6), bone, Vector3(side * 0.98, 1.5, -0.12), Vector3(0, 0, -side * 70))
+			# one continuous horn (out of the hood, then up and back), not two loose cones that read as bent legs
+			_tube(head, [Vector3(side * 0.42, 0.92, -0.15), Vector3(side * 0.68, 1.12, -0.22), Vector3(side * 0.82, 1.4, -0.34),
+				Vector3(side * 0.8, 1.68, -0.5), Vector3(side * 0.68, 1.88, -0.66)], [0.15, 0.12, 0.09, 0.055, 0.0], bone)
 			_add_mesh(head, MeshBuilder.sphere(0.075, 6, 4), fel, Vector3(side * 0.2, 0.36, 0.56), Vector3.ZERO, Vector3(1.2, 0.8, 0.6))  # fel eyes
 	if chest != null:
 		for side in [-1.0, 1.0]:
@@ -228,6 +229,21 @@ func _warlock_extras(inner: Node3D) -> void:
 		_add_mesh(hand, MeshBuilder.sphere(0.08, 6, 4), fel, Vector3(0.0, 0.05, 0.0))   # fel glow in the grip
 	if hand_l != null:
 		_add_mesh(hand_l, MeshBuilder.sphere(0.09, 6, 4), fel, Vector3(0, 0.0, 0.0))
+
+
+## A tapering tube through `points` (radius per point): one cone frustum per segment, a ball on each joint so it bends
+## smoothly.
+func _tube(parent: Node3D, points: Array, radii: Array, mat: Material) -> void:
+	for i in points.size() - 1:
+		var p0: Vector3 = points[i]
+		var p1: Vector3 = points[i + 1]
+		var dir := p1 - p0
+		var mi := _add_mesh(parent, MeshBuilder.cylinder(radii[i + 1], radii[i], dir.length(), 8), mat, (p0 + p1) * 0.5)
+		var y := dir.normalized()
+		var x := y.cross(Vector3.FORWARD if absf(y.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
+		mi.basis = Basis(x, y, x.cross(y))
+		if i > 0:
+			_add_mesh(parent, MeshBuilder.sphere(radii[i], 8, 5), mat, p0)
 
 
 func _holy_mat(gold: bool) -> StandardMaterial3D:
