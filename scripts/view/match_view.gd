@@ -327,6 +327,7 @@ const CAST_SOUND := {
 	"blind": "blind", "vanish": "vanish", "deathmark": "deathmark",
 	"shadowbolt": "shadowbolt", "corruption": "corruption", "agony": "agony", "fear": "scream", "darkpact": "darkpact", "drainlife": "drainlife", "soulrot": "soulrot",
 	"frostbolt": "frostbolt", "icelance": "icelance", "blizzard": "blizzard",
+	"slash": "slash", "tempest": "tempest", "windwall": "windwall", "sweep": "sweep", "flow": "flow", "upcut": "interrupt", "lastbreath": "lastbreath",
 	"rifle": "rifle", "headshot": "headshot", "flashbang": "flashbang", "kevlar": "kevlar", "knife": "knife", "bash": "interrupt", "awp": "awp",
 	"wrath": "wrath", "regrowth": "regrowth", "ironbark": "ironbark", "cyclone": "cyclone", "rejuv": "renew", "naturescure": "dispel", "tranquility": "tranquility",
 }
@@ -421,6 +422,12 @@ func _one_fx(f: Dictionary) -> void:
 			audio.play("bigBoom" if f.kind in ["meteor", "pyro"] else "boom", Vector2(f.x, f.z))
 		"flash":
 			fx.flash(f.x, f.z, f.r)
+		"tempest":
+			fx.tempest(f.x, f.z, f.dx, f.dz, f.r)
+		"windwall":
+			fx.windwall(f.x, f.z, f.dx, f.dz, f.hw, f.ms)
+		"absorb_wall":
+			fx.burst(Vector3(f.x, world.h(f.x, f.z) + 1.0, f.z), 8, 3.0, Color("#e8faff"), 0.3, 0.2, 0.0)
 		"nova":
 			fx.nova(f.x, f.z, f.r)
 			audio.play("nova", Vector2(f.x, f.z))

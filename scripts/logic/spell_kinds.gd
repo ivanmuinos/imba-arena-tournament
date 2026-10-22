@@ -16,6 +16,7 @@ const TABLE := {
 	"smite": "hostile", "heal": "friendly", "pwshield": "friendly", "scream": "self", "renew": "friendly", "dispel": "friendly", "hymn": "self",
 	"wrath": "hostile", "regrowth": "friendly", "ironbark": "friendly", "cyclone": "hostile", "rejuv": "friendly", "naturescure": "friendly", "tranquility": "self",
 	"rifle": "auto", "headshot": "hostile", "flashbang": "ground", "kevlar": "self", "knife": "self", "bash": "hostile", "awp": "hostile",
+	"slash": "auto", "tempest": "hostile", "windwall": "direction", "sweep": "hostile", "flow": "self", "upcut": "hostile", "lastbreath": "hostile",
 	"stab": "auto", "eviscerate": "hostile", "cheapshot": "hostile", "blind": "hostile", "vanish": "self", "kick": "hostile", "deathmark": "hostile",
 }
 

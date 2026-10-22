@@ -91,6 +91,10 @@ const LAYERS := {
 	"smite": [["holy_chime", 1.3, -6.0, 0.0], ["arc_bright", 1.2, -12.0, 0.03]], "shieldUp": [["holy_chime", 0.9, -6.0, 0.0]],
 	"renew": [["heal", 1.1, -12.0, 0.0]], "dispel": [["arc_soft", 1.3, -6.0, 0.0], ["holy_chime", 1.4, -12.0, 0.0]],
 	"hymn": [["holy_choir", 1.0, -5.0, 0.0], ["holy_chime", 0.8, -12.0, 0.2]],
+	# ronin
+	"slash": [["blade", 1.2, -4.0, 0.0], ["swish", 1.3, -6.0, 0.0]], "tempest": [["swish", 1.5, -2.0, 0.0], ["blade", 1.4, -6.0, 0.03]],
+	"windwall": [["whoosh_long", 0.7, -2.0, 0.0], ["whoosh_long", 1.0, -6.0, 0.2]], "sweep": [["whoosh_long", 1.4, -4.0, 0.0], ["blade", 1.2, -6.0, 0.1]],
+	"flow": [["whoosh_long", 1.2, -8.0, 0.0], ["holy_chime", 1.6, -14.0, 0.0]], "lastbreath": [["whoosh_long", 0.8, -2.0, 0.0], ["blade", 0.8, -2.0, 0.15], ["earth_big", 1.3, -8.0, 0.2]],
 	# counter-terrorist
 	"rifle": [["metal", 1.7, -4.0, 0.0], ["fire_hit", 1.5, -8.0, 0.0]], "headshot": [["metal", 1.4, -2.0, 0.0], ["fire_hit", 1.2, -5.0, 0.0]],
 	"flashbang": [["earth_big", 1.6, -3.0, 0.0], ["arc_bright", 1.5, -6.0, 0.0]], "kevlar": [["cloth", 0.8, -6.0, 0.0], ["metal", 0.6, -10.0, 0.05]],

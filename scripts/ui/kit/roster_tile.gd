@@ -40,7 +40,8 @@ func _init(cls_ := "") -> void:
 	_art.offset_bottom = -26
 	_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_art)
-	_name = UiKit.heading(str(GameData.classes[cls].name).to_upper(), 13, UiKit.INK, 700, 1, HORIZONTAL_ALIGNMENT_CENTER)
+	var title := str(GameData.classes[cls].name).to_upper()
+	_name = UiKit.heading(title, 13 if title.length() <= 10 else 10, UiKit.INK, 700, 1, HORIZONTAL_ALIGNMENT_CENTER)  # long names fit narrow tiles
 	_name.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	_name.offset_top = -26
 	_name.offset_bottom = -4

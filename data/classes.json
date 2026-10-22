@@ -1103,5 +1103,126 @@
       "yaw": -90,
       "bond": "#5fa8ff"
     }
+  },
+  "ronin": {
+    "id": "ronin",
+    "name": "Ronin",
+    "role": "Duelista cuerpo a cuerpo",
+    "icon": "class_ronin",
+    "hp": 520,
+    "speed": 7.0,
+    "crit": 0.15,
+    "abilities": [
+      {
+        "id": "slash",
+        "name": "Corte",
+        "icon": "slash",
+        "desc": "Auto-ataque: cortes de katana a tu objetivo mientras esté al alcance (clic derecho sobre el enemigo o tecla 1).",
+        "cd": 900,
+        "cast": 0,
+        "range": 2.2,
+        "dmg": 22,
+        "melee": true,
+        "physical": true,
+        "auto": true
+      },
+      {
+        "id": "tempest",
+        "name": "Tempestad de acero",
+        "icon": "tempest",
+        "desc": "Estocada en línea de 6 m: 26 de daño al objetivo y a los que estén en el camino. A la tercera seguida (en 6 s) lanza un tornado que deja en el aire 1 s al primer enemigo que toca.",
+        "cd": 3500,
+        "cast": 0,
+        "range": 6,
+        "dmg": 26,
+        "melee": true,
+        "physical": true
+      },
+      {
+        "id": "windwall",
+        "name": "Muro de viento",
+        "icon": "windwall",
+        "desc": "Levantás un muro de viento de 7 m delante tuyo: bloquea los proyectiles enemigos durante 4 s.",
+        "cd": 22000,
+        "cast": 0,
+        "range": 0,
+        "durationMs": 4000
+      },
+      {
+        "id": "sweep",
+        "name": "Hoja barredora",
+        "icon": "sweep",
+        "desc": "Atravesás a un enemigo a 7 m de un dash y lo cortás: 20 de daño. Terminás detrás de él.",
+        "cd": 6000,
+        "cast": 0,
+        "range": 7,
+        "dmg": 20,
+        "targeted": true,
+        "physical": true
+      },
+      {
+        "id": "flow",
+        "name": "Escudo de viento",
+        "icon": "flow",
+        "desc": "El viento te envuelve: absorbe 70 de daño durante 4 s.",
+        "cd": 18000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 70,
+        "durationMs": 4000
+      },
+      {
+        "id": "upcut",
+        "name": "Corte ascendente",
+        "icon": "upcut",
+        "desc": "Corte rápido a un enemigo pegado a vos: si está lanzando, lo interrumpe y lo silencia 1,5 s.",
+        "cd": 14000,
+        "cast": 0,
+        "range": 2.6,
+        "melee": true,
+        "physical": true,
+        "ccMs": 1500
+      },
+      {
+        "id": "lastbreath",
+        "name": "Último aliento",
+        "icon": "lastbreath",
+        "desc": "DEFINITIVA: aparecés junto a un enemigo a 14 m, lo cortás por 90 y lo dejás en el aire 1,5 s.",
+        "cd": 0,
+        "cast": 0,
+        "range": 14,
+        "dmg": 90,
+        "ccMs": 1500,
+        "targeted": true,
+        "physical": true,
+        "ult": true
+      }
+    ],
+    "tags": [
+      "Daño",
+      "Movilidad"
+    ],
+    "stats": {
+      "hp": 3,
+      "mobility": 5,
+      "damage": 4,
+      "control": 2,
+      "difficulty": 4
+    },
+    "tagline": "El viento no se detiene.",
+    "identity": "Espadachín errante: se mete con dashes, castiga con la tempestad y frena la artillería enemiga con su muro de viento. Mucho daño y movilidad, pero sin curaciones: un mal dash y queda expuesto.",
+    "companion": {
+      "name": "Zorro",
+      "model": "cat",
+      "len": 0.7,
+      "idle": "Idle",
+      "move": "Walking",
+      "walk": 1.2,
+      "tint": {
+        "Grey": "#d0782a"
+      },
+      "yaw": -90,
+      "bond": "#7fd8ff"
+    }
   }
 }

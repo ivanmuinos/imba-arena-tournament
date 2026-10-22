@@ -22,6 +22,7 @@ var units: Array[ArenaUnit] = []
 var projs: Array = []
 var aoes: Array = []
 var traps: Array = []
+var windwalls: Array = []  # ronin: {team, x0, z0, x1, z1, until}; enemy projectiles that cross one vanish
 var powers: Array = []
 
 var phase := "prep"
@@ -119,6 +120,7 @@ func leave(u: ArenaUnit) -> void:
 
 func _reset_round(now: float) -> void:
 	projs.clear()
+	windwalls.clear()
 	aoes.clear()
 	traps.clear()
 	powers.clear()
@@ -516,7 +518,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				_cc(target, "incap", spec.ccMs, now, "poly")
 			else:
 				_error(u, "El objetivo escapó")
-		"counter", "pummel", "kick", "bash":
+		"counter", "pummel", "kick", "bash", "upcut":
 			if target != null and target.alive:
 				if not target.cast.is_empty():
 					_interrupt(target, now)
@@ -638,6 +640,50 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 					a.hot_until = maxf(a.hot_until, now + float(spec.durationMs))
 					a.hot_hps = spec.hotHps
 					a.hot_by = u
+		# ---- ronin
+		"tempest":
+			var reach: Vector2 = dir * float(spec.range)
+			for e in _enemies_within(u, u.x + reach.x * 0.5, u.z + reach.y * 0.5, spec.range * 0.5 + 1.0):
+				if Rules.segment_circle(u.x, u.z, u.x + reach.x, u.z + reach.y, e.x, e.z, Rules.PLAYER_R + 0.6) >= 0.0:
+					_damage(e, spec.dmg, u, now, id)
+			fx.append({"k": "tempest", "x": u.x, "z": u.z, "dx": dir.x, "dz": dir.y, "r": spec.range})
+			u.tempest_stacks = u.tempest_stacks + 1 if now - u.tempest_at < 6000.0 else 1
+			u.tempest_at = now
+			if u.tempest_stacks >= 3:
+				u.tempest_stacks = 0
+				_spawn_proj(u, TORNADO, dir)
+				_label(u, "¡TORNADO!", "#9fe8ff")
+		"windwall":
+			var c := Vector2(u.x, u.z) + dir * 2.5
+			var side := Vector2(-dir.y, dir.x) * 3.5
+			windwalls.append({"team": u.team, "x0": c.x - side.x, "z0": c.y - side.y, "x1": c.x + side.x, "z1": c.y + side.y, "until": now + float(spec.durationMs)})
+			fx.append({"k": "windwall", "x": c.x, "z": c.y, "dx": dir.x, "dz": dir.y, "hw": 3.5, "ms": spec.durationMs})
+		"sweep":
+			if target != null:
+				_damage(target, spec.dmg, u, now, id)
+				var through := Vector2(target.x - u.x, target.z - u.z).normalized()
+				var end := {"x": target.x + through.x * 1.6, "z": target.z + through.y * 1.6}
+				Rules.collide(end, map)
+				fx.append({"k": "charge", "id": u.id, "x0": u.x, "z0": u.z, "x1": end.x, "z1": end.z})
+				var travel := Vector2(end.x - u.x, end.z - u.z)
+				u.dash_left = travel.length() / 34.0
+				u.dash_vx = travel.x / maxf(u.dash_left, 1e-3)
+				u.dash_vz = travel.y / maxf(u.dash_left, 1e-3)
+		"flow":
+			u.absorb = maxf(u.absorb, float(spec.absorb))
+			u.absorb_until = now + float(spec.durationMs)
+			_label(u, "ESCUDO DE VIENTO", "#9fe8ff")
+		"lastbreath":
+			if target != null:
+				var p := {"x": target.x - sin(target.rot) * 1.2, "z": target.z - cos(target.rot) * 1.2}
+				Rules.collide(p, map)
+				fx.append({"k": "blink", "x0": u.x, "z0": u.z, "x1": p.x, "z1": p.z})
+				u.x = p.x
+				u.z = p.z
+				u.dash_left = 0.0
+				_damage(target, spec.dmg, u, now, id)
+				_cc(target, "stun", spec.ccMs, now)
+				_label(target, "¡AL AIRE!", "#9fe8ff")
 		# ---- counter-terrorist
 		"flashbang":
 			var fp := {"x": u.x + dir.x * aim_dist, "z": u.z + dir.y * aim_dist}
@@ -1085,6 +1131,9 @@ func _step_projectiles(now: float) -> void:
 				p.target = null  # lost (stealth, bush, death): keeps flying straight
 		var nx: float = p.x + p.vx * _dt
 		var nz: float = p.z + p.vz * _dt
+		if _blocked_by_windwall(p.owner.team, p.x, p.z, nx, nz, now):
+			fx.append({"k": "absorb_wall", "x": nx, "z": nz})
+			continue
 		var wall_t := Rules.obstacle_hit(map, p.x, p.z, nx, nz, spec.projR * 0.4)
 		var hit: ArenaUnit = null
 		var hit_t := INF
@@ -1110,6 +1159,32 @@ func _step_projectiles(now: float) -> void:
 	projs = keep
 
 
+## Ronin's Steel Tempest tornado: a slow, wide projectile that leaves the first enemy it reaches in the air.
+const TORNADO := {"id": "tornado", "name": "Tornado", "range": 12, "dmg": 26, "projSpeed": 22, "projR": 0.7, "ccMs": 1000, "physical": true}
+
+
+## A projectile of `team` crossing an enemy wind wall this step (segment against segment).
+func _blocked_by_windwall(team: String, ax: float, az: float, bx: float, bz: float, now: float) -> bool:
+	if windwalls.is_empty():
+		return false
+	windwalls = windwalls.filter(func(w): return now < w.until)
+	for w in windwalls:
+		if w.team == team:
+			continue
+		var p := Vector2(ax, az)
+		var r := Vector2(bx - ax, bz - az)
+		var q := Vector2(w.x0, w.z0)
+		var s := Vector2(w.x1 - w.x0, w.z1 - w.z0)
+		var den := r.cross(s)
+		if absf(den) < 1e-6:
+			continue
+		var t := (q - p).cross(s) / den
+		var u := (q - p).cross(r) / den
+		if t >= 0.0 and t <= 1.0 and u >= 0.0 and u <= 1.0:
+			return true
+	return false
+
+
 func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 	var spec: Dictionary = p.spec
 	match spec.id:
@@ -1133,6 +1208,9 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 				return
 		"headshot", "awp":
 			_label(t, "¡A LA CABEZA!", "#ff5a4a")
+		"tornado":
+			_cc(t, "stun", spec.ccMs, now)
+			_label(t, "¡AL AIRE!", "#9fe8ff")
 		"volley":
 			var v := Vector2(p.vx, p.vz).normalized()
 			t.dash_left = 0.12

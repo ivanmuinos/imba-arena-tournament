@@ -17,6 +17,7 @@ const OF := {
 	"scream": "shadow", "silence": "shadow", "blind": "shadow", "vanish": "shadow", "deathmark": "shadow",
 	"renew": "nature",
 	"rifle": "physical", "headshot": "physical", "flashbang": "holy", "kevlar": "physical", "knife": "physical", "bash": "physical", "awp": "physical",
+	"slash": "physical", "tempest": "physical", "windwall": "frost", "sweep": "physical", "flow": "frost", "upcut": "physical", "lastbreath": "physical", "tornado": "frost",
 	"wrath": "nature", "regrowth": "nature", "ironbark": "nature", "cyclone": "nature", "rejuv": "nature", "naturescure": "nature", "tranquility": "nature",
 }
 

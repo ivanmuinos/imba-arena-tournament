@@ -15,6 +15,8 @@ const KAYKIT := {
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"ct": {"file": "Rogue", "show": [], "scale": 0.86, "recolor": {"hue": 0.55, "sat": -0.55, "val": -0.35},
 		"clips": {"idle": "2H_Ranged_Aiming", "run": "Running_A", "cast": "2H_Ranged_Aiming", "attack": "2H_Ranged_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
+	"ronin": {"file": "Knight", "show": [], "hide": ["Knight_Helmet"], "scale": 0.84, "recolor": {"hue": 0.5, "sat": -0.2, "val": -0.25},
+		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Block", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"mage": {"file": "Mage", "show": ["2H_Staff"], "scale": 0.86, "hue": 0.0,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
@@ -37,6 +39,7 @@ const ATTACKS := {
 	"priest": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"druid": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
 	"ct": {"light": [["2H_Ranged_Shoot", 0.10]], "heavy": [["2H_Ranged_Shoot", 0.10]]},
+	"ronin": {"light": [["1H_Melee_Attack_Slice_Horizontal", 0.27], ["1H_Melee_Attack_Slice_Diagonal", 0.40]], "heavy": [["1H_Melee_Attack_Stab", 0.35]]},
 }
 ## How long before the contact frame a swing starts: the server event arrives at the moment of the hit, so the clip
 ## begins this far (seconds of clip time) before contact to show a short wind-up, the strike, then the recovery.
@@ -69,7 +72,7 @@ static func available(cls: String) -> bool:
 
 ## Procedural fallback model: the warlock and the druid borrow the mage's.
 static func _glb(cls: String) -> String:
-	return "mage" if cls in ["warlock", "druid"] else ("hunter" if cls == "ct" else cls)
+	return "mage" if cls in ["warlock", "druid"] else ("hunter" if cls == "ct" else ("warrior" if cls == "ronin" else cls))
 
 
 static func _kk_ok(cls: String) -> bool:
@@ -145,6 +148,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 		_druid_extras(inner)
 	elif cls == "ct":
 		_ct_extras(inner)
+	elif cls == "ronin":
+		_ronin_extras(inner)
 	for logical in _clips:
 		var clip: String = _clips[logical]
 		if player.has_animation(clip):
@@ -330,6 +335,46 @@ func _ct_extras(inner: Node3D) -> void:
 		barrel.rotation_degrees = Vector3(90, 0, 0)
 		_add_mesh(hand, MeshBuilder.box(Vector3(0.06, 0.07, 0.22)), gun, Vector3(0, 0.2, 0.2))           # sight
 		_add_mesh(hand, MeshBuilder.box(Vector3(0.1, 0.12, 0.3)), wood, Vector3(0, -0.02, 0.62))        # handguard
+
+
+## Wandering swordsman on the KayKit knight body (helmet off): a high ponytail, a long blue scarf, one armoured
+## shoulder pad and a katana (slim curved blade, round guard, wrapped hilt) in the sword hand.
+func _ronin_extras(inner: Node3D) -> void:
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var head := sk.get_node_or_null("head") as Node3D
+	if head == null:
+		var att := BoneAttachment3D.new()
+		att.name = "head"
+		att.bone_name = "head"
+		sk.add_child(att)
+		head = att
+	var chest := sk.get_node_or_null("chest") as Node3D
+	var hand := sk.get_node_or_null("handslot_r") as Node3D
+	var hair := UnitModels.std(Color("#2a2420"), Color.BLACK, 0.0, 0.0, 0.8)
+	var scarf := UnitModels.std(Color("#3a6fb0"), Color.BLACK, 0.0, 0.0, 0.85)
+	var plate := UnitModels.std(Color("#6a707a"), Color.BLACK, 0.0, 0.35, 0.55)
+	var steel := UnitModels.std(Color("#dfe8f0"), Color("#9fe8ff"), 0.25, 0.9, 0.2)
+	var wrap := UnitModels.std(Color("#1e2a44"), Color.BLACK, 0.0, 0.0, 0.8)
+	var gold := UnitModels.std(Color("#c8963a"), Color.BLACK, 0.0, 0.8, 0.35)
+	if head != null:
+		# hair cap and a tied ponytail falling down the back
+		_add_mesh(head, MeshBuilder.sphere(0.65, 14, 8), hair, Vector3(0, 0.75, -0.11), Vector3.ZERO, Vector3(1.04, 0.8, 1.04))
+		_add_mesh(head, MeshBuilder.sphere(0.12, 8, 5), scarf, Vector3(0, 1.2, -0.48))  # hair tie
+		_tube(head, [Vector3(0, 1.2, -0.5), Vector3(0, 1.22, -0.78), Vector3(0, 0.95, -0.98), Vector3(0, 0.5, -0.96)], [0.15, 0.13, 0.09, 0.0], hair)
+	if chest != null:
+		# scarf around the neck with a tail flying back, and a plate on the left shoulder
+		_add_mesh(chest, MeshBuilder.torus(0.4, 0.1, 18, 6), scarf, Vector3(0, 0.22, 0.0), Vector3(-8, 0, 0))
+		_tube(chest, [Vector3(0.15, 0.22, -0.35), Vector3(0.3, 0.1, -0.75), Vector3(0.42, -0.15, -1.05)], [0.1, 0.08, 0.0], scarf)
+		_add_mesh(chest, MeshBuilder.sphere(0.22, 10, 6), plate, Vector3(0.5, 0.1, 0.0), Vector3.ZERO, Vector3(1.1, 0.55, 1.0))
+	if hand != null:
+		var sword := hand.get_node_or_null("1H_Sword") as MeshInstance3D
+		if sword != null:
+			sword.visible = false
+			parts.erase(sword)
+		# katana along the hand's +Y like the knight's sword
+		_add_mesh(hand, MeshBuilder.cylinder(0.045, 0.05, 0.38, 8), wrap, Vector3(0, 0.0, 0))          # wrapped hilt
+		_add_mesh(hand, MeshBuilder.torus(0.09, 0.03, 12, 4), gold, Vector3(0, 0.21, 0))                 # guard
+		_tube(hand, [Vector3(0, 0.22, 0), Vector3(0, 0.75, 0.03), Vector3(0, 1.25, 0.09), Vector3(0, 1.6, 0.17)], [0.035, 0.032, 0.028, 0.0], steel)
 
 
 ## A tapering tube through `points` (radius per point): one cone frustum per segment, a ball on each joint so it bends

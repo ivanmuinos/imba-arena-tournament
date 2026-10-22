@@ -39,6 +39,7 @@ const PROJ_STYLE := {
 	"icelance": {"color": Color("#d8f6ff"), "size": 0.22, "arrow": true, "trail": 14},
 	"wrath": {"color": Color("#8fe86a"), "size": 0.3, "arrow": false, "trail": 14},
 	"rifle": {"color": Color("#ffe9a0"), "size": 0.1, "arrow": true, "trail": 22},
+	"tornado": {"color": Color("#c8f4ff"), "size": 0.8, "arrow": false, "trail": 26},
 	"headshot": {"color": Color("#fff2c0"), "size": 0.13, "arrow": true, "trail": 30},
 	"awp": {"color": Color("#ffffff"), "size": 0.16, "arrow": true, "trail": 44},
 }
@@ -609,6 +610,37 @@ func boom(x: float, z: float, r: float, kind: String) -> void:
 		burst(Vector3(x, y + 0.6, z), 70, 11.0, COL_FIRE, 0.7, 0.9, 9.0)
 		burst(Vector3(x, y + 0.4, z), 20, 2.0, COL_SMOKE, 1.4, 1.6, -1.0)
 	shake.emit(0.7 if meteor else 0.15, x, z)
+
+
+## Steel Tempest: a quick streak of wind along the thrust.
+func tempest(x: float, z: float, dx: float, dz: float, r: float) -> void:
+	var y := _y(x, z)
+	for i in 8:
+		var k := (i + 0.5) / 8.0
+		burst(Vector3(x + dx * r * k, y + 1.0, z + dz * r * k), 3, 1.5, Color("#d8f6ff"), 0.3, 0.18, 0.0)
+
+
+## Wind wall: a pale, swirling curtain across the caster's front that fades after `ms`.
+func windwall(x: float, z: float, dx: float, dz: float, hw: float, ms: float) -> void:
+	var y := _y(x, z)
+	var m := MeshInstance3D.new()
+	m.mesh = MeshBuilder.box(Vector3(hw * 2.0, 3.0, 0.25))
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0.82, 0.96, 1.0, 0.32)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.material_override = mat
+	m.position = Vector3(x, y + 1.5, z)
+	m.rotation.y = atan2(dx, dz)
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(m)
+	for i in 6:
+		burst(Vector3(x - dz * hw * (i / 2.5 - 1.0), y + 0.5, z + dx * hw * (i / 2.5 - 1.0)), 4, 2.0, Color("#e8faff"), 0.6, 0.25, -3.0)
+	var tw := m.create_tween()
+	tw.tween_interval(maxf(0.0, ms / 1000.0 - 0.4))
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.4)
+	tw.tween_callback(m.queue_free)
 
 
 ## Flashbang: a white blast on the ground and a spray of bright sparks.

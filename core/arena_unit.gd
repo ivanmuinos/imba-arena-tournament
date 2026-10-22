@@ -86,6 +86,8 @@ var burn_next := 0.0
 var burn_by: ArenaUnit = null
 ## Independent periodic effects keyed by source id + ability id (never reuse mage burn).
 var curses := {}
+var tempest_stacks := 0  # ronin: Steel Tempest casts in a row (the third one throws a tornado)
+var tempest_at := -1e9
 var jump_at := -1e9
 var auto_target := -1
 ## Auto-attack toggled on (melee classes and the hunter only).
@@ -115,6 +117,7 @@ func ability(slot: int) -> Dictionary:
 ## Combat effects cleared at the start of every round.
 func reset_effects() -> void:
 	curses.clear()
+	tempest_stacks = 0
 	cast = {}
 	auto_on = false
 	stun_until = 0.0
