@@ -1319,6 +1319,10 @@ func practice_command(u: ArenaUnit, cmd: String, on: bool, now: float) -> void:
 				u.cds.fill(0.0)
 		"ult":
 			u.ult = 100.0
+		"stun":  # tutorial: a long stun to break with the trinket
+			u.trinket_ready = 0.0
+			u.stun_until = now + 6000.0
+			_label(u, "ATURDIDO", "#ffd166")
 
 
 # ---------------------------------------------------------------- snapshots
