@@ -21,7 +21,7 @@ var finished := false
 
 func _init(p_cls := "mage", p_spec := "") -> void:
 	GameData.ensure_loaded()
-	cls = p_cls if GameData.classes.has(p_cls) else "mage"
+	cls = p_cls if GameData.playable(p_cls) else "mage"
 	spec = GameData.normalize_spec(cls, p_spec)
 	_build()
 

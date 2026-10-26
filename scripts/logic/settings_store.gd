@@ -44,7 +44,7 @@ func set_value(key: String, v: Variant) -> Variant:
 		"name":
 			values.name = MatchConfig.sanitize_name(str(v)) if str(v).strip_edges() != "" else ""
 		"cls":
-			values.cls = str(v) if GameData.classes.has(str(v)) else "mage"
+			values.cls = str(v) if GameData.playable(str(v)) else "mage"
 			values.spec = GameData.normalize_spec(values.cls, str(values.specs.get(values.cls, "")))
 		"spec":
 			values.spec = GameData.normalize_spec(str(values.cls), str(v))

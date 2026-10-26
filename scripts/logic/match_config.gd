@@ -20,7 +20,7 @@ static func sanitize_name(raw: String) -> String:
 
 static func class_ids() -> Array:
 	GameData.ensure_loaded()
-	return GameData.classes.keys()
+	return GameData.playable_ids()
 
 
 ## Anything the user/network can send, forced into valid values.
@@ -30,7 +30,7 @@ static func normalize(c: Dictionary) -> Dictionary:
 	var diff := str(c.get("diff", "normal"))
 	var map_id := str(c.get("map", "random"))
 	var pref := str(c.get("pref", "any"))
-	var cls_ok := cls if GameData.classes.has(cls) else "mage"
+	var cls_ok := cls if GameData.playable(cls) else "mage"
 	return {
 		"name": sanitize_name(str(c.get("name", ""))),
 		"cls": cls_ok,

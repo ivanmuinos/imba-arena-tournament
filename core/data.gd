@@ -7,6 +7,20 @@ static var powers: Dictionary = {}
 static var maps: Dictionary = {}
 ## Tuning constants (C.SIM_HZ, C.PLAYER_R, ...).
 static var C: Dictionary = {}
+## Classes kept in the data but switched off: not in any picker, never given to bots, and a request for one becomes
+## "mage". Remove an id to bring the class back.
+const DISABLED_CLASSES := ["druid", "ct", "ronin", "wizard", "ki"]
+
+
+static func playable(cls: String) -> bool:
+	ensure_loaded()
+	return classes.has(cls) and not DISABLED_CLASSES.has(cls)
+
+
+## Playable class ids in roster order.
+static func playable_ids() -> Array:
+	ensure_loaded()
+	return classes.keys().filter(func(id): return not DISABLED_CLASSES.has(id))
 
 
 ## Maximum health of a roster entry: training dummies carry their own huge value, everyone else the class's.

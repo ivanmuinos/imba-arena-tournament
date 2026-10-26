@@ -90,7 +90,7 @@ func setup(p_cls: String, p_spec: String) -> PracticePanel:
 	_cls_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_cls_pick.focus_mode = Control.FOCUS_NONE
 	_cls_pick.add_theme_font_size_override("font_size", 15)
-	var ids: Array = GameData.classes.keys()
+	var ids: Array = GameData.playable_ids()
 	for i in ids.size():
 		_cls_pick.add_item(str(GameData.classes[ids[i]].name), i)
 		_cls_pick.set_item_metadata(i, ids[i])

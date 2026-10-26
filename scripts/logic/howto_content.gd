@@ -49,7 +49,7 @@ static func _pct(v: float) -> String:
 static func classes() -> String:
 	GameData.ensure_loaded()
 	var out := "[b]Los campeones[/b]\n\n"
-	for id in GameData.classes:
+	for id in GameData.playable_ids():
 		var c: Dictionary = GameData.classes[id]
 		out += "[color=#ffc15a][b]%s[/b][/color]  [i]%s[/i]\n" % [str(c.name).to_upper(), ", ".join(c.tags)]
 		var armor := float(c.get("armor", 0.0))

@@ -91,7 +91,7 @@ func _ready() -> void:
 	tr.position = Vector2(668, 458)
 	tr.add_theme_constant_override("separation", 10)
 	stage.add_child(tr)
-	for id in GameData.classes:
+	for id in GameData.playable_ids():
 		var tile := RosterTile.new(id)
 		tile.custom_minimum_size = Vector2(100, 112)
 		tile.pressed.connect(func(): settings.emit({"cls": id, "spec": str(SettingsStore.shared().get_value("specs").get(id, ""))}))

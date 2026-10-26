@@ -379,3 +379,13 @@ func test_key_settings_name_the_abilities_of_your_champion() -> void:
 	eq((s._bind_labels.slot_1 as Label).text, str(GameData.abilities("rogue", str(m.st.get_value("spec")))[1].name), "cambia con el campeón")
 	eq((s._pad_labels.slot_1 as Label).text, (s._bind_labels.slot_1 as Label).text, "también en la tabla del mando")
 	_drop(m)
+
+
+func test_disabled_classes_are_not_offered_and_fall_back_to_mage() -> void:
+	for id in GameData.DISABLED_CLASSES:
+		check(GameData.classes.has(id), "%s sigue en los datos" % id)
+		check(not MatchConfig.class_ids().has(id), "%s no sale para bots ni en las listas" % id)
+		eq(MatchConfig.normalize({"cls": id}).cls, "mage", "pedir %s da mago" % id)
+	var st := SettingsStore.new()
+	eq(st.set_value("cls", "ki"), "mage", "un campeón guardado desactivado vuelve a mago")
+	check(MatchConfig.class_ids().has("warlock"), "los demás siguen")

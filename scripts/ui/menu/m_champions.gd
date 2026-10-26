@@ -92,14 +92,14 @@ func _ready() -> void:
 	role.name = "RoleLine"
 	col.add_child(role)
 	# roster: one row centred in its band; tiles narrow down when there are many champions
-	var n := GameData.classes.size()
+	var n := GameData.playable_ids().size()
 	var gap := 12.0
 	var tile_w := minf(104.0, (ROSTER_X1 - ROSTER_X0 - gap * (n - 1)) / n)
 	var rrow := HBoxContainer.new()
 	rrow.position = Vector2(ROSTER_X0 + (ROSTER_X1 - ROSTER_X0 - (tile_w * n + gap * (n - 1))) / 2.0, 548)
 	rrow.add_theme_constant_override("separation", int(gap))
 	add_child(rrow)
-	for id in GameData.classes:
+	for id in GameData.playable_ids():
 		var t := RosterTile.new(id)
 		t.custom_minimum_size = Vector2(tile_w, 112)
 		t.fit_name(tile_w)
@@ -188,7 +188,7 @@ func debug_tip(i: int) -> void:
 
 
 func select(id: String, from_user := false) -> void:
-	if not GameData.classes.has(id):
+	if not GameData.playable(id):
 		return
 	var changed := id != _cls
 	_cls = id

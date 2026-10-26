@@ -169,7 +169,7 @@ func debug_goto(spec: String) -> void:
 			nav.start_flow("join" if id == "join" else "practice")
 			if id == "champions":
 				nav.next()
-				if parts.size() > 1 and GameData.classes.has(parts[1]):
+				if parts.size() > 1 and GameData.playable(parts[1]):
 					st.set_value("cls", parts[1])
 		"settings":
 			nav.go("settings")
