@@ -9,7 +9,7 @@ static var maps: Dictionary = {}
 static var C: Dictionary = {}
 ## Classes kept in the data but switched off: not in any picker, never given to bots, and a request for one becomes
 ## "mage". Remove an id to bring the class back.
-const DISABLED_CLASSES := ["druid", "ct", "ronin", "wizard", "ki"]
+const DISABLED_CLASSES := ["druid", "ct", "ronin", "crack", "wizard", "ki"]
 
 
 static func playable(cls: String) -> bool:
