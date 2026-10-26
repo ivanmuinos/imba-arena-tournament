@@ -129,11 +129,13 @@ func test_practice_panel_row_texts_and_number_format() -> void:
 func test_teaches_trinket_focus_macros_and_keybinds_with_the_real_keys() -> void:
 	var f := TutorialFlow.new("rogue")
 	var ids: Array = f.steps.map(func(s): return s.id)
-	for id in ["trinket", "focus", "keys"]:
+	for id in ["trinket", "keys"]:
 		check(ids.has(id), "paso %s" % id)
+	eq(ids.has("focus"), MacroStore.ENABLED, "el paso de foco y macros sólo con macros activadas")
 	var t: Dictionary = f.steps[ids.find("trinket")]
 	eq(t.on_enter, "stun", "te aturde para que uses el abalorio")
 	check(str(t.objectives[0].text).contains(Keybinds.shared().label("trinket")), "muestra la tecla del abalorio")
-	var events: Array = f.steps[ids.find("focus")].objectives.map(func(o): return o.event)
-	eq(events, ["focus_set", "tab_target", "macro_cast"], "marcar foco, cambiar de objetivo, macro al foco")
+	if MacroStore.ENABLED:
+		var events: Array = f.steps[ids.find("focus")].objectives.map(func(o): return o.event)
+		eq(events, ["focus_set", "tab_target", "macro_cast"], "marcar foco, cambiar de objetivo, macro al foco")
 	check(ids.find("keys") < ids.find("rounds"), "antes del resumen de la partida")

@@ -4,6 +4,8 @@ extends RefCounted
 ## The texts use ability names, so one set works for every class (a line naming an ability the current class lacks is
 ## just skipped).
 
+## Off: macros are hidden everywhere (HUD bar, Macros tab, their keys, the tutorial step) until they are ready.
+const ENABLED := false
 const PATH := "user://macros.json"
 const COUNT := Keybinds.MACROS
 const DEFAULT_TEXTS := [

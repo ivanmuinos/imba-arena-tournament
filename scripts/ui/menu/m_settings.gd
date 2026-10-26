@@ -37,7 +37,7 @@ var _bind_caption: Label
 
 func _ready() -> void:
 	header("Configuración", "")
-	_tabs = Segmented.new().setup(TABS, "graficos")
+	_tabs = Segmented.new().setup(TABS.filter(func(t): return MacroStore.ENABLED or t[0] != "macros"), "graficos")
 	_tabs.position = Vector2(72, 164)
 	_tabs.add_theme_constant_override("separation", 8)
 	add_child(_tabs)
@@ -139,7 +139,8 @@ func _ready() -> void:
 	reset.pressed.connect(_reset)
 	j.add_child(UiKit.spacer(14))
 	j.add_child(reset)
-	_build_macros(_page(holder, "macros"))
+	if MacroStore.ENABLED:
+		_build_macros(_page(holder, "macros"))
 
 
 ## Macros: six slots on the left, the selected one's key and text on the right, the syntax under it.
@@ -222,6 +223,8 @@ func _build_bindings(parent: Control) -> void:
 	grid.add_theme_constant_override("v_separation", 3)
 	parent.add_child(grid)
 	for a in Keybinds.ACTIONS:
+		if not MacroStore.ENABLED and str(a[0]).begins_with("macro_"):
+			continue
 		var l := UiKit.label(str(a[1]).replace(" (reasignar en partida)", "").replace(" (básica)", ""), 12, UiKit.MUTED)
 		l.custom_minimum_size = Vector2(140, 0)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

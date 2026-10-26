@@ -623,6 +623,8 @@ func _build_macro_bar() -> void:
 	_macro_buttons.clear()
 	for c in _macro_bar.get_children():
 		c.queue_free()
+	if not MacroStore.ENABLED:
+		return
 	var store := MacroStore.new()
 	for i in MacroStore.COUNT:
 		if store.is_empty(i):

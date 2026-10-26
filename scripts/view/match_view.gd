@@ -646,7 +646,8 @@ func _do_action(action: String) -> void:
 	if action.begins_with("slot_"):
 		_cast(int(action.substr(5)))
 	elif action.begins_with("macro_"):
-		run_macro(int(action.substr(6)) - 1)
+		if MacroStore.ENABLED:
+			run_macro(int(action.substr(6)) - 1)
 	elif action.begins_with("ally_"):
 		var ids := hud.ally_ids()
 		var i := int(action.substr(5)) - 1
