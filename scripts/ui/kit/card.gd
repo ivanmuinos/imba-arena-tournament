@@ -17,6 +17,7 @@ var _art: Control
 var _title: Label
 var _sub: Label
 var _badge: Label
+var _col: VBoxContainer
 
 
 ## art: optional Control shown big on top (e.g. a map thumbnail); otherwise `icon_id` is drawn large.
@@ -38,6 +39,8 @@ func _init(icon_id := "", title := "", subtitle := "", accent_: Color = UiKit.LA
 	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 18)
 	col.add_theme_constant_override("separation", 6)
 	add_child(col)
+	_col = col
+	col.minimum_size_changed.connect(update_minimum_size)  # a long title or subtitle grows the card instead of spilling out
 	if art != null:
 		_art = art
 	elif icon_id != "":
@@ -67,6 +70,16 @@ func _init(icon_id := "", title := "", subtitle := "", accent_: Color = UiKit.LA
 func set_title_size(px: int) -> void:
 	_title.add_theme_font_size_override("font_size", px)
 	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+
+## Height of the icon area (170 by default); rows of narrow cards use less so wrapped titles fit.
+func set_art_height(px: int) -> void:
+	if _art != null:
+		_art.custom_minimum_size.y = px
+
+
+func _get_minimum_size() -> Vector2:
+	return _col.get_combined_minimum_size() + Vector2(36, 36) if _col != null else Vector2.ZERO
 
 
 func _icon_art(icon_id: String) -> Control:

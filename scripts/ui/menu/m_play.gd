@@ -26,6 +26,7 @@ func _ready() -> void:
 		var c := Card.new(d[1], d[2], d[3], d[4])
 		c.custom_minimum_size = Vector2(210, 330)
 		c.set_title_size(28)
+		c.set_art_height(140)
 		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(c)
 		_cards[d[0]] = c
