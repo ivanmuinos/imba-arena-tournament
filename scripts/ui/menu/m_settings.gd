@@ -57,6 +57,8 @@ func _ready() -> void:
 	_row(g, "Calidad gráfica", "Auto elige según tu equipo. Baja ayuda en PCs modestas.", _gfx)
 	_full = Segmented.new().setup([["off", "Ventana"], ["on", "Pantalla completa"]], "off")
 	_row(g, "Pantalla", "", _full)
+	_slider(g, "bar_scale", "Tamaño del HUD de habilidades", SettingsStore.BAR_MIN, SettingsStore.BAR_MAX, 0.05, "%d%%", 100.0,
+		"Agranda o achica la barra de habilidades en la partida. Se aplica en la próxima partida.")
 	_gfx_info = UiKit.label("", 13, UiKit.MUTED)
 	_gfx_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_gfx_info.custom_minimum_size = Vector2(780, 0)
@@ -134,7 +136,6 @@ func _ready() -> void:
 	_row(j, "Compañeros", "La mascota de cada clase (lobo, toro, hada...). Es sólo visual; se aplica en la próxima partida.", _pets)
 	_pets.changed.connect(func(v): menu.st.set_value("companions", v == "on"); menu.settings_changed("companions"))
 	_pets.get_parent().visible = CompanionView.AVAILABLE
-	_slider(j, "bar_scale", "Tamaño de la barra de habilidades", SettingsStore.BAR_MIN, SettingsStore.BAR_MAX, 0.05, "%d%%", 100.0)
 	var reset := MButton.new("Restablecer valores", "secondary")
 	reset.custom_minimum_size = Vector2(260, 44)
 	reset.pressed.connect(_reset)
@@ -308,7 +309,7 @@ func _row(parent: Control, title: String, hint: String, ctl: Control) -> void:
 	parent.add_child(r)
 
 
-func _slider(parent: Control, key: String, title: String, lo: float, hi: float, step: float, fmt: String, mult := 1.0) -> void:
+func _slider(parent: Control, key: String, title: String, lo: float, hi: float, step: float, fmt: String, mult := 1.0, hint := "") -> void:
 	var s := HSlider.new()
 	s.min_value = lo
 	s.max_value = hi
@@ -333,7 +334,7 @@ func _slider(parent: Control, key: String, title: String, lo: float, hi: float, 
 			UiSound.play("uiConfirm")
 		elif key == "sfx":
 			UiSound.play("hit"))
-	_row(parent, title, "", box)
+	_row(parent, title, hint, box)
 
 
 func _update_label(key: String) -> void:
@@ -354,7 +355,7 @@ func select_tab(id: String) -> void:
 	for k in _pages:
 		_pages[k].visible = k == id
 	if _holder != null:
-		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 820.0, "audio": 200.0, "juego": 360.0, "macros": 420.0}.get(id, 300.0)
+		_holder.custom_minimum_size.y = {"graficos": 330.0, "controles": 820.0, "audio": 200.0, "juego": 300.0, "macros": 420.0}.get(id, 300.0)
 		_panel.reset_size()
 	_tabs.select(id, false)
 
