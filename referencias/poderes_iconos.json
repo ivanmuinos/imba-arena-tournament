@@ -1,0 +1,1506 @@
+{
+  "style_reference": "Gemini_Generated_Image_qhi61gqhi61gqhi6.jpeg",
+  "style_notes": "Escena cartoon dentro de un círculo rúnico violeta brillante, fondo negro",
+  "powerups": [
+    {
+      "id": "crit",
+      "name": "Furia",
+      "desc": "100% de golpes críticos",
+      "icon": "power_crit",
+      "icon_path": "assets/icons/power_crit.svg",
+      "icon_exists": true
+    },
+    {
+      "id": "stealth",
+      "name": "Velo de humo",
+      "desc": "Invisible hasta que ataques o te peguen",
+      "icon": "power_stealth",
+      "icon_path": "assets/icons/power_stealth.svg",
+      "icon_exists": true
+    },
+    {
+      "id": "shield",
+      "name": "Escudo de obsidiana",
+      "desc": "Inmune a daño y control",
+      "icon": "power_shield",
+      "icon_path": "assets/icons/power_shield.svg",
+      "icon_exists": true
+    },
+    {
+      "id": "haste",
+      "name": "Pies de fuego",
+      "desc": "+50% de velocidad",
+      "icon": "power_haste",
+      "icon_path": "assets/icons/power_haste.svg",
+      "icon_exists": true
+    },
+    {
+      "id": "heal",
+      "name": "Esencia",
+      "desc": "Cura 35% de la vida",
+      "icon": "power_heal",
+      "icon_path": "assets/icons/power_heal.svg",
+      "icon_exists": true
+    }
+  ],
+  "abilities": [
+    {
+      "icon": "fireball",
+      "id": "fireball",
+      "name": "Bola de fuego",
+      "desc": "Bola de fuego instantánea contra tu objetivo (necesita objetivo y línea de visión). No es un auto-ataque.",
+      "icon_path": "assets/icons/fireball.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": null
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "fire"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "pyro",
+      "id": "pyro",
+      "name": "Piroexplosión",
+      "desc": "Lanzamiento de 1,4 s: una bola enorme que pega fuerte. Moverte cancela.",
+      "icon_path": "assets/icons/pyro.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": null
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "fire"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "nova",
+      "id": "nova",
+      "name": "Nova de escarcha",
+      "desc": "Congela los pies de los enemigos cercanos: los enraíza 2 s.",
+      "icon_path": "assets/icons/nova.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": null
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "frost"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "poly",
+      "id": "poly",
+      "name": "Polimorfia",
+      "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 4 s: no puede actuar pero recupera 10% de vida por segundo. Se rompe con daño.",
+      "icon_path": "assets/icons/poly.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": null
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "fire"
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "frost"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "blink",
+      "id": "blink",
+      "name": "Traslación",
+      "desc": "Te teletransportás 8 m. Rompe raíces.",
+      "icon_path": "assets/icons/blink.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": null
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "fire"
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "frost"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "counter",
+      "id": "counter",
+      "name": "Contrahechizo",
+      "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+      "icon_path": "assets/icons/counter.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": null
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "fire"
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "frost"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "meteor",
+      "id": "meteor",
+      "name": "Lluvia de meteoros",
+      "desc": "DEFINITIVA: tres meteoros caen en la zona, aturden 1 s y queman.",
+      "icon_path": "assets/icons/meteor.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": null
+        },
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "fire"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "dragonbreath",
+      "id": "dragonbreath",
+      "name": "Aliento de dragón",
+      "desc": "Cono de fuego corto frente a vos: desorienta 2,5 s a los enemigos que alcanza (el daño rompe el efecto).",
+      "icon_path": "assets/icons/dragonbreath.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "fire"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "frostbolt",
+      "id": "frostbolt",
+      "name": "Descarga de escarcha",
+      "desc": "Lanzamiento de 1,5 s: daño moderado y ralentiza al objetivo un 40% durante 3 s.",
+      "icon_path": "assets/icons/frostbolt.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "frost"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "icelance",
+      "id": "icelance",
+      "name": "Lanza de hielo",
+      "desc": "Proyectil instantáneo de poco daño. Contra un objetivo enraizado o congelado pega 2,5 veces más (astillado).",
+      "icon_path": "assets/icons/icelance.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "frost"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "blizzard",
+      "id": "blizzard",
+      "name": "Ventisca",
+      "desc": "DEFINITIVA: una tormenta de hielo cubre una zona durante 5 s: daño continuo y ralentización fuerte (60%) a todos los enemigos dentro.",
+      "icon_path": "assets/icons/blizzard.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "mage",
+          "class_name": "Mago",
+          "spec": "frost"
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "shadowbolt",
+      "id": "shadowbolt",
+      "name": "Descarga de las sombras",
+      "desc": "Lanzamiento de 1,2 s: proyectil de 34 de daño. Moverte cancela; no es auto-ataque.",
+      "icon_path": "assets/icons/shadowbolt.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warlock",
+          "class_name": "Brujo",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "corruption",
+      "id": "corruption",
+      "name": "Corrupción",
+      "desc": "Maldice al objetivo: 9 de daño por segundo durante 8 s. Refrescar no acumula daño. Disipable.",
+      "icon_path": "assets/icons/corruption.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warlock",
+          "class_name": "Brujo",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "agony",
+      "id": "agony",
+      "name": "Agonía",
+      "desc": "Otra maldición: 7 de daño por segundo durante 10 s. Coexiste con Corrupción; refrescar no acumula. Disipable.",
+      "icon_path": "assets/icons/agony.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warlock",
+          "class_name": "Brujo",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "fear",
+      "id": "fear",
+      "name": "Miedo",
+      "desc": "Lanzamiento de 1,2 s: el enemigo huye 3 s. Se rompe al recibir más de 40 de daño, incluidas maldiciones. Comparte rendimiento decreciente con Alarido.",
+      "icon_path": "assets/icons/fear.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warlock",
+          "class_name": "Brujo",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "darkpact",
+      "id": "darkpact",
+      "name": "Pacto oscuro",
+      "desc": "Sacrificás 15% de tu vida actual (no letal) para absorber 80 de daño durante 6 s. No te libera del control.",
+      "icon_path": "assets/icons/darkpact.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warlock",
+          "class_name": "Brujo",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "drainlife",
+      "id": "drainlife",
+      "name": "Drenar vida",
+      "desc": "Lanzamiento de 1,5 s: roba hasta 42 de vida. Cura sólo la vida realmente quitada; escudos y amortiguación reducen el drenaje. Moverte cancela.",
+      "icon_path": "assets/icons/drainlife.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warlock",
+          "class_name": "Brujo",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "soulrot",
+      "id": "soulrot",
+      "name": "Putrefacción del alma",
+      "desc": "DEFINITIVA: 25 de daño y una tercera maldición de 16 por segundo durante 6 s. Disipable; no consume las otras maldiciones.",
+      "icon_path": "assets/icons/soulrot.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warlock",
+          "class_name": "Brujo",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "shot",
+      "id": "shot",
+      "name": "Disparo",
+      "desc": "Auto-ataque: dispara solo contra tu objetivo mientras esté a tiro y de frente (clic derecho sobre el enemigo o tecla 1).",
+      "icon_path": "assets/icons/shot.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "hunter",
+          "class_name": "Cazador",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "aimed",
+      "id": "aimed",
+      "name": "Disparo apuntado",
+      "desc": "Lanzamiento de 1,1 s: flecha devastadora. Moverte cancela.",
+      "icon_path": "assets/icons/aimed.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "hunter",
+          "class_name": "Cazador",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "trap",
+      "id": "trap",
+      "name": "Trampa congelante",
+      "desc": "Arrojás una trampa invisible: congela 3 s al primer enemigo que la pisa. Se rompe con daño.",
+      "icon_path": "assets/icons/trap.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "hunter",
+          "class_name": "Cazador",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "conc",
+      "id": "conc",
+      "name": "Disparo de conmoción",
+      "desc": "Flecha que ralentiza un 50% durante 4 s.",
+      "icon_path": "assets/icons/conc.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "hunter",
+          "class_name": "Cazador",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "disengage",
+      "id": "disengage",
+      "name": "Retirada",
+      "desc": "Saltás 7 m hacia atrás.",
+      "icon_path": "assets/icons/disengage.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "hunter",
+          "class_name": "Cazador",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "silence",
+      "id": "silence",
+      "name": "Disparo silenciador",
+      "desc": "Flecha que interrumpe y silencia 2,5 s.",
+      "icon_path": "assets/icons/silence.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "hunter",
+          "class_name": "Cazador",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "volley",
+      "id": "volley",
+      "name": "Andanada",
+      "desc": "DEFINITIVA: abanico de 9 flechas ardientes que empujan.",
+      "icon_path": "assets/icons/volley.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "hunter",
+          "class_name": "Cazador",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "strike",
+      "id": "strike",
+      "name": "Golpe",
+      "desc": "Auto-ataque cuerpo a cuerpo contra tu objetivo (clic derecho sobre el enemigo o tecla 1).",
+      "icon_path": "assets/icons/strike.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warrior",
+          "class_name": "Guerrero",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "mortal",
+      "id": "mortal",
+      "name": "Golpe mortal",
+      "desc": "Golpe brutal: el objetivo recibe 50% menos de curación durante 8 s.",
+      "icon_path": "assets/icons/mortal.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warrior",
+          "class_name": "Guerrero",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "charge",
+      "id": "charge",
+      "name": "Carga",
+      "desc": "Corrés hasta el enemigo y lo aturdís 1,2 s.",
+      "icon_path": "assets/icons/charge.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warrior",
+          "class_name": "Guerrero",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "hamstring",
+      "id": "hamstring",
+      "name": "Seccionar",
+      "desc": "Corte que ralentiza un 50% durante 6 s.",
+      "icon_path": "assets/icons/hamstring.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warrior",
+          "class_name": "Guerrero",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "shieldwall",
+      "id": "shieldwall",
+      "name": "Muro de escudo",
+      "desc": "Recibís 60% menos de daño durante 6 s.",
+      "icon_path": "assets/icons/shieldwall.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warrior",
+          "class_name": "Guerrero",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "pummel",
+      "id": "pummel",
+      "name": "Zurrar",
+      "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+      "icon_path": "assets/icons/pummel.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warrior",
+          "class_name": "Guerrero",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "bladestorm",
+      "id": "bladestorm",
+      "name": "Filotormenta",
+      "desc": "DEFINITIVA: girás 4 s golpeando a todos los cercanos. Inmune al control.",
+      "icon_path": "assets/icons/bladestorm.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "warrior",
+          "class_name": "Guerrero",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "smite",
+      "id": "smite",
+      "name": "Castigo",
+      "desc": "Rayo sagrado instantáneo contra tu objetivo. No es un auto-ataque.",
+      "icon_path": "assets/icons/smite.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "priest",
+          "class_name": "Sacerdote",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "heal",
+      "id": "heal",
+      "name": "Sanación",
+      "desc": "Lanzamiento de 1,5 s: cura 72 al aliado elegido (F1-F3) o al más herido.",
+      "icon_path": "assets/icons/heal.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "priest",
+          "class_name": "Sacerdote",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "pwshield",
+      "id": "pwshield",
+      "name": "Escudo divino",
+      "desc": "Escudo que absorbe 77 de daño durante 10 s.",
+      "icon_path": "assets/icons/pwshield.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "priest",
+          "class_name": "Sacerdote",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "scream",
+      "id": "scream",
+      "name": "Alarido psíquico",
+      "desc": "Los enemigos a 6 m huyen aterrorizados 3 s (se rompe con daño).",
+      "icon_path": "assets/icons/scream.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "priest",
+          "class_name": "Sacerdote",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "renew",
+      "id": "renew",
+      "name": "Renovar",
+      "desc": "Cura 11 por segundo durante 6 s.",
+      "icon_path": "assets/icons/renew.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "priest",
+          "class_name": "Sacerdote",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "dispel",
+      "id": "dispel",
+      "name": "Disipar",
+      "desc": "Quita aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
+      "icon_path": "assets/icons/dispel.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "priest",
+          "class_name": "Sacerdote",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "hymn",
+      "id": "hymn",
+      "name": "Himno divino",
+      "desc": "DEFINITIVA: cura 125 a todos los aliados cercanos.",
+      "icon_path": "assets/icons/hymn.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "priest",
+          "class_name": "Sacerdote",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "stab",
+      "id": "stab",
+      "name": "Puñalada",
+      "desc": "Auto-ataque rápido cuerpo a cuerpo contra tu objetivo (clic derecho sobre el enemigo o tecla 1).",
+      "icon_path": "assets/icons/stab.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "rogue",
+          "class_name": "Asesino",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "eviscerate",
+      "id": "eviscerate",
+      "name": "Eviscerar",
+      "desc": "Golpe letal de mucho daño (+30% desde el sigilo).",
+      "icon_path": "assets/icons/eviscerate.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "rogue",
+          "class_name": "Asesino",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "cheapshot",
+      "id": "cheapshot",
+      "name": "Golpe bajo",
+      "desc": "Aturde al enemigo 2,5 s (4 s si venís del sigilo).",
+      "icon_path": "assets/icons/cheapshot.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "rogue",
+          "class_name": "Asesino",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "blind",
+      "id": "blind",
+      "name": "Ceguera",
+      "desc": "Ciega a un enemigo a 12 m: incapacitado 4 s (se rompe con daño).",
+      "icon_path": "assets/icons/blind.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "rogue",
+          "class_name": "Asesino",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "vanish",
+      "id": "vanish",
+      "name": "Desvanecer",
+      "desc": "Te volvés invisible 8 s, te sacás raíces y ralentizaciones y corrés +50% durante 4 s.",
+      "icon_path": "assets/icons/vanish.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "rogue",
+          "class_name": "Asesino",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "kick",
+      "id": "kick",
+      "name": "Patada",
+      "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+      "icon_path": "assets/icons/kick.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "rogue",
+          "class_name": "Asesino",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "deathmark",
+      "id": "deathmark",
+      "name": "Marca de muerte",
+      "desc": "DEFINITIVA: aparecés detrás del objetivo y recibe 40% más de daño durante 6 s.",
+      "icon_path": "assets/icons/deathmark.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "rogue",
+          "class_name": "Asesino",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "wrath",
+      "id": "wrath",
+      "name": "Cólera",
+      "desc": "Rayo de naturaleza instantáneo contra tu objetivo: 22 de daño. No es un auto-ataque.",
+      "icon_path": "assets/icons/wrath.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "druid",
+          "class_name": "Druida",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "regrowth",
+      "id": "regrowth",
+      "name": "Recrecimiento",
+      "desc": "Lanzamiento de 1,5 s: cura 38 al aliado elegido (F1-F3) o a vos.",
+      "icon_path": "assets/icons/regrowth.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "druid",
+          "class_name": "Druida",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "ironbark",
+      "id": "ironbark",
+      "name": "Corteza férrea",
+      "desc": "La piel de un aliado (o la tuya) se vuelve corteza: recibe 60% menos de daño durante 6 s.",
+      "icon_path": "assets/icons/ironbark.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "druid",
+          "class_name": "Druida",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "cyclone",
+      "id": "cyclone",
+      "name": "Ciclón",
+      "desc": "Lanzamiento de 1,3 s: un ciclón saca de combate al enemigo 4 s (se rompe con daño). Comparte rendimientos decrecientes con Polimorfia y Ceguera.",
+      "icon_path": "assets/icons/cyclone.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "druid",
+          "class_name": "Druida",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "rejuv",
+      "id": "rejuv",
+      "name": "Rejuvenecimiento",
+      "desc": "Cura 7 por segundo durante 9 s. Reemplaza a otra curación en el tiempo (Renovar) si ya la tiene.",
+      "icon_path": "assets/icons/rejuv.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "druid",
+          "class_name": "Druida",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "naturescure",
+      "id": "naturescure",
+      "name": "Curación natural",
+      "desc": "Quita maldiciones, quemaduras, aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
+      "icon_path": "assets/icons/naturescure.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "druid",
+          "class_name": "Druida",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "tranquility",
+      "id": "tranquility",
+      "name": "Tranquilidad",
+      "desc": "DEFINITIVA: cura 55 a todos los aliados cercanos y les deja 6 de curación por segundo durante 6 s.",
+      "icon_path": "assets/icons/tranquility.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "druid",
+          "class_name": "Druida",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "rifle",
+      "id": "rifle",
+      "name": "Fusil",
+      "desc": "Auto-ataque: tiro a tiro contra tu objetivo mientras esté a tiro y de frente: 30 de daño por bala, llega casi al instante.",
+      "icon_path": "assets/icons/rifle.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ct",
+          "class_name": "Antiterrorista",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "headshot",
+      "id": "headshot",
+      "name": "Tiro a la cabeza",
+      "desc": "Apuntás 0,9 s y disparás a la cabeza: 72 de daño. Moverte cancela.",
+      "icon_path": "assets/icons/headshot.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ct",
+          "class_name": "Antiterrorista",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "flashbang",
+      "id": "flashbang",
+      "name": "Granada cegadora",
+      "desc": "Tirás una granada al suelo: ciega 2,5 s a los enemigos a 5 m de donde explota (se rompe con daño).",
+      "icon_path": "assets/icons/flashbang.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ct",
+          "class_name": "Antiterrorista",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "kevlar",
+      "id": "kevlar",
+      "name": "Chaleco de kevlar",
+      "desc": "Te ponés el chaleco: absorbe 80 de daño durante 8 s.",
+      "icon_path": "assets/icons/kevlar.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ct",
+          "class_name": "Antiterrorista",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "knife",
+      "id": "knife",
+      "name": "Cuchillo en mano",
+      "desc": "Guardás el fusil y corrés más rápido 4 s; te sacás ralentizaciones y raíces.",
+      "icon_path": "assets/icons/knife.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ct",
+          "class_name": "Antiterrorista",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "bash",
+      "id": "bash",
+      "name": "Culatazo",
+      "desc": "Golpe con la culata a un enemigo pegado a vos: si está lanzando, lo interrumpe y lo silencia 2 s.",
+      "icon_path": "assets/icons/bash.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ct",
+          "class_name": "Antiterrorista",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "awp",
+      "id": "awp",
+      "name": "Francotirador",
+      "desc": "DEFINITIVA: apuntás 1,5 s con el rifle de francotirador: un disparo de 150 de daño desde muy lejos.",
+      "icon_path": "assets/icons/awp.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ct",
+          "class_name": "Antiterrorista",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "slash",
+      "id": "slash",
+      "name": "Corte",
+      "desc": "Auto-ataque: cortes de katana a tu objetivo mientras esté al alcance (clic derecho sobre el enemigo o tecla 1).",
+      "icon_path": "assets/icons/slash.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ronin",
+          "class_name": "Ronin",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "tempest",
+      "id": "tempest",
+      "name": "Tempestad de acero",
+      "desc": "Estocada en línea de 6 m: 26 de daño al objetivo y a los que estén en el camino. A la tercera seguida (en 6 s) lanza un tornado que deja en el aire 1 s al primer enemigo que toca.",
+      "icon_path": "assets/icons/tempest.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ronin",
+          "class_name": "Ronin",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "windwall",
+      "id": "windwall",
+      "name": "Muro de viento",
+      "desc": "Levantás un muro de viento de 7 m delante tuyo: bloquea los proyectiles enemigos durante 4 s.",
+      "icon_path": "assets/icons/windwall.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ronin",
+          "class_name": "Ronin",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "sweep",
+      "id": "sweep",
+      "name": "Hoja barredora",
+      "desc": "Atravesás a un enemigo a 7 m de un dash y lo cortás: 20 de daño. Terminás detrás de él.",
+      "icon_path": "assets/icons/sweep.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ronin",
+          "class_name": "Ronin",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "flow",
+      "id": "flow",
+      "name": "Escudo de viento",
+      "desc": "El viento te envuelve: absorbe 70 de daño durante 4 s.",
+      "icon_path": "assets/icons/flow.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ronin",
+          "class_name": "Ronin",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "upcut",
+      "id": "upcut",
+      "name": "Corte ascendente",
+      "desc": "Corte rápido a un enemigo pegado a vos: si está lanzando, lo interrumpe y lo silencia 1,5 s.",
+      "icon_path": "assets/icons/upcut.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ronin",
+          "class_name": "Ronin",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "lastbreath",
+      "id": "lastbreath",
+      "name": "Último aliento",
+      "desc": "DEFINITIVA: aparecés junto a un enemigo a 14 m, lo cortás por 90 y lo dejás en el aire 1,5 s.",
+      "icon_path": "assets/icons/lastbreath.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ronin",
+          "class_name": "Ronin",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "pass",
+      "id": "pass",
+      "name": "Pase",
+      "desc": "Auto-ataque: le pegás pelotazos a tu objetivo mientras esté a tiro y de frente: 20 de daño.",
+      "icon_path": "assets/icons/pass.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "crack",
+          "class_name": "El Crack",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "chip",
+      "id": "chip",
+      "name": "Tiro colocado",
+      "desc": "Le pegás de lleno, al ángulo: 50 de daño.",
+      "icon_path": "assets/icons/chip.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "crack",
+          "class_name": "El Crack",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "nutmeg",
+      "id": "nutmeg",
+      "name": "Caño",
+      "desc": "Le tirás la pelota entre las piernas a un rival pegado a vos: 10 de daño, aparecés detrás y queda desorientado 2 s (se rompe con daño).",
+      "icon_path": "assets/icons/nutmeg.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "crack",
+          "class_name": "El Crack",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "dribble",
+      "id": "dribble",
+      "name": "Gambeta",
+      "desc": "Arrancás 7 m hacia adelante y corrés más rápido 2 s; te sacás las ralentizaciones.",
+      "icon_path": "assets/icons/dribble.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "crack",
+          "class_name": "El Crack",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "onetwo",
+      "id": "onetwo",
+      "name": "Pared",
+      "desc": "Tirás una pared con un aliado a 18 m: llegás a su lado de un pique y los dos corren más rápido 3 s.",
+      "icon_path": "assets/icons/onetwo.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "crack",
+          "class_name": "El Crack",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "tackle",
+      "id": "tackle",
+      "name": "Barrida",
+      "desc": "Barrida a un rival pegado a vos: si está lanzando, lo interrumpe y lo silencia 1,5 s.",
+      "icon_path": "assets/icons/tackle.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "crack",
+          "class_name": "El Crack",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "golazo",
+      "id": "golazo",
+      "name": "Golazo",
+      "desc": "DEFINITIVA: 1 s para acomodarte y la clavás: un pelotazo de 120 de daño que empuja y aturde 1 s.",
+      "icon_path": "assets/icons/golazo.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "crack",
+          "class_name": "El Crack",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "spark",
+      "id": "spark",
+      "name": "Chispa",
+      "desc": "Auto-ataque: chispas de la varita contra tu objetivo mientras esté a tiro y de frente: 22 de daño.",
+      "icon_path": "assets/icons/spark.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "wizard",
+          "class_name": "Aprendiz",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "stunbolt",
+      "id": "stunbolt",
+      "name": "Rayo aturdidor",
+      "desc": "Un rayo rojo de la varita: 18 de daño y aturde 1,5 s al que toca.",
+      "icon_path": "assets/icons/stunbolt.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "wizard",
+          "class_name": "Aprendiz",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "disarm",
+      "id": "disarm",
+      "name": "Desarme",
+      "desc": "Le volás el arma de las manos: interrumpe lo que esté lanzando y lo silencia 2 s.",
+      "icon_path": "assets/icons/disarm.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "wizard",
+          "class_name": "Aprendiz",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "wardshield",
+      "id": "wardshield",
+      "name": "Escudo encantado",
+      "desc": "Un escudo mágico te envuelve: absorbe 75 de daño durante 5 s.",
+      "icon_path": "assets/icons/wardshield.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "wizard",
+          "class_name": "Aprendiz",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "broom",
+      "id": "broom",
+      "name": "Escoba",
+      "desc": "Te subís a la escoba: salís volando 9 m hacia adelante y corrés más rápido 2 s.",
+      "icon_path": "assets/icons/broom.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "wizard",
+          "class_name": "Aprendiz",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "confuse",
+      "id": "confuse",
+      "name": "Hechizo confusor",
+      "desc": "Lanzamiento de 1,2 s: el objetivo queda desorientado 3,5 s (se rompe con daño). Comparte rendimientos decrecientes con Polimorfia.",
+      "icon_path": "assets/icons/confuse.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "wizard",
+          "class_name": "Aprendiz",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "guardian",
+      "id": "guardian",
+      "name": "Guardián de luz",
+      "desc": "DEFINITIVA: conjurás un guardián de luz plateada: los enemigos a 8 m huyen aterrorizados 2,5 s y los aliados cercanos se curan 45.",
+      "icon_path": "assets/icons/guardian.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "wizard",
+          "class_name": "Aprendiz",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "punch",
+      "id": "punch",
+      "name": "Combo de puños",
+      "desc": "Auto-ataque: una lluvia de puños a tu objetivo mientras esté al alcance: 20 de daño.",
+      "icon_path": "assets/icons/punch.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ki",
+          "class_name": "Guerrero Ki",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "kiblast",
+      "id": "kiblast",
+      "name": "Ráfaga de ki",
+      "desc": "Disparás una bola de ki: 32 de daño.",
+      "icon_path": "assets/icons/kiblast.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ki",
+          "class_name": "Guerrero Ki",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "flashstep",
+      "id": "flashstep",
+      "name": "Paso instantáneo",
+      "desc": "Desaparecés y aparecés detrás de un enemigo a 16 m.",
+      "icon_path": "assets/icons/flashstep.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ki",
+          "class_name": "Guerrero Ki",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "kiguard",
+      "id": "kiguard",
+      "name": "Guardia de ki",
+      "desc": "Concentrás el ki: absorbe 65 de daño durante 4 s.",
+      "icon_path": "assets/icons/kiguard.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ki",
+          "class_name": "Guerrero Ki",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "awaken",
+      "id": "awaken",
+      "name": "Despertar",
+      "desc": "Liberás tu poder con un aura dorada: durante 8 s corrés más rápido y todos tus golpes son críticos.",
+      "icon_path": "assets/icons/awaken.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ki",
+          "class_name": "Guerrero Ki",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "palm",
+      "id": "palm",
+      "name": "Palma de ki",
+      "desc": "Golpe de palma a un enemigo pegado a vos: 12 de daño, si está lanzando lo interrumpe y lo silencia 1,5 s, y lo empuja 6 m.",
+      "icon_path": "assets/icons/palm.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ki",
+          "class_name": "Guerrero Ki",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    },
+    {
+      "icon": "kiwave",
+      "id": "kiwave",
+      "name": "Onda de ki",
+      "desc": "DEFINITIVA: cargás 1,5 s y soltás un rayo de ki de 26 m: 140 de daño a todos los enemigos en la línea. Moverte cancela.",
+      "icon_path": "assets/icons/kiwave.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "ki",
+          "class_name": "Guerrero Ki",
+          "spec": null
+        }
+      ],
+      "disabled": true
+    }
+  ]
+}

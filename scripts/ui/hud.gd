@@ -300,7 +300,7 @@ func _build() -> void:
 	_macro_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	bottom.add_child(_macro_bar)
 	_bar = HBoxContainer.new()
-	_bar.add_theme_constant_override("separation", 6)
+	_bar.add_theme_constant_override("separation", 0)  # the rune frames touch
 	_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	_bar_frame = ActionBarFrame.new()  # one frame around every button of the bar, scaled by the "bar_scale" setting
 	_bar_frame.add_child(_bar)
@@ -554,7 +554,7 @@ func _build_bar() -> void:
 		var slot := Panel.new()
 		slot.custom_minimum_size = Vector2(60, 60)
 		var ult: bool = a.get("ult", false)
-		slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.03, 0.02, 0.015, 0.95), Color("#ffb84d") if ult else ActionBarFrame.GOLD_DARK, 8, 2, 0))
+		slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.03, 0.02, 0.015, 0.95), Color("#ffb84d") if ult else Color(0, 0, 0, 0), 2, 2 if ult else 0, 0))
 		slot.mouse_filter = Control.MOUSE_FILTER_PASS
 		slot.mouse_entered.connect(_show_ability_tip.bind(i))
 		slot.mouse_exited.connect(_ability_tip.hush)
@@ -587,7 +587,7 @@ func _build_bar() -> void:
 		slot.add_child(sweep)
 		slot.add_child(key)
 		slot.add_child(cd)
-		_bar.add_child(slot)
+		_bar.add_child(ActionBarFrame.framed(slot, ActionBarFrame.piece_for(i, abilities.size())))
 		_slots.append({"root": slot, "sweep": sweep, "cd": cd, "charge": charge, "icon": icon, "ult": ult, "auto": a.get("auto", false), "key": key})
 	_build_trinket(dim_tex)
 	_build_macro_bar()
@@ -699,7 +699,7 @@ func _build_trinket(dim_tex: Texture2D) -> void:
 	cd.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for c in [icon, sweep, key, cd]:
 		slot.add_child(c)
-	_bar.add_child(slot)
+	_bar.add_child(ActionBarFrame.framed(slot, "solo"))
 	_trinket = {"sweep": sweep, "cd": cd, "key": key}
 	_track_hover(slot, "trinket")
 
