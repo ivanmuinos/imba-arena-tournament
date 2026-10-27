@@ -17,7 +17,7 @@ Jugar online con amigos
 -----------------------
 1. Uno crea la partida ("CREAR PARTIDA (SOY ANFITRIÓN)").
 2. Los demás ponen la IP de esa persona y el puerto (7777 por defecto) y tocan "UNIRME".
-3. Todos tienen que usar esta misma compilación del juego: reemplazá las copias anteriores de v0.6.0.
+3. Todos tienen que usar esta misma compilación del juego: reemplazá las copias anteriores de v0.7.0.
 4. Con varios humanos, todos deben marcar "Listo" antes de empezar.
    Cambiar equipo, campeón o sala borra las confirmaciones.
 Para que funcione por internet hace falta una VPN virtual (Tailscale / ZeroTier / Radmin VPN),
