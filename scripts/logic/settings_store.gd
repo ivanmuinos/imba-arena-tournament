@@ -17,7 +17,7 @@ var values := {
 	"name": "", "cls": "mage", "spec": "fire", "specs": {}, "mode": 2, "map": "random", "diff": "normal", "pref": "any",
 	"addr": "127.0.0.1", "port": 7777, "gfx": "auto", "fullscreen": false,
 	"tutorial_seen": false, "master": 0.8, "music": 0.5, "sfx": 0.9, "sens": 1.0, "invert": false, "steam_friends": true,
-	"companions": true,
+	"companions": true, "news_seen": [],
 }
 
 
@@ -81,6 +81,13 @@ func set_value(key: String, v: Variant) -> Variant:
 			values[key] = bool(v) if typeof(v) == TYPE_BOOL else false
 		"companions":
 			values.companions = bool(v) if typeof(v) == TYPE_BOOL else true
+		"news_seen":
+			var ids: Array = []
+			if typeof(v) == TYPE_ARRAY:
+				for id in v:
+					if not ids.has(str(id)):
+						ids.append(str(id))
+			values.news_seen = ids.slice(maxi(0, ids.size() - NewsFeed.SEEN_KEEP))
 		"master", "music", "sfx":
 			values[key] = clampf(float(v), 0.0, 1.0) if typeof(v) in [TYPE_INT, TYPE_FLOAT] else values[key]
 		"sens":

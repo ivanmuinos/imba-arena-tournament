@@ -15,6 +15,8 @@ signal gfx_changed(choice: String)
 signal steam_host(cfg: Dictionary, friends_only: bool)
 signal steam_browse
 signal steam_changed
+## "Unirse" on a friend in the home's social panel: enter their Steam lobby.
+signal steam_join(lobby_id: int)
 ## The splash/hub asks for the 3D backdrop mood: "splash" (cinematic flythrough) or "hub".
 signal backdrop_requested(kind: String)
 
@@ -26,6 +28,11 @@ var nav := MenuNav.new()
 var status: Label
 var steam_ok := false
 var steam_text := "Steam no disponible"
+## Friends, avatars and the overlay for the home screen (null until main.gd hands it over).
+var steam_backend: SteamBackend = null
+var top_bar: TopBar
+## In-client private chat with friends (null without Steam).
+var dm: DirectChat = null
 var scale_ := 1.0
 ## The hub offers the tutorial on the first launch (off for scripted runs and screenshots).
 var offer_tutorial := true
@@ -36,8 +43,7 @@ var _views := {}
 var _view: MenuView = null
 var _tw: Tween
 var _chrome: Control
-var _name_edit: LineEdit
-var _back: MButton
+var _bar_bg: ColorRect
 var _hints: HBoxContainer
 var _booted := false
 var _launching := false
@@ -53,6 +59,13 @@ func _ready() -> void:
 	add_child(UiKit.backdrop())
 	_shade = UiKit.side_shade(0.72)
 	add_child(_shade)
+	# The top bar spans the whole window (also on ultrawide, where the content stays 1280 wide and centred).
+	_bar_bg = ColorRect.new()
+	_bar_bg.color = Color(0.035, 0.022, 0.018, 0.94)
+	_bar_bg.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar_bg.visible = false
+	add_child(_bar_bg)
 	_stage = Control.new()
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_stage)
@@ -65,8 +78,9 @@ func _ready() -> void:
 	status = UiKit.label("", 16, Color("#ffd9b3"), HORIZONTAL_ALIGNMENT_CENTER)
 	status.add_theme_stylebox_override("normal", UiKit.box(Color(0.08, 0.04, 0.03, 0.92), UiKit.LINE_STRONG, 8, 1, 10))
 	status.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	status.offset_left = 340
-	status.offset_right = -340
+	# left of the home's chat window and friends column, so notices never cover them
+	status.offset_left = 72
+	status.offset_right = -(TopBar.SIDE + 16 + DmWindow.W + 16)
 	status.offset_top = -120
 	status.offset_bottom = -76
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -88,6 +102,7 @@ func _rescale() -> void:
 	_stage.scale = Vector2(scale_, scale_)
 	_stage.position = box.position
 	_stage.size = box.size
+	_bar_bg.offset_bottom = TopBar.HEIGHT * scale_
 
 
 ## The menu layout is designed for 1280 px of width: on ultrawide windows (21:9, 32:9) it stays that wide and centred
@@ -177,6 +192,16 @@ func debug_goto(spec: String) -> void:
 	_booted = true
 	_present(nav.current, 1, true)
 	backdrop_requested.emit("splash" if id == "splash" else "hub")
+
+
+func set_steam_backend(b: SteamBackend) -> void:
+	steam_backend = b
+	dm = DirectChat.new(b) if b.available() else null
+	set_steam(b.available(), b.status_text())
+	_refresh_profile()
+	if b.available():
+		b.avatar_ready.connect(func(id, tex): if id == b.my_id(): top_bar.set_avatar(tex))
+		b.request_avatar(b.my_id())
 
 
 # ---------------------------------------------------------------- navigation
@@ -280,82 +305,67 @@ func _focus_view(v: MenuView) -> void:
 			f.grab_focus()
 
 
-# ---------------------------------------------------------------- chrome (logo, name chip, back, hints, version)
+# ---------------------------------------------------------------- chrome (top bar, hints, version)
 
 func _build_chrome() -> void:
 	_chrome = Control.new()
 	_chrome.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_chrome.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stage.add_child(_chrome)
-	var mark := UiKit.heading("IMBA", 30, Color("#ffcf6a"), 700, 4)
-	mark.position = Vector2(72, 30)
-	UiKit.outlined(mark, 6, Color("#3a1204"))
-	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_chrome.add_child(mark)
-	var mark2 := UiKit.heading("ARENA TOURNAMENT", 14, UiKit.MUTED, 600, 5)
-	mark2.position = Vector2(170, 41)
-	mark2.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_chrome.add_child(mark2)
-	# name chip, top right
-	var chip := UiKit.glass(UiKit.LINE, 22, 0, 3.0, 0.5)
-	chip.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	chip.position = Vector2(-72 - 230, 26)
-	chip.custom_minimum_size = Vector2(230, 40)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	var av := Icons.rect("ui_user", 20)
-	av.modulate = UiKit.GOLD
-	var pad := Control.new()
-	pad.custom_minimum_size = Vector2(10, 0)
-	row.add_child(pad)
-	row.add_child(av)
-	_name_edit = LineEdit.new()
-	_name_edit.placeholder_text = "Tu nombre"
-	_name_edit.max_length = 16
-	_name_edit.flat = true
-	_name_edit.custom_minimum_size = Vector2(150, 36)
-	_name_edit.add_theme_font_override("font", UiKit.display(600, 1))
-	_name_edit.add_theme_font_size_override("font_size", 19)
-	_name_edit.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	_name_edit.add_theme_stylebox_override("focus", UiKit.box(Color(1, 1, 1, 0.07), UiKit.GOLD, 14, 1, 6))
-	_name_edit.text = str(st.get_value("name"))
-	_name_edit.text_changed.connect(func(t): st.set_value("name", t); st.save())
-	_name_edit.text_submitted.connect(func(_t): _name_edit.release_focus())
-	_name_edit.tooltip_text = "Tu nombre (se puede editar acá)"
-	row.add_child(_name_edit)
-	chip.add_child(row)
-	_chrome.add_child(chip)
-	# back
-	_back = MButton.new("Volver", "ghost", "ui_back")
-	_back.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_back.position = Vector2(-72 - 230 - 16 - 128, 27)
-	_back.size = Vector2(128, 38)
-	_back.custom_minimum_size = Vector2(128, 38)
-	_back.pressed.connect(back)
-	_chrome.add_child(_back)
-	# hints + version
+	top_bar = TopBar.new()
+	top_bar.play_pressed.connect(func(): go_tab("play"))
+	top_bar.tab_pressed.connect(go_tab)
+	top_bar.back_pressed.connect(back)
+	top_bar.settings_pressed.connect(func(): go_tab("settings"))
+	top_bar.quit_pressed.connect(func(): get_tree().quit())
+	top_bar.name_edit.text_changed.connect(func(t): st.set_value("name", t); st.save())
+	_chrome.add_child(top_bar)
+	_refresh_profile()
+	# hints + version, bottom of the content area (the friends column takes the right edge on the home)
 	_hints = HBoxContainer.new()
 	_hints.add_theme_constant_override("separation", 22)
 	_hints.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	_hints.position = Vector2(-72 - 420, -50)
+	_hints.position = Vector2(-TopBar.SIDE - 24 - 420, -40)
 	_hints.custom_minimum_size = Vector2(420, 28)
 	_hints.alignment = BoxContainer.ALIGNMENT_END
 	_hints.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_chrome.add_child(_hints)
 	var ver := UiKit.label("v%s" % str(ProjectSettings.get_setting("application/config/version", "0")), 13, UiKit.DIM)
 	ver.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	ver.position = Vector2(72, -42)
+	ver.position = Vector2(24, -34)
 	ver.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_chrome.add_child(ver)
 
 
+## Tabs and JUGAR: one level under the home, so Esc / Volver always lead back to it.
+func go_tab(screen: String) -> void:
+	if nav.current == screen:
+		return
+	nav.reset_to("hub")
+	if screen != "hub":
+		nav.go(screen)
+	_present(nav.current, 1)
+
+
+## Which part of the top bar is lit for a screen.
+func active_tab(id: String) -> String:
+	if nav.mode != "" or id in ["play", "setup", "join"]:
+		return "play"
+	return id if id in ["hub", "champions", "howto"] else ""
+
+
+func _refresh_profile() -> void:
+	var online := steam_backend != null and steam_backend.available()
+	top_bar.set_profile(steam_backend.persona_name() if online else "", str(st.get_value("name")), online)
+
+
 func _update_chrome(id: String) -> void:
 	_chrome.visible = id != "splash"
+	_bar_bg.visible = _chrome.visible
 	create_tween().tween_property(_shade, "modulate:a", 0.0 if id == "splash" else (0.5 if id == "champions" else 1.0), 0.3)
-	if _name_edit.text != str(st.get_value("name")) and not _name_edit.has_focus():
-		_name_edit.text = str(st.get_value("name"))
-	_back.visible = nav.can_back() and id != "hub"
+	_refresh_profile()
+	top_bar.set_active(active_tab(id))
+	top_bar.back.visible = nav.can_back() and nav.mode != ""
 	for c in _hints.get_children():
 		c.queue_free()
 	for h in _views[id].hints():

@@ -18,6 +18,7 @@ extends Node
 ##   --steam-host[=public]   create a Steam lobby on start (friends only unless "public")
 ##   --steam-join=LOBBY_ID   join a Steam lobby on start (Steam itself launches us with `+connect_lobby ID` for invites)
 ##   --log / --steam-log     print every Steam callback
+##   --steam-mock[=NAME]     simulated Steam (no Steam client): copies on this PC or LAN see each other as friends
 
 const DEFAULT_PORT := 7777
 
@@ -107,6 +108,7 @@ func _ready() -> void:
 	_menu.gfx_changed.connect(_on_gfx)
 	_menu.steam_host.connect(_start_steam_host)
 	_menu.steam_browse.connect(_open_steam_browser)
+	_menu.steam_join.connect(_join_friend_lobby)
 	_lobby = LobbyScreen.new()
 	_chat = ChatPanel.new()
 	add_child(_chat)
@@ -198,8 +200,13 @@ func _cfg_from_args() -> Dictionary:
 # ---------------------------------------------------------------- Steam (optional)
 
 func _init_steam() -> void:
-	steam = SteamBackendReal.new(args.has("log") or args.has("steam-log"))
-	_menu.set_steam(steam.available(), steam.status_text())
+	var verbose := args.has("log") or args.has("steam-log")
+	if args.has("steam-mock"):  # development stand-in: copies on this PC / LAN are each other's Steam friends
+		var mock_name := str(args["steam-mock"]) if typeof(args["steam-mock"]) == TYPE_STRING else str(SettingsStore.shared().get_value("name"))
+		steam = SteamBackendMock.new(mock_name, SteamBackendMock.DEFAULT_BASE, SteamBackendMock.DEFAULT_COUNT, 0, verbose)
+	else:
+		steam = SteamBackendReal.new(verbose)
+	_menu.set_steam_backend(steam)
 	if not steam.available():
 		if args.has("steam-host") or args.has("steam-join"):
 			print("[steam] no disponible: ", steam.status_text())
@@ -266,6 +273,32 @@ func _on_browser_join(entry: Dictionary) -> void:
 	steam_lobbies.join(int(entry.id))
 
 
+## "Unirse" on a friend in the home's social panel.
+func _join_friend_lobby(lobby_id: int) -> void:
+	if steam_lobbies == null:
+		return
+	_teardown_session()
+	_via_steam = true
+	_menu.set_status("Entrando a la sala de tu amigo…")
+	steam_lobbies.join(lobby_id)
+
+
+## Rich presence: friends see where we are in their Steam list, and a Steam lobby with room can be joined from there.
+func _update_presence() -> void:
+	if steam == null or not steam.available():
+		return
+	var ctx := {"where": "menu"}
+	if _state == "match" and _match != null:
+		var map_id := str(client.lobby.get("map", last_cfg.get("map", ""))) if client != null else ""
+		ctx = {"where": "practice"} if _match.practice else {"where": "match", "mode": int(last_cfg.get("mode", 2)),
+			"map_name": str(GameData.maps.get(map_id, {}).get("name", ""))}
+	elif _state in ["lobby", "end"] and client != null and not client.lobby.is_empty():
+		var lob: Dictionary = client.lobby
+		ctx = {"where": "lobby", "members": lob.get("members", []).size(), "max": int(lob.get("mode", 2)) * 2,
+			"lobby": steam_lobbies.lobby_id if _via_steam and steam_lobbies != null else 0}
+	steam.set_presence(Social.presence(ctx))
+
+
 ## Joined a Steam lobby (from the list or from an overlay invite): talk to its owner over Steam messages.
 func _on_steam_joined(lobby_id: int, owner: int) -> void:
 	_browser.visible = false
@@ -328,8 +361,7 @@ func _new_client(cfg: Dictionary) -> GameClient:
 	c.closed.connect(_on_closed)
 	c.server_error.connect(_on_server_error)
 	if _chat != null:
-		_chat.lines.clear()
-		_chat.log_label.text = "Enter: chat de la sala"
+		_chat.clear()
 		c.chat_received.connect(_chat.receive)
 	if args.has("log"):
 		_log_client(c)
@@ -478,6 +510,7 @@ func _on_lobby(msg: Dictionary) -> void:
 			if steam_lobbies != null:
 				steam_lobbies.update_settings({"mode": msg.mode, "map": msg.map, "name": _steam_name(last_cfg)})
 		_set_preview(msg.map)
+		_update_presence()
 
 
 func _on_match_started(msg: Dictionary) -> void:
@@ -501,6 +534,7 @@ func _on_match_started(msg: Dictionary) -> void:
 			tut.attach(_match, TutorialFlow.new(str(last_cfg.cls), str(last_cfg.get("spec", ""))))
 			tut.finished.connect(_on_tutorial_finished)
 	_tutorial_next = false
+	_update_presence()
 
 
 func _on_match_finished(end: Dictionary, rows: Array) -> void:
@@ -549,12 +583,13 @@ func _to_menu() -> void:
 func _show(state: String) -> void:
 	_state = state
 	if _chat != null:
-		_chat.activate(state in ["lobby", "match", "end"])
+		_chat.activate(state in ["lobby", "match", "end"], state if state in ["match", "end"] else "lobby")
 	_menu.visible = state == "menu"
 	_lobby.visible = state == "lobby"
 	_end.visible = state == "end"
 	if state == "menu":
 		_menu.set_status("" if _menu.status.text.begins_with("Conectando") else _menu.status.text)
+	_update_presence()
 
 
 # ---------------------------------------------------------------- preview behind the menus

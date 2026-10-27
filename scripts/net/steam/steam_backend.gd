@@ -15,6 +15,11 @@ signal session_failed(steam_id: int)
 signal leaderboard_ready(board: String, ok: bool)
 signal leaderboard_entries(board: String, entries: Array)
 signal leaderboard_uploaded(board: String, ok: bool)
+## A friend changed name, state, game or rich presence: ask friends() again.
+signal friends_changed
+signal avatar_ready(steam_id: int, texture: Texture2D)
+## A friend's private chat message (in-client chat; only friends get through).
+signal dm_received(from: int, text: String)
 
 
 func available() -> bool:
@@ -121,3 +126,34 @@ func request_top(_board: String, _start: int, _end: int) -> void:
 ## Just our own entry.
 func request_mine(_board: String) -> void:
 	pass
+
+
+## App id the client runs as (0 without Steam).
+func app_id() -> int:
+	return 0
+
+
+## Our Steam friends: [{id, name, state, app, lobby, status}] (see Social for what each field means).
+func friends() -> Array:
+	return []
+
+
+## Private chat message to a friend who is in the game (DirectChat).
+func send_dm(_to: int, _text: String) -> void:
+	pass
+
+
+## Loads a small avatar; avatar_ready says when it is there.
+func request_avatar(_steam_id: int) -> void:
+	pass
+
+
+## Rich presence keys ("status", "connect"); an empty value removes the key.
+func set_presence(_values: Dictionary) -> void:
+	pass
+
+
+## Opens the Steam overlay: "chat" / "steamid" (profile) / "friendadd" on a user, or "friends" (steam_id 0).
+## false when there is no overlay to open (the caller explains why).
+func open_overlay(_kind: String, _steam_id: int) -> bool:
+	return false

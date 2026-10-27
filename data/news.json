@@ -1,0 +1,38 @@
+[
+  {
+    "id": "local-0.7.0",
+    "title": "Versión 0.7.0",
+    "tag": "Parche",
+    "date": "2026-10-26",
+    "body": "Arreglos en el menú Jugar: el texto de la Arena de práctica ya no se sale de su tarjeta. Las macros y algunas clases nuevas quedan guardadas por ahora mientras las terminamos.",
+    "map": "tomb",
+    "champion": "mage"
+  },
+  {
+    "id": "local-0.6.0",
+    "title": "Tutorial y Arena de práctica",
+    "tag": "Parche",
+    "date": "2026-10-18",
+    "body": "Llegó el tutorial interactivo, la página Cómo jugar y la Arena de práctica con medidor de daño. Cada clase tiene ahora una identidad más marcada.",
+    "map": "pillars",
+    "champion": "warrior"
+  },
+  {
+    "id": "local-0.5.0",
+    "title": "Nueva clase: Brujo",
+    "tag": "Noticia",
+    "date": "2026-10-18",
+    "body": "El Brujo de Aflicción llega a la arena: maldiciones independientes, miedo real, drenar vida y pacto oscuro.",
+    "map": "living",
+    "champion": "warlock"
+  },
+  {
+    "id": "local-steam",
+    "title": "Jugá con tus amigos por Steam",
+    "tag": "Noticia",
+    "date": "2026-10-10",
+    "body": "Creá una sala sólo para amigos o pública, invitá desde la superposición de Steam y unite a la sala de un amigo desde el panel de la derecha.",
+    "map": "bridge",
+    "champion": "hunter"
+  }
+]

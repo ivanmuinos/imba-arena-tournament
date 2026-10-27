@@ -17,7 +17,7 @@ var _subtitle: Label
 
 func _ready() -> void:
 	_title_box = header("Configurar partida", "")
-	_subtitle = _title_box.get_child(1)
+	_subtitle = _title_box.get_child(-1)  # the header ends with its subtitle
 	# left: options
 	var panel := UiKit.glass(UiKit.LINE, 14, 22)
 	panel.position = Vector2(72, 196)
@@ -147,3 +147,7 @@ func first_focus() -> Control:
 
 func hints() -> Array:
 	return [["Flechas", "Navegar"], ["Enter", "Elegir"], ["Esc", "Volver"]]
+
+
+func section() -> String:
+	return "Jugar · Paso 1 de 2"

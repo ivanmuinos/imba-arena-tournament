@@ -77,3 +77,7 @@ func first_focus() -> Control:
 
 func hints() -> Array:
 	return [["Enter", "Continuar"], ["Esc", "Volver"]]
+
+
+func section() -> String:
+	return "Jugar · Por IP"

@@ -37,7 +37,7 @@ var _bind_caption: Label
 
 func _ready() -> void:
 	header("Configuración", "")
-	_tabs = Segmented.new().setup(TABS.filter(func(t): return MacroStore.ENABLED or t[0] != "macros"), "graficos")
+	_tabs = Segmented.new().setup(TABS.filter(func(t): return MacroStore.ENABLED or t[0] != "macros"), "graficos").as_tabs()
 	_tabs.position = Vector2(72, 164)
 	_tabs.add_theme_constant_override("separation", 8)
 	add_child(_tabs)
@@ -433,3 +433,7 @@ func slot_name(i: int) -> String:
 		return Keybinds.action_label("slot_%d" % i)
 	var n := str(abilities[i].name)
 	return ("Definitiva: " + n) if i == abilities.size() - 1 else n
+
+
+func section() -> String:
+	return "Opciones"
