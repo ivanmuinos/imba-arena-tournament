@@ -49,7 +49,8 @@ línea LF (`.gitattributes`) porque Godot reescribe los recursos con LF.
 
 Opciones de línea de comandos (tras `--`): `--map=random|bridge|pillars|tomb|living`, `--cls=`, `--mode=2|3`, `--diff=`, `--gfx=auto|alta|media|baja`,
 `--name=`, `--team=`, `--host`, `--join=IP[:PUERTO]`, `--autopilot`, `--drive` (jugador scripteado), `--target` (mantiene un enemigo seleccionado),
-`--log`, `--shot=PREFIJO --shot-times=3,10` (capturas), `--time-scale=N`, `--rounds=N`, `--no-capture`.
+`--log`, `--shot=PREFIJO --shot-times=3,10` (capturas), `--time-scale=N`, `--rounds=N`, `--no-capture`,
+`--version` (imprime `Imba Arena Tournament v<versión>` y sale; ej. `godot --headless --path . -- --version`).
 Para capturas de menús: `--menu=hub|play|setup:practice|join|champions:rogue|settings:audio` (+ `--menu-tip=N` abre el tooltip de la habilidad N), `--lobby-demo`, `--end-demo`, `--menu-script=1:key,2:go:play,3:press:ui_down` (acciones temporizadas).
 
 ## Arenas
