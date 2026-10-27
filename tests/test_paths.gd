@@ -80,3 +80,10 @@ func test_version_is_consistent_across_project_and_export_presets() -> void:
 	check(cfg.contains("application/short_version=\"%s\"" % v), "versión de macOS = %s" % v)
 	check(cfg.contains("application/product_name=\"Imba Arena Tournament\""), "nombre de producto")
 	eq(GameServer.game_version(), v, "el handshake usa la misma versión")
+
+
+func test_version_flag_parses_and_prints_the_handshake_version() -> void:
+	var main_script = load("res://scripts/main.gd")
+	check(main_script._parse(PackedStringArray(["--version"])).has("version"), "-- --version se reconoce")
+	check(not main_script._parse(PackedStringArray(["--offline", "version"])).has("version"), "sólo con guiones")
+	eq(main_script.version_line(), "Imba Arena Tournament v%s" % GameServer.game_version(), "una línea con nombre y versión del handshake")
