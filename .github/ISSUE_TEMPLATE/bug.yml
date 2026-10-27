@@ -1,0 +1,35 @@
+name: Bug
+description: Algo que no anda como debería.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: que
+    attributes:
+      label: Qué pasa
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1.
+        2.
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Qué debería pasar
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión / commit
+      placeholder: v0.7.0
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / capturas
+      render: text
