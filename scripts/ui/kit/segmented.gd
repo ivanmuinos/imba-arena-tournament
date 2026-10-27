@@ -25,6 +25,34 @@ func setup(options: Array, initial: String) -> Segmented:
 	return self
 
 
+## Section tabs (settings, how to play): text tabs with a gold underline on the active one, like the client's top bar,
+## over a hairline. Options keep the pill look.
+var tabs := false
+
+
+func as_tabs() -> Segmented:
+	tabs = true
+	add_theme_constant_override("separation", 4)
+	for b in _buttons.values():
+		var mb: MButton = b
+		mb.variant = "tab"
+		mb.text = mb.text.to_upper()
+		mb.add_theme_font_override("font", UiKit.display(700, 2))
+		mb.add_theme_font_size_override("font_size", 16)
+		mb.custom_minimum_size = Vector2(36.0 + mb.text.length() * 11.0, 42)  # the tab variant draws no box: room for the text
+		for k in ["font_color", "font_focus_color"]:
+			mb.add_theme_color_override(k, UiKit.MUTED)
+		for k in ["font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
+			mb.add_theme_color_override(k, UiKit.INK)
+	queue_redraw()
+	return self
+
+
+func _draw() -> void:
+	if tabs:
+		draw_line(Vector2(0, size.y - 0.5), Vector2(size.x, size.y - 0.5), UiKit.LINE, 1.0)
+
+
 func _pick(v: String) -> void:
 	value = v
 	changed.emit(v)

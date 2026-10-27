@@ -142,10 +142,15 @@ func _draw_bg() -> void:
 			if glow > 0.01:
 				_bg.draw_rect(r, Color(1, 0.6, 0.3, 0.10 * glow))
 			_bg.draw_rect(Rect2(Vector2(0, r.size.y - 2), Vector2(r.size.x * glow, 2)), UiKit.LAVA)
+		"tab":
+			if glow > 0.01:
+				_bg.draw_rect(r, Color(1, 1, 1, 0.03 * glow))
+			if button_pressed:
+				_bg.draw_rect(Rect2(Vector2(10, r.size.y - 3), Vector2(r.size.x - 20, 3)), UiKit.GOLD)
 		"seg":
 			var on := button_pressed
 			var fill := Color(1, 0.48, 0.1, 0.92) if on else Color(1, 1, 1, 0.05 + 0.07 * glow)
-			var sb := UiKit.box(fill, Color(1, 0.8, 0.5, 0.9) if on else Color(1, 1, 1, 0.12 + 0.2 * glow), 6, 1, 0)
+			var sb := UiKit.box(fill, Color(1, 0.8, 0.5, 0.9) if on else Color(1, 1, 1, 0.12 + 0.2 * glow), UiKit.CORNER - 1, 1, 0)
 			_bg.draw_style_box(sb, r)
 		_:
 			var fill := Color(1, 1, 1, 0.05 + 0.08 * glow)
@@ -153,9 +158,9 @@ func _draw_bg() -> void:
 			if dis:
 				fill = Color(1, 1, 1, 0.03)
 				border = Color(1, 1, 1, 0.08)
-			_bg.draw_style_box(UiKit.box(fill, border, 6, 1, 0), r)
+			_bg.draw_style_box(UiKit.box(fill, border, UiKit.CORNER - 1, 1, 0), r)
 	if has_focus():
-		var f := UiKit.box(Color(0, 0, 0, 0), Color(1, 0.93, 0.75, 0.95), 8, 2, 0)
+		var f := UiKit.box(Color(0, 0, 0, 0), Color(1, 0.93, 0.75, 0.95), UiKit.CORNER + 2, 2, 0)
 		f.draw_center = false
 		_bg.draw_style_box(f, r.grow(4))
 

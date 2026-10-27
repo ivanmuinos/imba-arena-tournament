@@ -7,6 +7,7 @@ var lobbies := {}   # id -> {owner, members: [], data: {}, max, joinable}
 var mailboxes := {} # steam_id -> [{from, data}]
 var _next_lobby := 109775240000000000
 var backends := {}
+var friendships := {} # steam_id -> [steam_id]
 
 
 func user(steam_id: int, name: String) -> FakeSteamBackend:
@@ -24,6 +25,13 @@ func new_lobby_id() -> int:
 	return _next_lobby
 
 
+func befriend(a: int, b: int) -> void:
+	for pair in [[a, b], [b, a]]:
+		if not friendships.has(pair[0]):
+			friendships[pair[0]] = []
+		friendships[pair[0]].append(pair[1])
+
+
 ## Simulates accepting an invite in the Steam overlay.
 func invite(lobby_id: int, to_steam_id: int) -> void:
 	backends[to_steam_id]._queue.append(func(): backends[to_steam_id].join_requested.emit(lobby_id))
@@ -38,6 +46,9 @@ class FakeSteamBackend:
 	var _queue: Array = []
 	var closed_sessions: Array = []
 	var accepted: Array = []
+	var presence := {}
+	var overlay_calls: Array = []
+	var overlay := true  # false: behaves like a backend without the Steam overlay
 
 	func available() -> bool:
 		return online
@@ -120,3 +131,42 @@ class FakeSteamBackend:
 
 	func close_session(steam_id: int) -> void:
 		closed_sessions.append(steam_id)
+
+	func app_id() -> int:
+		return 480 if online else 0
+
+	func friends() -> Array:
+		var out: Array = []
+		for id in net.friendships.get(sid, []):
+			var f: FakeSteamBackend = net.backends[id]
+			var lobby := 0
+			for l in net.lobbies:
+				if net.lobbies[l].members.has(id):
+					lobby = l
+			out.append({"id": id, "name": f.name_, "state": 1 if f.online else 0, "app": 480 if f.online else 0,
+				"lobby": lobby if f.online else 0, "status": str(f.presence.get("status", "")) if f.online else ""})
+		return out
+
+	func set_presence(values: Dictionary) -> void:
+		for k in values:
+			if str(values[k]) == "":
+				presence.erase(k)
+			else:
+				presence[k] = str(values[k])
+		for id in net.friendships.get(sid, []):
+			var other: FakeSteamBackend = net.backends[id]
+			other._queue.append(func(): other.friends_changed.emit())
+
+	func persona_of(steam_id: int) -> String:
+		return net.backends[steam_id].name_ if net.backends.has(steam_id) else ""
+
+	func send_dm(to: int, text: String) -> void:
+		if not net.friendships.get(sid, []).has(to) or not net.backends[to].online:
+			return
+		var other: FakeSteamBackend = net.backends[to]
+		var from := sid
+		other._queue.append(func(): other.dm_received.emit(from, text))
+
+	func open_overlay(kind: String, steam_id: int) -> bool:
+		overlay_calls.append([kind, steam_id])
+		return overlay

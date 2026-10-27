@@ -177,16 +177,21 @@ static func glass_material(blur := 3.2, tint_amount := 0.62, tint: Color = Color
 	return m
 
 
+## Client look: panels are near-square (CORNER) and dark enough to read as solid surfaces, like the home's cards.
+const CORNER := 4
+const GLASS_TINT := 0.82
+
+
 ## StyleBox for glass panels: black fill (the shader replaces it) and a thin luminous border.
 static func glass_box(border: Color = LINE, radius := 12, pad := 18, border_w := 1) -> StyleBoxFlat:
-	return box(Color(0, 0, 0, 1), border, radius, border_w, pad)
+	return box(Color(0, 0, 0, 1), border, mini(radius, CORNER), border_w, pad)
 
 
-## A PanelContainer with blurred-glass background.
+## A PanelContainer with a dark, lightly blurred background.
 static func glass(border: Color = LINE, radius := 12, pad := 18, blur := 3.2, tint_amount := 0.62) -> PanelContainer:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", glass_box(border, radius, pad))
-	p.material = glass_material(blur, tint_amount)
+	p.material = glass_material(blur, maxf(tint_amount, GLASS_TINT))
 	return p
 
 

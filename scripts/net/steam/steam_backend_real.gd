@@ -9,6 +9,9 @@ const MSG_CHANNEL := 7
 const SEND_UNRELIABLE := 0
 const SEND_RELIABLE := 8
 const DISTANCE_WORLDWIDE := 3
+const FRIEND_FLAG_IMMEDIATE := 4  # regular friends (not blocked, pending or clan members)
+const AVATAR_MEDIUM := 2  # 64 px
+const DM_CHANNEL := 9  # private chat, apart from the match traffic on MSG_CHANNEL
 
 ## Print every Steam callback and a message count (`--log` / `--steam-log`): the real integration is debugged from these lines.
 var verbose := false
@@ -20,6 +23,8 @@ var _sent := 0
 var _received := 0
 var _hooks: Array = []  # [signal name, callable]: all disconnected in shutdown()
 var _boards := {}  # leaderboard name -> handle
+var _friends_dirty := false
+var _presence_asked := {}  # steam_id -> true once their rich presence was requested
 
 
 func _init(p_verbose := false) -> void:
@@ -49,6 +54,10 @@ func _init(p_verbose := false) -> void:
 	_hook("network_messages_session_failed", func(reason, remote: int, state, dbg):
 		_log("sesión con %d falló: motivo=%s estado=%s %s" % [remote, reason, state, dbg])
 		session_failed.emit(remote))
+	# Persona updates come in bursts (dozens at login): run_callbacks() turns them into one friends_changed.
+	_hook("persona_state_change", func(_id: int, _flags: int): _friends_dirty = true)
+	_hook("friend_rich_presence_update", func(_id: int, _app: int): _friends_dirty = true)
+	_hook("avatar_loaded", _on_avatar_loaded)
 	if _steam.has_method("initRelayNetworkAccess"):
 		_steam.initRelayNetworkAccess()
 
@@ -82,6 +91,28 @@ func my_id() -> int:
 func run_callbacks() -> void:
 	if _ok:
 		_steam.run_callbacks()
+		if _friends_dirty:
+			_friends_dirty = false
+			friends_changed.emit()
+		_poll_dms()
+
+
+## Private chat: only from people on our friends list, as {dm: text} dictionaries (no objects decoded).
+func _poll_dms() -> void:
+	for m in _steam.receiveMessagesOnChannel(DM_CHANNEL, 32):
+		var from := int(m.get("identity", m.get("remote_steam_id", 0)))
+		if not _steam.hasFriend(from, FRIEND_FLAG_IMMEDIATE):
+			_log("mensaje privado de %d ignorado: no es amigo" % from)
+			continue
+		var d = bytes_to_var(m.get("payload", PackedByteArray()))
+		if typeof(d) == TYPE_DICTIONARY and typeof(d.get("dm")) == TYPE_STRING:
+			dm_received.emit(from, d.dm)
+
+
+func send_dm(to: int, text: String) -> void:
+	if _ok:
+		var r := int(_steam.sendMessageToUser(to, var_to_bytes({"dm": text}), SEND_RELIABLE, DM_CHANNEL))
+		_log("mensaje privado a %d -> %d" % [to, r])
 
 
 ## Without this the process crashed on exit (segfault, exit code 139) whenever Steam had been initialized: the extension
@@ -265,3 +296,65 @@ func _on_board_scores(_message: String, handle: int, entries: Array) -> void:
 			"details": Array(e.get("details", PackedInt32Array()))})
 	_log("%d entradas de %s" % [out.size(), _board_name(handle)])
 	leaderboard_entries.emit(_board_name(handle), out)
+
+
+# ---------------------------------------------------------------- friends, presence, overlay (social panel)
+
+func app_id() -> int:
+	return int(_steam.getAppID()) if _ok else 0
+
+
+func friends() -> Array:
+	if not _ok:
+		return []
+	var app := app_id()
+	var out: Array = []
+	for i in int(_steam.getFriendCount(FRIEND_FLAG_IMMEDIATE)):
+		var id := int(_steam.getFriendByIndex(i, FRIEND_FLAG_IMMEDIATE))
+		var played: Dictionary = _steam.getFriendGamePlayed(id)
+		var f := {"id": id, "name": str(_steam.getFriendPersonaName(id)), "state": int(_steam.getFriendPersonaState(id)),
+			"app": int(played.get("id", 0)), "lobby": int(played.get("lobby", 0)), "status": ""}
+		if f.app == app:
+			if not _presence_asked.has(id):
+				_presence_asked[id] = true
+				_steam.requestFriendRichPresence(id)  # answered by friend_rich_presence_update
+			f.status = str(_steam.getFriendRichPresence(id, "status"))
+		out.append(f)
+	return out
+
+
+func request_avatar(steam_id: int) -> void:
+	if _ok:
+		_steam.getPlayerAvatar(AVATAR_MEDIUM, steam_id)
+
+
+func _on_avatar_loaded(steam_id: int, px: int, data: PackedByteArray) -> void:
+	if px <= 0 or data.size() != px * px * 4:
+		return
+	var img := Image.create_from_data(px, px, false, Image.FORMAT_RGBA8, data)
+	avatar_ready.emit(steam_id, ImageTexture.create_from_image(img))
+
+
+## Rich presence is only shown to friends while the game runs; setting a key to "" removes it.
+func set_presence(values: Dictionary) -> void:
+	if not _ok:
+		return
+	for k in values:
+		_steam.setRichPresence(str(k), str(values[k]))
+	_log("rich presence: %s" % values)
+
+
+## The overlay is only injected when Steam itself launched the game; otherwise the Steam client window opens instead
+## (chat with the friend, their profile, the friends list) through a steam:// link.
+func open_overlay(kind: String, steam_id: int) -> bool:
+	if not _ok:
+		return false
+	if not _steam.isOverlayEnabled():
+		var url := Social.steam_url(kind, steam_id)
+		_log("superposición no disponible: abriendo el cliente (%s)" % url)
+		return url != "" and OS.shell_open(url) == OK
+	if kind == "friends":
+		_steam.activateGameOverlay("Friends")
+	else:
+		_steam.activateGameOverlayToUser(kind, steam_id)
+	return true

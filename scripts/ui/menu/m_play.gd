@@ -96,3 +96,7 @@ func first_focus() -> Control:
 
 func hints() -> Array:
 	return [["Flechas", "Navegar"], ["Enter", "Elegir"], ["Esc", "Volver"]]
+
+
+func section() -> String:
+	return "Jugar"

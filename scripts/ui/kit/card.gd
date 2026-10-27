@@ -141,7 +141,7 @@ func _hover(on: bool) -> void:
 		_tw.kill()
 	_tw = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_tw.tween_property(self, "glow", 1.0 if on else 0.0, 0.18)
-	_tw.tween_property(self, "scale", Vector2.ONE * (1.045 if on else 1.0), 0.18)
+	_tw.tween_property(self, "scale", Vector2.ONE * (1.015 if on else 1.0), 0.18)
 	_tw.tween_method(func(_v): _apply(), 0.0, 1.0, 0.2)
 
 
@@ -150,8 +150,7 @@ func _apply() -> void:
 		return
 	var hot := maxf(glow, 1.0 if selected else 0.0)
 	_style.border_color = UiKit.LINE.lerp(Color(accent.r, accent.g, accent.b, 1.0), hot)
-	var w := int(roundf(lerpf(1.0, 3.0, hot)))
-	_style.set_border_width_all(w)
+	_style.set_border_width_all(2 if selected else 1)
 	if _title != null:
 		_title.add_theme_color_override("font_color", UiKit.INK.lerp(accent.lightened(0.4), hot * 0.6))
 	if _art != null and _art.has_meta("icon"):
@@ -160,16 +159,17 @@ func _apply() -> void:
 	queue_redraw()
 
 
+## Client look: no halo; a lit edge on hover, and the selected card carries a bar in its accent along the bottom.
 func _draw() -> void:
+	var r := Rect2(Vector2.ZERO, size)
+	if glow > 0.01 and not selected:
+		draw_rect(r, Color(1, 1, 1, 0.035 * glow))
+	if selected:
+		draw_rect(Rect2(Vector2(0, size.y - 4), Vector2(size.x, 4)), accent)
 	if has_focus():
-		var f := UiKit.box(Color(0, 0, 0, 0), Color(1, 0.93, 0.75, 0.95), 16, 2, 0)
+		var f := UiKit.box(Color(0, 0, 0, 0), Color(1, 0.93, 0.75, 0.95), UiKit.CORNER + 2, 2, 0)
 		f.draw_center = false
-		draw_style_box(f, Rect2(Vector2.ZERO, size).grow(5))
-	if glow > 0.01 or selected:  # soft halo
-		var a := maxf(glow, 0.6 if selected else 0.0) * 0.16
-		for i in 3:
-			var g := UiKit.box(Color(accent.r, accent.g, accent.b, a / (i + 1)), Color(0, 0, 0, 0), 18 + i * 4, 0, 0)
-			draw_style_box(g, Rect2(Vector2.ZERO, size).grow(4 + i * 5))
+		draw_style_box(f, r.grow(4))
 
 
 func _notification(what: int) -> void:

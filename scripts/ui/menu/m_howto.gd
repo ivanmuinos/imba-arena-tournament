@@ -18,7 +18,7 @@ func _ready() -> void:
 	note.position = Vector2(72, 256)
 	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(note)
-	_tabs = Segmented.new().setup([["controls", "Controles"], ["rules", "Reglas"], ["classes", "Campeones"]], "controls")
+	_tabs = Segmented.new().setup([["controls", "Controles"], ["rules", "Reglas"], ["classes", "Campeones"]], "controls").as_tabs()
 	_tabs.position = Vector2(72, 296)
 	_tabs.changed.connect(_show_tab)
 	add_child(_tabs)
@@ -54,3 +54,7 @@ func first_focus() -> Control:
 
 func hints() -> Array:
 	return [["Enter", "Aceptar"], ["Esc", "Volver"]]
+
+
+func section() -> String:
+	return "Aprender"

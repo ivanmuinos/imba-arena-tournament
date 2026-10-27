@@ -21,6 +21,7 @@ en GDScript.
 | 4f | v0.5.0: sexta clase, Brujo (Aflicción): maldiciones independientes, miedo real, drenar vida, pacto oscuro | listo |
 | 4g | v0.6.0: tutorial interactivo, página Cómo jugar, Arena de práctica con medidor de daño y identidades de clase asimétricas | listo |
 | 5 | Steam (GodotSteam GDExtension): salas de amigos/públicas, invitaciones, nombres de Steam | **implementado, sin probar contra Steam real** |
+| 6a | Inicio social (sin servidor propio): noticias (feed de Steam, caché, `data/news.json`), panel de amigos de Steam con Unirse/Chat/Perfil, rich presence | **implementado, sin probar contra Steam real** |
 
 ## Cómo jugar
 
@@ -169,6 +170,8 @@ instalada en `addons/godotsteam/` (sólo win64, macOS universal y linux64). App 
 
 - Es **opcional**: sin la extensión o sin el cliente de Steam el menú deshabilita la fila de Steam (con el motivo) y todo sigue igual por ENet. Verificado: la extensión carga en 4.7.2 y en un build macOS exportado, y el juego arranca sin Steam.
 - Salas: *Crear sala Steam* (sólo amigos / pública), lista **Salas de Steam** (sólo muestra las de la misma versión y con lugar), invitaciones y "unirse a partida" desde la superposición. Los jugadores se llaman como su nombre de Steam y el servidor los identifica por **SteamID**.
+- Inicio: columna de **Noticias** y panel de **Amigos**. Las noticias salen del feed público de Steam de la app (anuncios publicados en Steamworks) cuando el juego corre con su app id propio; con el `480` de prueba se usan las de `data/news.json`, y la última descarga queda en caché para arrancar sin red. Los amigos se agrupan en Jugando Imba Arena / En línea / Desconectados; **Unirse** entra a la sala del amigo si tiene lugar, **Chat** y **Perfil** abren la superposición de Steam. El juego publica su rich presence (`status`, y `connect` en una sala con lugar para "Unirse a partida" desde Steam). Sin servidor propio: ver el PRD del cliente social.
+- **Steam simulado** (hasta publicar, o sin cliente de Steam): `godot --path . -- --steam-mock=Ana` (o `tools/steam_mock.sh`, que abre dos copias, Ana y Beto). Las copias en la misma PC o en la misma red local se encuentran solas por UDP (puertos 47600-47615) y se ven como amigos de Steam: panel de amigos con estados, crear/listar salas, **Unirse**, invitar con `--steam-join=ID` y jugar por el mismo `SteamTransport`. No hay superposición: Chat/Perfil sólo se anotan en la consola. No funciona por internet (sólo LAN). Probado con dos copias: Beto ve a Ana "En sala (1/6)", entra a su sala y los dos ven 2 humanos en la sala de espera.
 - Red: `SteamTransport` usa mensajes P2P de Steam (con relay, sin abrir puertos) detrás de la misma interfaz `Transport` que ENet; `GameServer`/`GameClient` no cambian.
 - **Sin probar contra Steam real** (no había cliente de Steam en esta máquina): la lógica de lobbies, el transporte y el flujo completo (lobby → partida) se prueban con un Steam falso en `tests/test_steam.gd`, y los nombres de métodos/señales de `SteamBackendReal` se comprobaron contra la extensión cargada, pero la integración final hay que probarla con dos cuentas de Steam.
 
