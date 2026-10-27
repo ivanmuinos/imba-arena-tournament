@@ -75,6 +75,9 @@ var _stop_until := -1.0
 var cls_id := ""
 var _tree: AnimationTree = null  # KayKit characters are driven by this blend tree (locomotion blend space + state + one-shots)
 var _clips := {}  # logical animation -> clip name (identity for the procedural models)
+## Cosmetic skin: overrides merged over the class entry of KAYKIT (recolor, show, hide, scale), plus `cape` (colour),
+## `palette` (colours the class extras read through _pal) and `accessories` (builders in _skin_extra). Empty = the base look.
+var skin := {}
 
 
 static func available(cls: String) -> bool:
@@ -115,7 +118,8 @@ static func _recolored(tex: Texture2D, key: String, rc: Dictionary) -> Texture2D
 
 
 func _setup_kaykit(cls: String, team: Color) -> void:
-	var def: Dictionary = KAYKIT[cls]
+	var def: Dictionary = KAYKIT[cls].duplicate()
+	def.merge(skin, true)
 	cls_id = cls
 	var scene := load("res://assets/third_party/kaykit/%s.glb" % def.file) as PackedScene
 	var inner: Node3D = scene.instantiate()
@@ -140,10 +144,10 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 			sm.metallic = 0.0
 			sm.albedo_color = Color(0.84, 0.84, 0.86)  # the atlas is bright; keeps white armour from clipping under strong ambient light
 			if def.has("recolor") and sm.albedo_texture != null:
-				sm.albedo_texture = _recolored(sm.albedo_texture, "%s_%s" % [cls, def.file], def.recolor)
+				sm.albedo_texture = _recolored(sm.albedo_texture, "%s_%s_%s" % [cls, def.file, skin.get("id", "")], def.recolor)
 			if nm.ends_with("Cape"):  # the cape carries the team colour
 				sm.albedo_texture = null
-				sm.albedo_color = team.darkened(0.15)
+				sm.albedo_color = Color(str(skin.cape)).darkened(0.15) if skin.has("cape") else team.darkened(0.15)
 				sm.emission_enabled = true
 				sm.emission = team
 				sm.emission_energy_multiplier = 0.18
@@ -167,6 +171,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 		_wizard_extras(inner)
 	elif cls == "ki":
 		_ki_extras(inner)
+	for e in skin.get("accessories", []):
+		_skin_extra(inner, str(e))
 	for logical in _clips:
 		var clip: String = _clips[logical]
 		if player.has_animation(clip):
@@ -180,7 +186,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 	_build_tree()
 
 
-func setup(cls: String, team: Color) -> void:
+func setup(cls: String, team: Color, p_skin := {}) -> void:
+	skin = p_skin
 	if _kk_ok(cls):
 		_setup_kaykit(cls, team)
 		return
@@ -226,11 +233,11 @@ func _warlock_extras(inner: Node3D) -> void:
 	var chest := sk.get_node_or_null("chest") as Node3D
 	var hand := sk.get_node_or_null("handslot_r") as Node3D
 	var hand_l := sk.get_node_or_null("handslot_l") as Node3D
-	var shadow := UnitModels.std(Color("#2a1840"), Color.BLACK, 0.0, 0.8)
-	var deep := UnitModels.std(Color("#150b22"), Color.BLACK, 0.0, 0.9)
+	var shadow := UnitModels.std(_pal("shadow", "#2a1840"), Color.BLACK, 0.0, 0.8)
+	var deep := UnitModels.std(_pal("deep", "#150b22"), Color.BLACK, 0.0, 0.9)
 	var iron := UnitModels.std(Color("#3a2a4a"), Color.BLACK, 0.0, 0.5)
 	var bone := UnitModels.std(Color("#cbbf9f"), Color.BLACK, 0.0, 0.35)
-	var fel := UnitModels.std(Color("#4fa83a"), Color("#4fe03a"), 1.0)
+	var fel := UnitModels.std(_pal("fel", "#4fa83a"), _pal("fel_glow", "#4fe03a"), 1.0)
 	if head != null:
 		# hood: a dark dome behind and above the face, with a peaked back and two curved horns
 		_add_mesh(head, MeshBuilder.sphere(0.62, 14, 8), shadow, Vector3(0, 0.44, -0.5), Vector3.ZERO, Vector3(1.25, 1.05, 0.8))
@@ -473,6 +480,50 @@ func _ki_extras(inner: Node3D) -> void:
 
 ## A tapering tube through `points` (radius per point): one cone frustum per segment, a ball on each joint so it bends
 ## smoothly.
+## A colour of the class extras, replaced by the skin's palette when it has one.
+func _pal(key: String, base: String) -> Color:
+	return Color(str(skin.get("palette", {}).get(key, base)))
+
+
+## Skin accessories, bone-bound like the class extras. Colours come from the skin palette (`trim`, `glow`).
+func _skin_extra(inner: Node3D, kind: String) -> void:
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var head := sk.get_node_or_null("head") as Node3D
+	var chest := sk.get_node_or_null("chest") as Node3D
+	var trim := UnitModels.std(_pal("trim", "#e0aa3e"), _pal("trim", "#e0aa3e"), 0.25, 0.9, 0.3)
+	var glow := UnitModels.std(_pal("glow", "#7fd8ff"), _pal("glow", "#7fd8ff"), 1.4)
+	match kind:
+		"crown":  # a spiked circlet with gems, floating just over the hat brim or the hair
+			if head == null: return
+			var y := 0.95 if skin.get("hide", []).has("Mage_Hat") or not cls_id in ["mage"] else 1.55
+			_add_mesh(head, MeshBuilder.torus(0.42, 0.05, 24, 6), trim, Vector3(0, y, 0))
+			for i in 6:
+				var a := TAU * i / 6.0
+				_add_mesh(head, MeshBuilder.cylinder(0.0, 0.07, 0.28, 4), trim, Vector3(sin(a) * 0.42, y + 0.15, cos(a) * 0.42))
+				_add_mesh(head, MeshBuilder.sphere(0.05, 6, 4), glow, Vector3(sin(a) * 0.43, y + 0.02, cos(a) * 0.43))
+		"horned_helm":  # two forward-curving horns out of the helmet
+			if head == null: return
+			for side in [-1.0, 1.0]:
+				_tube(head, [Vector3(side * 0.45, 0.75, 0.0), Vector3(side * 0.7, 0.95, 0.05), Vector3(side * 0.82, 1.25, 0.2),
+					Vector3(side * 0.72, 1.5, 0.38)], [0.13, 0.1, 0.06, 0.0], trim)
+		"pauldrons":  # angular plated shoulders: a hexagonal cap tilted outward, two overlapping lames under it and a spike
+			if chest == null: return
+			var dark := UnitModels.std(_pal("plate", "#2a2a30"), Color.BLACK, 0.0, 0.8, 0.4)
+			for side in [-1.0, 1.0]:
+				_add_mesh(chest, MeshBuilder.cylinder(0.28, 0.5, 0.22, 6), trim, Vector3(side * 0.66, 0.3, 0.0), Vector3(0, 30, -side * 22))
+				for k in 2:
+					_add_mesh(chest, MeshBuilder.box(Vector3(0.42 - 0.06 * k, 0.08, 0.66 - 0.08 * k)), dark if k == 0 else trim,
+						Vector3(side * (0.86 + 0.06 * k), 0.12 - 0.13 * k, 0.0), Vector3(0, 0, -side * (38 + 12 * k)))
+				_add_mesh(chest, MeshBuilder.cylinder(0.0, 0.1, 0.5, 5), dark, Vector3(side * 0.78, 0.6, 0.0), Vector3(0, 0, -side * 30))
+				_add_mesh(chest, MeshBuilder.sphere(0.07, 6, 4), glow, Vector3(side * 0.7, 0.36, 0.3))
+		"orbs":  # three small glowing orbs circling the shoulders
+			if chest == null: return
+			for i in 3:
+				var a := TAU * i / 3.0
+				var o := _add_mesh(chest, MeshBuilder.sphere(0.1, 8, 5), glow, Vector3(sin(a) * 0.9, 0.5, cos(a) * 0.9))
+				o.set_meta("orbit", a)
+
+
 func _tube(parent: Node3D, points: Array, radii: Array, mat: Material) -> void:
 	for i in points.size() - 1:
 		var p0: Vector3 = points[i]
