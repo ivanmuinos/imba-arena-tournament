@@ -23,6 +23,7 @@ func _init() -> void:
 	add_child(row)
 	_icon = Icons.rect("fireball", 56)
 	_icon.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_icon.material = HudArt.circle_mask()  # the painted icons are round
 	row.add_child(_icon)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 4)

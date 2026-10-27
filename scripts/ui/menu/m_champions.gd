@@ -125,6 +125,7 @@ func _make_slot(i: int) -> Button:
 	var ic := Icons.rect("fireball", 46)
 	ic.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	ic.offset_bottom = 46
+	ic.material = HudArt.circle_mask()  # the painted icons are round: shown in a circle, ringed below
 	b.add_child(ic)
 	b.set_meta("icon", ic)
 	var key := UiKit.heading("", 12, UiKit.MUTED, 700, 1, HORIZONTAL_ALIGNMENT_CENTER)
@@ -139,15 +140,11 @@ func _make_slot(i: int) -> Button:
 	b.focus_entered.connect(_tip_for.bind(i, true))
 	b.focus_exited.connect(_tip_for.bind(i, false))
 	b.draw.connect(func():
-		if b.has_focus():
-			var f := UiKit.box(Color(0, 0, 0, 0), Color(1, 0.93, 0.75, 0.95), 10, 2, 0)
-			f.draw_center = false
-			b.draw_style_box(f, Rect2(Vector2.ZERO, Vector2(46, 46)).grow(3))
+		var c := Vector2(23, 23)
 		var a: Dictionary = b.get_meta("ability", {})
-		if a.get("ult", false):
-			var g := UiKit.box(Color(0, 0, 0, 0), UiKit.GOLD, 12, 2, 0)
-			g.draw_center = false
-			b.draw_style_box(g, Rect2(Vector2.ZERO, Vector2(46, 46)).grow(1)))
+		b.draw_arc(c, 23.5, 0.0, TAU, 48, UiKit.GOLD if a.get("ult", false) else Color("#8a6a3a"), 2.5 if a.get("ult", false) else 2.0, true)
+		if b.has_focus():
+			b.draw_arc(c, 26.5, 0.0, TAU, 48, Color(1, 0.93, 0.75, 0.95), 2.0, true))
 	return b
 
 
