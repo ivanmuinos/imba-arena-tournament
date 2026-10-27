@@ -4,6 +4,11 @@ Arenas PvP 2v2 / 3v3 con controles estilo World of Warcraft, cuatro arenas estra
 llenan los lugares libres y juego online por IP (ENet) o por Steam. Port del prototipo web (`../magma-arena`) a Godot 4
 en GDScript.
 
+## Cómo trabajar en el proyecto
+
+Ideas → issues → `/issue N` en Claude Code → PR → CI → merge. Guía completa (setup, flujo, reglas): **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+Issues: https://github.com/ivanmuinos/imba-arena-tournament/issues
+
 ## Estado
 
 | Etapa | Qué | Estado |
@@ -204,7 +209,7 @@ Regenerar arte: `blender -b --python tools/blender/build_characters.py` y `build
 ## Tests
 
 ```sh
-./run_tests.sh              # todos (263); falla ante cualquier test o error de script
+./run_tests.sh              # todos (366); falla ante cualquier test o error de script
 ./run_tests.sh net steam    # sólo las suites cuyo archivo contiene esas palabras; -v imprime cada test
 ./tests/smoke.sh            # humo headless: menú, partida offline, jugador scripteado en 2 mapas, servidor dedicado + cliente ENet
 ```
