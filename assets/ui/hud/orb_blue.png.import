@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bl76pytyo4ase"
-path="res://.godot/imported/slot_solo.png-91d00caaa4bd1cd7e472b91051dd81be.ctex"
+uid="uid://c111d17amj8fi"
+path="res://.godot/imported/orb_blue.png-a84dd16fcd13f75e3df23dc358c744a7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/hud/slot_solo.png"
-dest_files=["res://.godot/imported/slot_solo.png-91d00caaa4bd1cd7e472b91051dd81be.ctex"]
+source_file="res://assets/ui/hud/orb_blue.png"
+dest_files=["res://.godot/imported/orb_blue.png-a84dd16fcd13f75e3df23dc358c744a7.ctex"]
 
 [params]
 

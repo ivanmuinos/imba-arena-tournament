@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dktth1u8owqn3"
-path="res://.godot/imported/slot_right.png-3275d2def92940c9fba95f4c8cfe2319.ctex"
+uid="uid://fmt7ybq17xby"
+path="res://.godot/imported/smite.png-56f3a8cfa873c3c2f7644d6590b5eaed.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/hud/slot_right.png"
-dest_files=["res://.godot/imported/slot_right.png-3275d2def92940c9fba95f4c8cfe2319.ctex"]
+source_file="res://assets/icons/smite.png"
+dest_files=["res://.godot/imported/smite.png-56f3a8cfa873c3c2f7644d6590b5eaed.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

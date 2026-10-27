@@ -16,6 +16,8 @@ var text := "":
 	set(v):
 		text = v
 		queue_redraw()
+## Drawn into a track of the HUD art: no background or edge of its own, a glossy fill.
+var bare := false
 
 
 func _init(h := 10.0, color := Color("#4caf50")) -> void:
@@ -25,9 +27,15 @@ func _init(h := 10.0, color := Color("#4caf50")) -> void:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, size), back)
-	draw_rect(Rect2(Vector2(1, 1), Vector2((size.x - 2) * ratio, size.y - 2)), fill)
-	draw_rect(Rect2(Vector2.ZERO, size), edge, false, 1.0)
+	if bare:
+		var w := size.x * ratio
+		draw_rect(Rect2(Vector2.ZERO, Vector2(w, size.y)), fill)
+		draw_rect(Rect2(Vector2.ZERO, Vector2(w, size.y * 0.42)), Color(1, 1, 1, 0.22))
+		draw_rect(Rect2(Vector2(0, size.y * 0.8), Vector2(w, size.y * 0.2)), Color(0, 0, 0, 0.25))
+	else:
+		draw_rect(Rect2(Vector2.ZERO, size), back)
+		draw_rect(Rect2(Vector2(1, 1), Vector2((size.x - 2) * ratio, size.y - 2)), fill)
+		draw_rect(Rect2(Vector2.ZERO, size), edge, false, 1.0)
 	if text != "":
 		var f := get_theme_default_font()
 		var fs := int(maxf(9.0, size.y - 3.0))
