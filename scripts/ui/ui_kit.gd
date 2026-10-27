@@ -21,9 +21,11 @@ static var _theme: Theme = null
 static var _fonts := {}
 static var _glass_shader: Shader = null
 static var _knob: ImageTexture = null
+static var _art := {}
 
 
 static func clear_cache() -> void:
+	_art.clear()
 	_theme = null
 	_fonts.clear()
 	_glass_shader = null
@@ -187,12 +189,34 @@ static func glass_box(border: Color = LINE, radius := 12, pad := 18, border_w :=
 	return box(Color(0, 0, 0, 1), border, mini(radius, CORNER), border_w, pad)
 
 
-## A PanelContainer with a dark, lightly blurred background.
-static func glass(border: Color = LINE, radius := 12, pad := 18, blur := 3.2, tint_amount := 0.62) -> PanelContainer:
+## A menu panel: the wood board with gold corners from the interface kit, lightly tinted by `border` when it carries
+## a colour (team, Steam). radius, blur and tint_amount are kept for the callers; the art has its own shape.
+static func glass(border: Color = LINE, _radius := 12, pad := 18, _blur := 3.2, _tint_amount := 0.62) -> PanelContainer:
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", glass_box(border, radius, pad))
-	p.material = glass_material(blur, maxf(tint_amount, GLASS_TINT))
+	p.add_theme_stylebox_override("panel", wood_box(pad, border))
 	return p
+
+
+## The wood board as a 9-slice (assets/ui/menu, cut by tools/build_menu_kit.gd).
+static func wood_box(pad := 18, border: Color = LINE) -> StyleBoxTexture:
+	var s := art_box("panel_wood", 18, 18, 18, 18)
+	s.set_content_margin_all(pad)
+	var tint := Color(border.r, border.g, border.b) if border != LINE and border != LINE_STRONG else Color.WHITE
+	s.modulate_color = Color.WHITE.lerp(tint, 0.25)
+	return s
+
+
+## A 9-slice of one of the menu pieces in assets/ui/menu, margins in its px.
+static func art_box(name: String, left: int, right: int, top: int, bottom: int) -> StyleBoxTexture:
+	if not _art.has(name):
+		_art[name] = load("res://assets/ui/menu/%s.png" % name)
+	var s := StyleBoxTexture.new()
+	s.texture = _art[name]
+	s.texture_margin_left = left
+	s.texture_margin_right = right
+	s.texture_margin_top = top
+	s.texture_margin_bottom = bottom
+	return s
 
 
 # ---------------------------------------------------------------- small builders

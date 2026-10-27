@@ -67,7 +67,7 @@ func test_export_presets_ship_icon_and_exclude_dev_folders() -> void:
 	check(cfg.contains("res://assets/app_icon/icon.ico"), "Windows: ícono .ico")
 	check(cfg.contains("res://assets/app_icon/icon.icns"), "macOS: ícono .icns")
 	check(cfg.contains("exclude_filter=\"tests/*, tools/*, build/*, compartir/*, docs/*"), "no se exportan tests, tools, compartir ni docs")
-	for f in ["icon.ico", "icon.icns", "icon.png", "icon.svg"]:
+	for f in ["icon.ico", "icon.icns", "icon.png"]:
 		check(_exists_exact("res://assets/app_icon/" + f), "existe " + f)
 	var sdl := FileAccess.get_file_as_string("res://addons/godotsteam/godotsteam.gdextension")
 	check(sdl.contains("steam_api64.dll") and sdl.contains("libsteam_api.dylib"), "las dependencias de Steam viajan junto al ejecutable")

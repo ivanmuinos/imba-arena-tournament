@@ -191,7 +191,7 @@ scripts/net/    Transport · LoopbackTransport · PeerTransport (ENet) · steam/
 scripts/view/   ArenaWorld (arenas), UnitView/CharacterRig (modelos .glb + animaciones), FxManager, CameraRig, MatchView, AudioBank
 scripts/ui/     MenuScreen + menu/ (splash, hub, jugar, configurar, unirse, campeones, configuración), kit/ (MButton, Card, Segmented, tooltip, sonidos), lobby, fin de partida, HUD, navegador de salas Steam
 tools/blender/  generadores reproducibles (Blender 5.2 headless): build_characters.py, build_env.py -> assets/models/ (personajes procedurales, de respaldo)
-tools/icons/    build_icons.py (set de íconos SVG -> assets/icons), build_app_icon.py (ícono .ico/.icns de la app)
+tools/icons/    build_icons.py (set de íconos SVG -> assets/icons), build_app_icon.gd + pack_app_icon.py (ícono .png/.ico/.icns de la app, desde referencias/interfaz_kit.jpeg)
 tools/render_menu_art.gd  retratos de clase y miniaturas de mapas (assets/ui) renderizados con el juego (`godot --path . --script res://tools/render_menu_art.gd`, ventana real)
 tools/          export_all.sh, install_templates.sh, LEEME.txt
 assets/         modelos .glb generados, third_party/kaykit (personajes CC0), fonts (OFL), icons (SVG), ui (retratos/mapas), shaders (terreno, cristal, hechizos, superficies del kit...)
