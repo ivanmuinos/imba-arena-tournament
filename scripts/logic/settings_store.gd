@@ -6,6 +6,8 @@ extends RefCounted
 const PATH := "user://settings.cfg"
 const SENS_MIN := 0.3
 const SENS_MAX := 2.5
+const BAR_MIN := 0.7  # size of the in-match ability bar
+const BAR_MAX := 1.5
 const GFX := ["auto", "alta", "media", "baja"]
 
 static var _shared: SettingsStore = null
@@ -17,7 +19,7 @@ var values := {
 	"name": "", "cls": "mage", "spec": "fire", "specs": {}, "mode": 2, "map": "random", "diff": "normal", "pref": "any",
 	"addr": "127.0.0.1", "port": 7777, "gfx": "auto", "fullscreen": false,
 	"tutorial_seen": false, "master": 0.8, "music": 0.5, "sfx": 0.9, "sens": 1.0, "invert": false, "steam_friends": true,
-	"companions": true, "news_seen": [],
+	"companions": true, "news_seen": [], "bar_scale": 1.0,
 }
 
 
@@ -92,6 +94,8 @@ func set_value(key: String, v: Variant) -> Variant:
 			values[key] = clampf(float(v), 0.0, 1.0) if typeof(v) in [TYPE_INT, TYPE_FLOAT] else values[key]
 		"sens":
 			values.sens = clampf(float(v), SENS_MIN, SENS_MAX) if typeof(v) in [TYPE_INT, TYPE_FLOAT] else 1.0
+		"bar_scale":
+			values.bar_scale = clampf(float(v), BAR_MIN, BAR_MAX) if typeof(v) in [TYPE_INT, TYPE_FLOAT] else 1.0
 	return values[key]
 
 

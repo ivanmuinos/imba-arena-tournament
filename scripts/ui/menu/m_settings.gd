@@ -134,6 +134,7 @@ func _ready() -> void:
 	_row(j, "Compañeros", "La mascota de cada clase (lobo, toro, hada...). Es sólo visual; se aplica en la próxima partida.", _pets)
 	_pets.changed.connect(func(v): menu.st.set_value("companions", v == "on"); menu.settings_changed("companions"))
 	_pets.get_parent().visible = CompanionView.AVAILABLE
+	_slider(j, "bar_scale", "Tamaño de la barra de habilidades", SettingsStore.BAR_MIN, SettingsStore.BAR_MAX, 0.05, "%d%%", 100.0)
 	var reset := MButton.new("Restablecer valores", "secondary")
 	reset.custom_minimum_size = Vector2(260, 44)
 	reset.pressed.connect(_reset)
@@ -353,7 +354,7 @@ func select_tab(id: String) -> void:
 	for k in _pages:
 		_pages[k].visible = k == id
 	if _holder != null:
-		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 820.0, "audio": 200.0, "juego": 300.0, "macros": 420.0}.get(id, 300.0)
+		_holder.custom_minimum_size.y = {"graficos": 250.0, "controles": 820.0, "audio": 200.0, "juego": 360.0, "macros": 420.0}.get(id, 300.0)
 		_panel.reset_size()
 	_tabs.select(id, false)
 
@@ -378,7 +379,7 @@ func menu_enter() -> void:
 
 func _reset() -> void:
 	var fresh := SettingsStore.new()
-	for k in ["gfx", "fullscreen", "master", "music", "sfx", "sens", "invert", "companions", "bindings", "swap_sticks"]:
+	for k in ["gfx", "fullscreen", "master", "music", "sfx", "sens", "invert", "companions", "bindings", "swap_sticks", "bar_scale"]:
 		menu.st.set_value(k, fresh.get_value(k))
 	menu.settings_changed("gfx")
 	menu_enter()

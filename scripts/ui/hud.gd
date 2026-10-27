@@ -57,6 +57,9 @@ var _frames_ally: VBoxContainer
 var _frames_enemy: VBoxContainer
 var _killfeed: VBoxContainer
 var _bar: HBoxContainer
+var _bar_frame: ActionBarFrame
+var _bar_holder: Control
+var bar_scale := 1.0
 var _my_debuffs: AuraRow
 var _my_cast: CastBar
 var _cast_track := CastTracker.new()
@@ -136,10 +139,10 @@ func blocks_mouse(pos: Vector2) -> bool:
 
 ## Screen rectangle of a HUD element the tutorial points at ("bar", "target_panel", "cast", "score", "frames"), or an empty Rect2.
 func rect_of(key: String) -> Rect2:
-	var c: Control = {"bar": _bar, "target_panel": _target_panel, "cast": _my_cast, "score": round_label, "frames": _frames_ally}.get(key)
+	var c: Control = {"bar": _bar_frame, "target_panel": _target_panel, "cast": _my_cast, "score": round_label, "frames": _frames_ally}.get(key)
 	if c == null or not c.is_visible_in_tree():
 		return Rect2()
-	return Rect2(c.global_position, c.size * ui_scale)
+	return c.get_global_rect()  # includes the bar's own scale
 
 
 ## Ability slot whose tooltip is showing (-1 when none).
@@ -299,7 +302,14 @@ func _build() -> void:
 	_bar = HBoxContainer.new()
 	_bar.add_theme_constant_override("separation", 6)
 	_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	bottom.add_child(_bar)
+	_bar_frame = ActionBarFrame.new()  # one frame around every button of the bar, scaled by the "bar_scale" setting
+	_bar_frame.add_child(_bar)
+	_bar_frame.minimum_size_changed.connect(_fit_bar)
+	_bar_holder = Control.new()  # takes the frame's scaled size in the column: a container ignores its children's scale
+	_bar_holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_bar_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar_holder.add_child(_bar_frame)
+	bottom.add_child(_bar_holder)
 	_root.add_child(bottom)
 
 	# Loss-of-control alert.
@@ -359,9 +369,9 @@ func _place_ability_tip(index: int) -> void:
 	if not _ability_tip.visible or index != _tip_slot or index >= _slots.size():
 		return
 	_ability_tip.size.y = 0
-	var slot: Control = _slots[index].root
-	var at := screen_to_ui(slot.global_position, ui_scale)
-	_ability_tip.pop(Vector2(clampf(at.x + 30 - _ability_tip.size.x / 2, 8, maxf(8, _root.size.x - _ability_tip.size.x - 8)), maxf(8, at.y - _ability_tip.size.y - 14)))
+	var slot := (_slots[index].root as Control).get_global_rect()
+	var at := screen_to_ui(slot.position, ui_scale)
+	_ability_tip.pop(Vector2(clampf(at.x + slot.size.x / ui_scale / 2 - _ability_tip.size.x / 2, 8, maxf(8, _root.size.x - _ability_tip.size.x - 8)), maxf(8, at.y - _ability_tip.size.y - 14)))
 
 
 func _build_target_frame() -> void:
@@ -522,8 +532,17 @@ func _make_frame(r: Dictionary, me: bool) -> Dictionary:
 		"cast": cast, "auras": auras, "name": nm}
 
 
+## Sizes the bar frame to its buttons, at the player's chosen scale.
+func _fit_bar() -> void:
+	_bar_frame.scale = Vector2(bar_scale, bar_scale)
+	_bar_frame.size = _bar_frame.get_combined_minimum_size()
+	_bar_holder.custom_minimum_size = _bar_frame.size * bar_scale
+
+
 func _build_bar() -> void:
+	bar_scale = float(SettingsStore.shared().get_value("bar_scale"))
 	for c in _bar.get_children():
+		_bar.remove_child(c)  # out now, so the frame shrinks to the new buttons
 		c.queue_free()
 	_slots.clear()
 	var abilities: Array = GameData.abilities(my_cls, my_spec)
@@ -535,7 +554,7 @@ func _build_bar() -> void:
 		var slot := Panel.new()
 		slot.custom_minimum_size = Vector2(60, 60)
 		var ult: bool = a.get("ult", false)
-		slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.1, 0.05, 0.04, 0.85), Color("#ffb84d") if ult else UiKit.LINE, 8, 2, 0))
+		slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.03, 0.02, 0.015, 0.95), Color("#ffb84d") if ult else ActionBarFrame.GOLD_DARK, 8, 2, 0))
 		slot.mouse_filter = Control.MOUSE_FILTER_PASS
 		slot.mouse_entered.connect(_show_ability_tip.bind(i))
 		slot.mouse_exited.connect(_ability_tip.hush)
@@ -573,6 +592,7 @@ func _build_bar() -> void:
 	_build_trinket(dim_tex)
 	_build_macro_bar()
 	refresh_keys()
+	_fit_bar()
 
 
 ## Keybinding mode and the hovered button: every bar button reports its action while the mouse is over it.

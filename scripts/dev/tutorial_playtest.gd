@@ -11,7 +11,7 @@ func _step_id() -> String:
 
 
 func _click_control(c: Control) -> void:
-	var r := Rect2(c.global_position, c.size * mv.hud.ui_scale)
+	var r := c.get_global_rect()
 	var p := r.get_center()
 	_motion(p)
 	await _wait(0.2)  # let the GUI register the hover before pressing (synthetic input is otherwise sometimes dropped)
