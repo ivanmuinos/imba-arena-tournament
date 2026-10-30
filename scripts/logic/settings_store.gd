@@ -8,6 +8,10 @@ const SENS_MIN := 0.3
 const SENS_MAX := 2.5
 const BAR_MIN := 0.7  # size of the in-match ability bar
 const BAR_MAX := 1.5
+const FRAME_MIN := 0.7  # size of the party / enemy frames
+const FRAME_MAX := 1.5
+## The HUD sizes: in Configuración > Gráficos and live from the in-match menu (Esc).
+const HUD_SCALES := ["bar_scale", "enemy_frame_scale", "ally_frame_scale"]
 const GFX := ["auto", "alta", "media", "baja"]
 
 static var _shared: SettingsStore = null
@@ -19,7 +23,7 @@ var values := {
 	"name": "", "cls": "mage", "spec": "fire", "specs": {}, "mode": 2, "map": "random", "diff": "normal", "pref": "any",
 	"addr": "127.0.0.1", "port": 7777, "gfx": "auto", "fullscreen": false,
 	"tutorial_seen": false, "master": 0.8, "music": 0.5, "sfx": 0.9, "sens": 1.0, "invert": false, "steam_friends": true,
-	"companions": true, "news_seen": [], "bar_scale": 1.0,
+	"companions": true, "news_seen": [], "bar_scale": 1.0, "enemy_frame_scale": 1.0, "ally_frame_scale": 1.0,
 }
 
 
@@ -96,6 +100,8 @@ func set_value(key: String, v: Variant) -> Variant:
 			values.sens = clampf(float(v), SENS_MIN, SENS_MAX) if typeof(v) in [TYPE_INT, TYPE_FLOAT] else 1.0
 		"bar_scale":
 			values.bar_scale = clampf(float(v), BAR_MIN, BAR_MAX) if typeof(v) in [TYPE_INT, TYPE_FLOAT] else 1.0
+		"enemy_frame_scale", "ally_frame_scale":
+			values[key] = clampf(float(v), FRAME_MIN, FRAME_MAX) if typeof(v) in [TYPE_INT, TYPE_FLOAT] else 1.0
 	return values[key]
 
 

@@ -225,6 +225,7 @@ func _build() -> void:
 	_frames_enemy.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_frames_enemy.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_frames_enemy.position = Vector2(-16, 14)
+	_frames_enemy.resized.connect(func(): _frames_enemy.pivot_offset = Vector2(_frames_enemy.size.x, 0))  # scales from the right edge
 	_root.add_child(_frames_enemy)
 	_killfeed = VBoxContainer.new()
 	_killfeed.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
@@ -473,6 +474,7 @@ func setup(roster: Array, you: int, cls: String, team: String, spec := "") -> vo
 		_plate_layer.add_child(plate)
 		_plates[r.id] = plate
 	_build_bar()
+	apply_scales()
 	_target_panel.visible = false
 	center_text.text = ""
 	center_sub.text = ""
@@ -528,6 +530,21 @@ func _make_frame(r: Dictionary, me: bool) -> Dictionary:
 	root.add_child(auras)
 	return {"root": root, "art": uf.art, "portrait": picon, "picon": picon, "ptime": ptime, "icon": GameData.classes[r.cls].icon, "hp": hp,
 		"hp_text": hp_text, "cast": cast, "auras": auras, "name": nm}
+
+
+## Applies the HUD sizes from the settings (ability bar, enemy and party frames); also live, from the in-match menu.
+func apply_scales() -> void:
+	var st := SettingsStore.shared()
+	bar_scale = float(st.get_value("bar_scale"))
+	_fit_bar()
+	_frames_ally.scale = Vector2.ONE * float(st.get_value("ally_frame_scale"))
+	_frames_enemy.scale = Vector2.ONE * float(st.get_value("enemy_frame_scale"))
+
+
+## A full-screen panel over the HUD (the Esc menu), at the HUD's scale.
+func add_modal(c: Control) -> void:
+	c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root.add_child(c)
 
 
 ## Sizes the bar frame to its buttons, at the player's chosen scale.
@@ -729,7 +746,7 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 
 	if s.phase == "prep":
 		center_text.text = str(ceili(s.phaseLeft / 1000.0))
-		center_sub.text = "Ronda %d — preparate" % s.round
+		center_sub.text = "Ronda %d — preparate · Esc: menú y tamaño del HUD" % s.round
 		center_text.remove_theme_color_override("font_color")
 	elif s.phase == "fight" and now_ms - _fight_at < 1200.0:
 		center_text.text = "¡PELEA!"

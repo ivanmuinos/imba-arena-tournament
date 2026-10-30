@@ -58,7 +58,11 @@ func _ready() -> void:
 	_full = Segmented.new().setup([["off", "Ventana"], ["on", "Pantalla completa"]], "off")
 	_row(g, "Pantalla", "", _full)
 	_slider(g, "bar_scale", "Tamaño del HUD de habilidades", SettingsStore.BAR_MIN, SettingsStore.BAR_MAX, 0.05, "%d%%", 100.0,
-		"Agranda o achica la barra de habilidades en la partida. Se aplica en la próxima partida.")
+		"Agranda o achica la barra de habilidades. En la partida también se ajusta en vivo desde el menú (Esc).")
+	_slider(g, "enemy_frame_scale", "Tamaño de los marcos de oponentes", SettingsStore.FRAME_MIN, SettingsStore.FRAME_MAX, 0.05, "%d%%", 100.0,
+		"Los marcos de los enemigos, arriba a la derecha.")
+	_slider(g, "ally_frame_scale", "Tamaño de los marcos de tu equipo", SettingsStore.FRAME_MIN, SettingsStore.FRAME_MAX, 0.05, "%d%%", 100.0,
+		"Tu marco y los de tus aliados, arriba a la izquierda.")
 	_gfx_info = UiKit.label("", 13, UiKit.MUTED)
 	_gfx_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_gfx_info.custom_minimum_size = Vector2(780, 0)
@@ -355,7 +359,7 @@ func select_tab(id: String) -> void:
 	for k in _pages:
 		_pages[k].visible = k == id
 	if _holder != null:
-		_holder.custom_minimum_size.y = {"graficos": 330.0, "controles": 820.0, "audio": 200.0, "juego": 300.0, "macros": 420.0}.get(id, 300.0)
+		_holder.custom_minimum_size.y = {"graficos": 470.0, "controles": 820.0, "audio": 200.0, "juego": 300.0, "macros": 420.0}.get(id, 300.0)
 		_panel.reset_size()
 	_tabs.select(id, false)
 
@@ -380,7 +384,7 @@ func menu_enter() -> void:
 
 func _reset() -> void:
 	var fresh := SettingsStore.new()
-	for k in ["gfx", "fullscreen", "master", "music", "sfx", "sens", "invert", "companions", "bindings", "swap_sticks", "bar_scale"]:
+	for k in ["gfx", "fullscreen", "master", "music", "sfx", "sens", "invert", "companions", "bindings", "swap_sticks"] + SettingsStore.HUD_SCALES:
 		menu.st.set_value(k, fresh.get_value(k))
 	menu.settings_changed("gfx")
 	menu_enter()

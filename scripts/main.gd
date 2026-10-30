@@ -526,9 +526,9 @@ func _on_match_started(msg: Dictionary) -> void:
 	add_child(_match)
 	_match.start(client, msg)
 	_match.finished.connect(_on_match_finished)
+	_match.leave_requested.connect(func(): _to_menu.call_deferred())  # practice panel or the Esc menu
 	if _match.practice:
 		_match.practice_switch.connect(_on_practice_switch)
-		_match.leave_requested.connect(func(): _to_menu.call_deferred())
 		if _tutorial_next:
 			var tut := TutorialOverlay.new()
 			tut.attach(_match, TutorialFlow.new(str(last_cfg.cls), str(last_cfg.get("spec", ""))))
@@ -695,6 +695,12 @@ func _process(delta: float) -> void:
 				ev.keycode = KEY_SPACE
 				ev.pressed = true
 				_menu._input(ev)
+			"esc":  # a real Esc key press, through the whole input chain (the in-match menu)
+				for down in [true, false]:
+					var ke := InputEventKey.new()
+					ke.keycode = KEY_ESCAPE
+					ke.pressed = down
+					Input.parse_input_event(ke)
 			"press":  # an input action as if typed/pressed on a gamepad (ui_down, ui_accept, ui_cancel...)
 				for down in [true, false]:
 					var ae := InputEventAction.new()
