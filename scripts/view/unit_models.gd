@@ -206,6 +206,17 @@ static func _rogue(team: Color) -> Dictionary:
 	return {"root": g, "weapon": blades, "glow": glow, "legs": legs}
 
 
+## A breakable crate of the Academia. Same shape of dictionary as a fighter, without legs or a weapon.
+static func crate() -> Dictionary:
+	var g := Node3D.new()
+	var wood := std(Color("#7a5230"), Color.BLACK, 0.0, 0.0, 0.9)
+	var band := std(Color("#2c2622"), Color.BLACK, 0.0, 0.6, 0.5)
+	_add(g, MeshBuilder.box(Vector3(1.3, 1.3, 1.3)), wood, Vector3(0, 0.65, 0))
+	for y in [0.2, 1.1]:
+		_add(g, MeshBuilder.box(Vector3(1.36, 0.12, 1.36)), band, Vector3(0, y, 0))
+	return {"root": g, "weapon": Node3D.new(), "glow": null, "legs": []}
+
+
 static func sheep() -> Node3D:
 	var g := Node3D.new()
 	var wool := std(Color.WHITE, Color.BLACK, 0.0, 0.0, 1.0)

@@ -70,7 +70,11 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 	is_me = p_is_me
 	_world = p_world
 	var team: Color = TEAM_COLOR[entry.team]
-	if CharacterRig.available(entry.cls):
+	if str(entry.get("dummy", "")) == "crate":
+		_model = UnitModels.crate()
+		_body.add_child(_model.root)
+		_collect_parts(_model.root)
+	elif CharacterRig.available(entry.cls):
 		_rig = CharacterRig.new()
 		_rig.setup(entry.cls, team, Cosmetics.rig_skin(str(entry.cls)) if is_me else {})
 		_body.add_child(_rig.root)

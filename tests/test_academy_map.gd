@@ -122,3 +122,77 @@ func test_the_pillar_room_blocks_sight() -> void:
 	var m := _map()
 	var c := m.room_z(GameMap.PILLAR_ROOM)
 	check(not Rules.has_los(m, {"x": -7.0, "z": c - 5.0}, {"x": -7.0, "z": c + 5.0}), "el pilar tapa")
+
+
+func _world(id := GameMap.ACADEMY_ID) -> ArenaWorld:
+	var w := ArenaWorld.new()
+	TestBase.tree.root.add_child(w)
+	w.setup(GameMap.create(id))
+	return w
+
+
+func test_the_world_draws_doors_and_plates_only_in_the_academy() -> void:
+	var w := _world()
+	eq(w._doors.size(), GameMap.ROOM_COUNT - 1, "una puerta por pared")
+	eq(w._plates.size(), w.map.plates.size(), "todas las placas")
+	w.free()
+	var y := _world(GameMap.PRACTICE_ID)
+	eq(y._doors.size(), 0, "el patio no tiene puertas")
+	eq(y._plates.size(), 0, "ni placas")
+	y.sync_doors(3)
+	y.sync_plates(3, 1)
+	y.free()
+
+
+func test_plates_only_show_while_a_lesson_uses_them() -> void:
+	var w := _world()
+	check(w._plates.all(func(p): return not p.visible), "ninguna hasta que la lección las active")
+	w.sync_plates(0b101, 0b001)
+	check(w._plates[0].visible and w._plates[2].visible and not w._plates[1].visible, "solo las activas")
+	var waiting: Color = (w._plates[2].material_override as StandardMaterial3D).albedo_color
+	var pressed: Color = (w._plates[0].material_override as StandardMaterial3D).albedo_color
+	check(waiting != pressed, "la pisada se ve distinta de la que espera")
+	w.free()
+
+
+func test_a_door_animates_open_and_closed() -> void:
+	var w := _world()
+	var leaf: Node3D = w._doors[0].left
+	near(leaf.rotation.y, 0.0, 0.001, "empieza cerrada")
+	w.sync_doors(1)
+	w.update(10.0, 1.0)
+	check(absf(leaf.rotation.y) > 1.0, "se abre")
+	near(w._doors[0].root.position.y, 0.0, 0.001, "una puerta común gira, no baja")
+	w.sync_doors(0)
+	w.update(10.0, 2.0)
+	near(leaf.rotation.y, 0.0, 0.001, "se cierra")
+	var grate: Dictionary = w._doors[GameMap.GRATE_DOOR]
+	var y0: float = grate.root.position.y
+	w.sync_doors(1 << GameMap.GRATE_DOOR)
+	w.update(10.0, 3.0)
+	check(grate.root.position.y < y0 - 1.0, "la reja baja")
+	w.free()
+
+
+func test_a_crate_is_a_box_without_a_frame_on_the_hud() -> void:
+	var hud := Hud.new()
+	TestBase.tree.root.add_child(hud)
+	hud.setup([{"id": 1, "team": "red", "cls": "mage", "spec": "fire", "name": "Yo", "bot": false},
+		{"id": 2, "team": "blue", "cls": "mage", "spec": "fire", "name": "Caja", "bot": true, "dummy": "crate", "hp": 30.0},
+		{"id": 3, "team": "blue", "cls": "warrior", "spec": "", "name": "Rival", "bot": true}], 1, "mage", "red", "fire")
+	check(not hud._frames.has(2), "la caja no ocupa un marco")
+	check(hud._frames.has(3), "un rival sí")
+	check(hud._plates.has(2), "pero se ve su barra sobre ella")
+	hud.mark_dead(2)
+	hud.free()
+
+
+func test_a_crate_view_needs_no_character_model() -> void:
+	var w := _world()
+	var v := UnitView.new()
+	w.add_child(v)
+	v.setup({"id": 2, "team": "blue", "cls": "mage", "spec": "fire", "name": "Caja", "bot": true, "dummy": "crate", "hp": 30.0}, false, w)
+	eq(v._rig, null, "no usa el personaje del mago")
+	check(v._model.legs.is_empty(), "no tiene piernas")
+	eq(v._companion, null, "ni mascota")
+	w.free()

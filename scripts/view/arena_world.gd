@@ -11,6 +11,8 @@ const THEMES := {
 		"torch": 0xff9a40, "glow": 0xff6a2a, "ember": 0xffb060, "tint": 0xffffff},
 	"pillars": {"sky_top": 0x2a2a3a, "sky_horizon": 0xc89070, "fog": 0x6a5248, "fog_density": 0.002, "ambient": 0xf0e0d0, "ambient_energy": 0.95, "sun": 0xfff0d8, "sun_energy": 2.0,
 		"torch": 0xffb860, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf0e8e0},
+	"academy": {"sky_top": 0x2a1f2a, "sky_horizon": 0xe08f52, "fog": 0x6a4c40, "fog_density": 0.0012, "ambient": 0xf4e6d6, "ambient_energy": 1.1, "sun": 0xfff0d8, "sun_energy": 2.1,
+		"torch": 0xffb050, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf4ece4},
 	"yard": {"sky_top": 0x2a2a3a, "sky_horizon": 0xd8a070, "fog": 0x6a5248, "fog_density": 0.0016, "ambient": 0xf4e6d6, "ambient_energy": 1.05, "sun": 0xfff0d8, "sun_energy": 2.1,
 		"torch": 0xffb860, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf0e8e0},
 	"tomb": {"sky_top": 0x182848, "sky_horizon": 0x5a78b8, "fog": 0x34466a, "fog_density": 0.0024, "ambient": 0xc8d8ff, "ambient_energy": 1.0, "sun": 0xe0ecff, "sun_energy": 1.9,
@@ -41,6 +43,8 @@ var _local_ft := 0.0
 var _ft_at := 0.0
 var _gates_open := false
 var _terrain: MeshInstance3D
+var _doors: Array = []  # academy: {root, left, right, grate, t, goal}
+var _plates: Array = []  # academy: one ring per map plate, hidden until a lesson uses it
 var _floaters: Array = []  # {node, base_y, phase}: crystals that bob and turn (elven plaza)
 var _terrain_mat: ShaderMaterial
 
@@ -58,6 +62,9 @@ func setup(p_map: GameMap) -> void:
 		_build_bridge()
 	if map.id == "spire":
 		_build_spire_plaza()
+	if map.id == GameMap.ACADEMY_ID:
+		_build_academy_doors()
+		_build_academy_plates()
 	_build_room_decor()
 	_build_outer_decor()
 	_build_embers()
@@ -254,6 +261,11 @@ func _full_h(x: float, z: float) -> float:
 	var ax := absf(x)
 	var az := absf(z)
 	var out := 0.0
+	if map.id == GameMap.ACADEMY_ID:  # no pockets behind start rooms here: just cliffs around the long hall
+		out = maxf(ax - GameMap.ACADEMY_HX, az - GameMap.ACADEMY_HZ)
+		if out > 0.0:
+			base += minf(out * out * 0.16, 14.0) + 2.0 * sin(x * 0.4) * cos(z * 0.33) * minf(out, 3.0) * 0.4
+		return base
 	if ax > GameMap.W:
 		out = maxf(out, ax - GameMap.W)
 	if az > GameMap.R:
@@ -267,7 +279,7 @@ func _full_h(x: float, z: float) -> float:
 
 func _build_terrain() -> void:
 	var ext_x := GameMap.W + 24.0
-	var ext_z := GameMap.R + 24.0
+	var ext_z := (GameMap.ACADEMY_HZ if map.id == GameMap.ACADEMY_ID else GameMap.R) + 24.0
 	var step := 0.8
 	var nx := int(2.0 * ext_x / step)
 	var nz := int(2.0 * ext_z / step)
@@ -292,7 +304,7 @@ func _build_terrain() -> void:
 			verts.append(Vector3(x, y, z))
 			norms.append(Vector3(hl - hr, 2.0 * step, hd - hu).normalized())
 			uvs.append(Vector2(x, z) / 6.0)
-			var inside := absf(x) <= GameMap.W and absf(z) <= GameMap.R
+			var inside := absf(x) <= map.half_x and absf(z) <= map.half_z if map.id == GameMap.ACADEMY_ID else absf(x) <= GameMap.W and absf(z) <= GameMap.R
 			var lava_floor := map.is_low(x, z)
 			var tint := 1.0 - clampf(y * 0.015, 0.0, 0.25)
 			var glow := 0.1 if not inside else (0.9 if lava_floor else 0.55)
@@ -338,11 +350,12 @@ func _build_terrain() -> void:
 		lm.shader = load("res://assets/shaders/lava.gdshader")
 		lm.set_shader_parameter("energy", 1.7)
 		q.material_override = lm
-		q.position = Vector3(hz.x, -1.55, hz.z)
+		q.position = Vector3(hz.x, 0.06 if map.id == GameMap.ACADEMY_ID else -1.55, hz.z)  # the academy's lava lies on flat floor
 		q.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(q)
 	if not map.hazards.is_empty():
-		_add_light(Vector3(0, 1.0, 0), _col(_theme.glow), 5.0, 34.0, true)
+		var over: Vector3 = Vector3(map.hazards[0].x, 1.0, map.hazards[0].z) if map.id == GameMap.ACADEMY_ID else Vector3(0, 1.0, 0)
+		_add_light(over, _col(_theme.glow), 5.0, 34.0, true)
 
 
 func _add_light(pos: Vector3, color: Color, energy: float, rng: float, flicker := false) -> OmniLight3D:
@@ -501,6 +514,9 @@ func _build_bridge() -> void:
 
 
 func _build_room_decor() -> void:
+	if map.id == GameMap.ACADEMY_ID:
+		_build_academy_decor()
+		return
 	if map.gate_shapes.is_empty():
 		_build_yard_decor()
 		return
@@ -523,6 +539,88 @@ func _build_room_decor() -> void:
 		add_child(disc)
 		if z0 == 0.0:
 			pass
+
+
+# ---------------------------------------------------------------- academy
+
+func _build_academy_decor() -> void:
+	for room in GameMap.ROOM_COUNT:
+		var z := map.room_z(room)
+		for sx in [1.0, -1.0]:
+			_place_kit("torch", Vector3(sx * (GameMap.ACADEMY_HX - 1.6), 0.0, z), 0.0)
+			_add_light(Vector3(sx * (GameMap.ACADEMY_HX - 1.6), 2.4, z), _col(_theme.torch), 2.4, 13.0, true)
+
+
+## Ordinary doors are the arena's gate leaves, narrowed; the grate door is bars you can see through, and it sinks to open.
+func _build_academy_doors() -> void:
+	for i in map.doors.size():
+		var o: Dictionary = map.doors[i]
+		var root := Node3D.new()
+		root.position = Vector3(0.0, 0.0, o.z)
+		add_child(root)
+		var d := {"root": root, "left": null, "right": null, "grate": not o.los, "t": 0.0, "goal": 0.0}
+		if d.grate:
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = Color("#3a3230")
+			mat.metallic = 0.7
+			mat.roughness = 0.5
+			var x := -GameMap.DOOR_HW + 0.4
+			while x <= GameMap.DOOR_HW:
+				_mi(MeshBuilder.cylinder(0.09, 0.09, 4.2, 6), mat, Vector3(x, 2.1, 0.0), root)
+				x += 0.8
+			_mi(MeshBuilder.box(Vector3(GameMap.DOOR_HW * 2.0, 0.2, 0.3)), mat, Vector3(0.0, 3.9, 0.0), root)
+		else:
+			var narrow := GameMap.DOOR_HW / GameMap.GATE_HW
+			var left := Node3D.new()
+			left.position = Vector3(-GameMap.DOOR_HW, 0.0, 0.0)
+			root.add_child(left)
+			_place_kit("gate_leaf", Vector3.ZERO, 0.0, Vector3(narrow, 1.0, 1.0), left)
+			var right := Node3D.new()
+			right.position = Vector3(GameMap.DOOR_HW, 0.0, 0.0)
+			root.add_child(right)
+			_place_kit("gate_leaf", Vector3.ZERO, 0.0, Vector3(-narrow, 1.0, 1.0), right)
+			d.left = left
+			d.right = right
+		_doors.append(d)
+
+
+func _build_academy_plates() -> void:
+	for p in map.plates:
+		var ring := MeshInstance3D.new()
+		ring.mesh = MeshBuilder.ring(p.r - 0.35, p.r, 40)
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		ring.material_override = mat
+		ring.position = Vector3(p.x, 0.09, p.z)
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		ring.visible = false
+		add_child(ring)
+		_plates.append(ring)
+
+
+## Lesson state from the snapshot: which doors are open.
+func sync_doors(mask: int) -> void:
+	for i in _doors.size():
+		_doors[i].goal = 1.0 if mask & (1 << i) != 0 else 0.0
+
+
+## Lesson state from the snapshot: plates the lesson uses, and which of them were already stepped on.
+func sync_plates(active: int, pressed: int) -> void:
+	for i in _plates.size():
+		var ring: MeshInstance3D = _plates[i]
+		ring.visible = active & (1 << i) != 0
+		(ring.material_override as StandardMaterial3D).albedo_color = Color(0.4, 2.2, 0.8) if pressed & (1 << i) != 0 else Color(2.4, 1.7, 0.5)
+
+
+func _update_doors(dt: float) -> void:
+	for d in _doors:
+		d.t = move_toward(d.t, d.goal, dt / 0.9)
+		var e: float = d.t * d.t * (3.0 - 2.0 * d.t)
+		if d.grate:
+			(d.root as Node3D).position.y = -e * 4.4
+		else:
+			(d.left as Node3D).rotation.y = e * deg_to_rad(100.0)
+			(d.right as Node3D).rotation.y = -e * deg_to_rad(100.0)
 
 
 ## Training yard: torches along both end walls and a rune ring where the player starts.
@@ -549,17 +647,19 @@ func _build_outer_decor() -> void:
 		_build_spire_outer()
 		return
 	# Cliffs behind the walls and dead ember trees / rocks scattered outside the play area.
+	var far_x := GameMap.ACADEMY_HX if map.id == GameMap.ACADEMY_ID else GameMap.W
+	var far_z := GameMap.ACADEMY_HZ if map.id == GameMap.ACADEMY_ID else GameMap.R
 	for k in 36:
 		var a := TAU * k / 36.0
-		var px := cos(a) * (GameMap.W + 15.0) * 1.1
-		var pz := sin(a) * (GameMap.R + 15.0) * 1.08
+		var px := cos(a) * (far_x + 15.0) * 1.1
+		var pz := sin(a) * (far_z + 15.0) * 1.08
 		var n := _place_kit("cliff", Vector3(px, _full_h(px, pz) - 1.0, pz), -a + PI / 2, Vector3(0.95, 0.8 + _rand.next() * 0.4, 0.95))
 		if n != null:
 			_tint_materials(n)
 	for k in 70:
-		var x := (_rand.next() * 2.0 - 1.0) * (GameMap.W + 16.0)
-		var z := (_rand.next() * 2.0 - 1.0) * (GameMap.R + 16.0)
-		if absf(x) < GameMap.W + 2.5 and absf(z) < GameMap.R + 2.5:
+		var x := (_rand.next() * 2.0 - 1.0) * (far_x + 16.0)
+		var z := (_rand.next() * 2.0 - 1.0) * (far_z + 16.0)
+		if absf(x) < far_x + 2.5 and absf(z) < far_z + 2.5:
 			continue
 		var y := _full_h(x, z)
 		var kitn: String = ["tree_a", "tree_b", "tree_c", "rock_a", "rock_b", "rock_c", "crystal"][int(_rand.next() * 7)]
@@ -747,6 +847,7 @@ func sync_state(open: bool, ft: float, now_s: float) -> void:
 
 
 func update(dt: float, now_s: float) -> void:
+	_update_doors(dt)
 	_gate_t = move_toward(_gate_t, _gate_goal, dt / 1.6)
 	var e := _gate_t * _gate_t * (3.0 - 2.0 * _gate_t)
 	for g in _gates:

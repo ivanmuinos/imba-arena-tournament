@@ -564,6 +564,9 @@ func _one_fx(f: Dictionary) -> void:
 				v.swing_count += 1
 				if v.shown:
 					fx.slash(pos.x, pos.z, float(v.snap.get("rot", 0.0)), f.heavy, 1.0 if (v.swing_count % 2 == 0) else -1.0)
+		"crate_break":
+			fx.burst(Vector3(f.x, world.h(f.x, f.z) + 0.7, f.z), 22, 5.0, Color("#b98a55"), 0.55, 0.22, 9.0)
+			audio.play("death", Vector2(f.x, f.z))
 		"death":
 			hud.mark_dead(int(f.id))
 			if v != null:

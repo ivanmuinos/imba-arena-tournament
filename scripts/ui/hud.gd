@@ -475,9 +475,10 @@ func setup(roster: Array, you: int, cls: String, team: String, spec := "", talen
 	_plates.clear()
 	_floats.clear()
 	for r in roster:
-		var f := _make_frame(r, r.id == you)
-		(_frames_ally if r.team == team else _frames_enemy).add_child(f.root)
-		_frames[r.id] = f
+		if str(r.get("dummy", "")) != "crate":  # a lesson can have many crates: they only get the bar over their head
+			var f := _make_frame(r, r.id == you)
+			(_frames_ally if r.team == team else _frames_enemy).add_child(f.root)
+			_frames[r.id] = f
 		var plate := Nameplate.new().setup(r.name, r.team == team, r.id == you, HP_ALLY if r.team == team else HP_ENEMY)
 		if r.id == you:
 			plate.set_title(Cosmetics.title())
