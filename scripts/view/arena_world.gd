@@ -609,7 +609,7 @@ func sync_plates(active: int, pressed: int) -> void:
 	for i in _plates.size():
 		var ring: MeshInstance3D = _plates[i]
 		ring.visible = active & (1 << i) != 0
-		(ring.material_override as StandardMaterial3D).albedo_color = Color(0.4, 2.2, 0.8) if pressed & (1 << i) != 0 else Color(2.4, 1.7, 0.5)
+		(ring.material_override as StandardMaterial3D).albedo_color = Color(0.25, 0.9, 0.4) if pressed & (1 << i) != 0 else Color(2.4, 1.7, 0.5)
 
 
 func _update_doors(dt: float) -> void:

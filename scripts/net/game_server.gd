@@ -360,7 +360,10 @@ func _on_game_message(from: int, msg: Dictionary) -> void:
 			game.cancel_cast(u)
 		"practice":
 			var c := Wire.clean_practice(msg)
-			if not c.is_empty():
+			if c.get("cmd") == "cue":
+				if game.stage != null:
+					game.stage.cue(game, c.n, sim_now)
+			elif not c.is_empty():
 				game.practice_command(u, c.cmd, c.on, sim_now)
 		"auto":
 			if bool(msg.get("on", false)) and typeof(msg.get("id")) in [TYPE_INT, TYPE_FLOAT]:
@@ -529,6 +532,10 @@ func _flush() -> void:
 	for e in m.errors:
 		_send(e.peer, {"t": "error", "text": e.text})
 	m.errors.clear()
+	if m.journal != null and not m.journal.is_empty():
+		for u in humans:
+			_send(u.peer, {"t": "lesson", "ev": m.journal})
+		m.journal = []
 	for u in humans:
 		var snap := m.snapshot_for(u, sim_now)
 		snap["ts"] = sim_now

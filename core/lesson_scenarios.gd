@@ -20,9 +20,9 @@ const SCENARIOS := {
 		"active": [0],
 		"units": [],
 		"triggers": [
-			{"on": "plate:0", "do": [["activate", 1]]},
-			{"on": "plate:1", "do": [["activate", 2]]},
-			{"on": "plate:2", "do": [["open", 0], ["activate", 7]]},
+			{"on": "cue:1", "do": [["activate", 1]]},
+			{"on": "cue:2", "do": [["activate", 2]]},
+			{"on": "cue:3", "do": [["open", 0], ["activate", 7]]},
 		],
 	},
 }

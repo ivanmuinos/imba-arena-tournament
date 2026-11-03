@@ -7,6 +7,7 @@ extends Node
 ##   --server [--port=7777] [--mode=1|2|3] [--map=magma|moon] [--diff=easy|normal|hard] [--wait=SEC]
 ##   --offline | --host | --join=IP[:PORT]   skip the menu   (+ --name= --cls= --team= --mode= --map= --diff=)
 ##   --practice[=tutorial]   the training yard (or the guided tutorial in it)
+##   --lesson=<id>           an Academia lesson (AcademyCatalog)
 ##   --tournament=<mode>:<tier>   start a cup offline (mode 1-3, tier bronze|silver|gold|gladiator; resumes a run in progress
 ##                       of the same mode and tier); unlocks are ignored here (smoke tests, screenshots)
 ##   --save-dir=PATH    keep tournament.json and profile.json in this folder instead of user:// (smoke tests)
@@ -67,6 +68,8 @@ var _steam_cfg := {}
 var _via_steam := false
 var _last_error := ""
 var _tutorial_next := false
+var _lesson_next: LessonFlow = null
+var _lesson_id := ""
 var _forfeited := false
 var _tresult := {}  # TournamentSession.finish() result of the match on the end screen
 var _state := "menu"
@@ -177,7 +180,7 @@ func _ready() -> void:
 	_set_preview(_menu.selected_map())
 	if args.has("playtest"):  # real-input automated playtest (see scripts/dev/playtest.gd, tools/playtest.sh)
 		BarLayout._shared = BarLayout.new("user://playtest_bar_layouts_unused.json")  # real-input runs press the default keys
-		var pt: Playtest = (PracticePlaytest.new() if args.has("practice-test") else (TutorialPlaytest.new() if args.has("tutorial-test") else Playtest.new()))
+		var pt: Playtest = LessonPlaytest.new() if args.has("lesson-test") else (PracticePlaytest.new() if args.has("practice-test") else (TutorialPlaytest.new() if args.has("tutorial-test") else Playtest.new()))
 		add_child(pt)
 		pt.run.call_deferred(self, str(args.get("cls", "mage")), str(args.get("shot", "/tmp/playtest")), str(args.get("spec", "")))
 	if args.has("menu-script"):  # e.g. --menu-script=1:key,2:go:play,3:flow:practice,4:next  (screenshots of transitions)
@@ -214,6 +217,8 @@ func _ready() -> void:
 		_lobby.show_connect_info(["192.168.0.23"], 7777)
 		_lobby._http.cancel_request()  # the demo must not look up (or show) the real public IP
 		_lobby._refresh_info("203.0.113.7")
+	elif args.has("lesson"):  # --lesson=<id>: an Academia lesson (see also --cls= --spec=)
+		_start_lesson(cfg, str(args.lesson))
 	elif args.has("practice"):  # --practice[=tutorial]: the training yard (see also --cls= --spec=)
 		_start_practice(cfg, str(args.practice) == "tutorial")
 	elif args.has("tournament"):
@@ -253,7 +258,7 @@ func _save_path(file: String) -> String:
 
 func _cfg_from_args() -> Dictionary:
 	var base := {"name": "Jugador", "cls": "mage", "mode": 2, "diff": "normal", "map": "random", "pref": "any"}
-	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join") and not args.has("practice") and not args.has("tournament"):
+	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join") and not args.has("practice") and not args.has("lesson") and not args.has("tournament"):
 		return _menu._cfg()
 	for k in ["name", "cls", "spec", "mode", "diff", "map"]:
 		if args.has(k):
@@ -609,6 +614,33 @@ func _start_practice(cfg: Dictionary, tutorial := false) -> void:
 	_show("none")
 
 
+## An Academia lesson, offline, in its own arena.
+func _start_lesson(cfg: Dictionary, id: String) -> void:
+	var flow := AcademyCatalog.lesson(id, str(cfg.cls), str(cfg.get("spec", "")))
+	if flow == null:
+		push_warning("No existe la lección %s" % id)
+		_to_menu()
+		return
+	_teardown_session()
+	last_cfg = cfg
+	offline = true
+	_auto_start = true
+	_lesson_next = flow
+	_lesson_id = id
+	server = GameServer.new({"mode": 2, "diff": "normal", "dedicated": false, "autopilot": false, "lesson": flow.scenario})
+	var link := LoopbackTransport.pair()
+	server.attach(link[0], true)
+	client = _new_client(cfg)
+	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "talents": [], "pref": "red"})
+	_show("none")
+
+
+func _on_lesson_finished(action: String) -> void:
+	match action:
+		"retry": _start_lesson.call_deferred(last_cfg, _lesson_id)
+		_: _to_menu.call_deferred()
+
+
 ## Starts a new cup (or resumes the run in progress when it is the same mode and tier). `force` skips the lock check
 ## (--tournament=). The champion, name and spec come from `cfg`.
 func _start_tournament(mode: int, tier_id: String, cfg: Dictionary, force := false) -> void:
@@ -764,7 +796,7 @@ func _on_match_started(msg: Dictionary) -> void:
 	_match.drive_bot = args.has("drive")
 	_match.demo_target = args.has("target")
 	_match.gfx_choice = gfx_choice
-	_match.tutorial = _tutorial_next
+	_match.tutorial = _tutorial_next or _lesson_next != null
 	_match.forfeit_enabled = offline
 	_match.forfeit_tournament = tsession != null
 	_match.chat = _chat
@@ -780,7 +812,12 @@ func _on_match_started(msg: Dictionary) -> void:
 			var tut := TutorialOverlay.new()
 			tut.attach(_match, TutorialFlow.new(str(last_cfg.cls), str(last_cfg.get("spec", ""))))
 			tut.finished.connect(_on_tutorial_finished)
+		elif _lesson_next != null:
+			var ov := LessonOverlay.new()
+			ov.attach(_match, _lesson_next)
+			ov.finished.connect(_on_lesson_finished)
 	_tutorial_next = false
+	_lesson_next = null
 	_update_presence()
 
 
@@ -990,7 +1027,7 @@ func _process(delta: float) -> void:
 			_online_tick = 0.0
 			online_session.tick()
 			_queue_try_start()
-	if server != null:
+	if server != null and not _lesson_paused():
 		server.process(ms)
 	if client != null:
 		client.poll(ms)
@@ -1029,6 +1066,11 @@ func _process(delta: float) -> void:
 		await _save_shot(_shot_n)
 		if _shot_n >= _shot_times.size():
 			get_tree().quit()
+
+
+## A lesson stops under the Esc menu: there is nobody else in the match to keep it running for.
+func _lesson_paused() -> bool:
+	return _match != null and str(server.cfg.lesson) != "" and _match.game_menu != null and _match.game_menu.visible
 
 
 func _save_shot(n: int) -> void:

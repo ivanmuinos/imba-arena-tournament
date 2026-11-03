@@ -52,6 +52,7 @@ var gfx_choice := "auto"
 var gfx_level := "alta"
 ## Practice arena (the yard) / guided tutorial inside it.
 var practice := false
+var _lesson_spawn := Vector2.INF
 ## Offline and tournament matches: the Esc menu's leave button gives up. `forfeit_tournament` words it as a tournament loss.
 var forfeit_enabled := false
 var forfeit_tournament := false
@@ -140,8 +141,13 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	hud.setup(_roster, my_id, my_cls, my_team, my_spec, my_talents)
 	hud.frame_clicked.connect(_on_frame_clicked)
 	hud.macro_pressed.connect(run_macro)
-	practice = str(msg.map) == GameMap.PRACTICE_ID
+	practice = str(msg.map) == GameMap.PRACTICE_ID or str(msg.map) == GameMap.ACADEMY_ID
 	hud.practice = practice
+	if str(msg.map) == GameMap.ACADEMY_ID:
+		hud.practice_title = "Academia"
+		var at = msg.get("spawn")
+		if typeof(at) == TYPE_DICTIONARY and at.has("x") and at.has("z"):
+			_lesson_spawn = Vector2(float(at.x), float(at.z))
 	if practice and not tutorial:
 		_build_practice_panel()
 	_build_game_menu()
@@ -234,6 +240,8 @@ static func esc_step(ground_pending: bool, casting: bool, has_target: bool) -> S
 
 
 func mine_spawn() -> Vector2:
+	if _lesson_spawn != Vector2.INF:
+		return _lesson_spawn
 	var map := GameMap.get_map(client.map_id)
 	var spawns: Array = map.spawns[my_team]
 	var idx := 0
@@ -344,6 +352,11 @@ func _on_state(s: Dictionary) -> void:
 	fx.sync_aoes(s.aoes, now / 1000.0)
 	fx.sync_traps(s.traps)
 	fx.sync_powers(s.powers)
+	var lesson = s.get("you", {}).get("lesson")
+	if typeof(lesson) == TYPE_DICTIONARY:
+		world.map.set_doors(int(lesson.get("d", 0)))
+		world.sync_doors(int(lesson.get("d", 0)))
+		world.sync_plates(int(lesson.get("a", 0)), int(lesson.get("p", 0)))
 	world.map.apply_state(s.gates, s.ft)
 	world.sync_state(s.gates, s.ft, now / 1000.0)
 	hud.on_state(s, me, now)

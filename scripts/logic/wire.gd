@@ -65,11 +65,17 @@ static func clean_cast(m: Dictionary) -> Dictionary:
 	}
 
 
-const PRACTICE_CMDS := ["reset", "nocd", "ult", "stun"]
+const PRACTICE_CMDS := ["reset", "nocd", "ult", "stun", "cue"]
+const CUE_MAX := 63
 
 
-## {cmd, on} for the practice arena controls, or {} when malformed.
+## {cmd, on, n} for the practice arena controls and a lesson's cues (n: which one), or {} when malformed.
 static func clean_practice(m: Dictionary) -> Dictionary:
 	if typeof(m.get("cmd")) != TYPE_STRING or not PRACTICE_CMDS.has(m.cmd):
 		return {}
-	return {"cmd": m.cmd, "on": bool(m.get("on", true))}
+	var n := 0
+	if m.cmd == "cue":
+		if not _num(m.get("n")) or int(m.n) < 0 or int(m.n) > CUE_MAX:
+			return {}
+		n = int(m.n)
+	return {"cmd": m.cmd, "on": bool(m.get("on", true)), "n": n}

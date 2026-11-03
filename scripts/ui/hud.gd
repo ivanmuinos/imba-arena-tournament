@@ -45,6 +45,7 @@ var score_red: Label
 var score_blue: Label
 ## Practice arena: no score, rounds or countdown on screen.
 var practice := false
+var practice_title := "Arena de práctica"
 var damp := 0.0  # fraction of healing removed by Dampening, shown as a debuff on everyone
 var round_label: Label
 var ping_label: Label
@@ -823,7 +824,7 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 		center_text.remove_theme_color_override("font_color")
 
 	if practice:
-		round_label.text = "Arena de práctica"
+		round_label.text = practice_title
 		score_red.visible = false
 		score_blue.visible = false
 		center_text.text = ""
