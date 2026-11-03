@@ -59,7 +59,7 @@ var _dt := 1.0 / 60.0
 var C: Dictionary
 
 
-## entries: [{name, cls, team, peer}] (peer 0 = bot).
+## entries: [{name, cls, team, peer}] (peer 0 = bot). Scripted matches add per unit: diff, skill, hp_mult, dmg_mult.
 func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id := "bridge") -> void:
 	GameData.ensure_loaded()
 	C = GameData.C
@@ -78,9 +78,12 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 		u.team = e.team
 		u.peer = e.get("peer", 0)
 		u.dummy = str(e.get("dummy", ""))
+		u.diff = str(e.get("diff", ""))
+		u.skill = float(e.get("skill", -1.0))
+		u.dmg_mult = float(e.get("dmg_mult", 1.0))
 		if u.peer == 0 and u.dummy == "":
-			u.brain = BotBrain.new(diff)
-		u.max_hp = float(e.hp) if u.dummy != "" else float(u.spec().hp)
+			u.brain = _new_brain(u)
+		u.max_hp = float(e.hp) if u.dummy != "" else float(u.spec().hp) * float(e.get("hp_mult", 1.0))
 		if u.dummy != "":
 			u.home = Vector2(float(e.x), float(e.z))
 		if practice and u.peer != 0:
@@ -99,6 +102,8 @@ func roster() -> Array:
 		if u.dummy != "":
 			r["dummy"] = u.dummy
 			r["hp"] = u.max_hp
+		elif not is_equal_approx(u.max_hp, float(u.spec().hp)):
+			r["hp"] = u.max_hp  # scripted HP: GameData.entry_max_hp (the HUD) reads it from here
 		return r)
 
 
@@ -119,7 +124,15 @@ func unit_by_id(id: int) -> ArenaUnit:
 ## A human left mid-match: a bot takes over so the arena stays fair.
 func leave(u: ArenaUnit) -> void:
 	u.peer = 0
-	u.brain = BotBrain.new(diff)
+	u.brain = _new_brain(u)
+
+
+## Bot brain of a unit: its own difficulty and fixed skill when scripted, else the match's.
+func _new_brain(u: ArenaUnit) -> BotBrain:
+	var b := BotBrain.new(u.diff if u.diff != "" else diff)
+	if u.skill >= 0.0:
+		b.skill = u.skill
+	return b
 
 
 # ---------------------------------------------------------------- rounds
@@ -898,6 +911,8 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 		return
 	if god and t.peer != 0:
 		return
+	if src != null and src.dmg_mult != 1.0:
+		amount *= src.dmg_mult
 	if now < t.shield_until:
 		if src != null: fx.append({"k": "absorb", "id": t.id})
 		return

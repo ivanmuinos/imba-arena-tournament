@@ -28,7 +28,7 @@ const BASE_TIME := 1_000_000.0  # sim clock start; keeps "ms since" fields away 
 ## mode 2|3, diff, map, dedicated (no local host), autopilot (bots drive human units: demos),
 ## auto_start_ms (dedicated: wait this long after the first player, 0 = never).
 ## ranked: no bots, teams split by rating, starts by itself when full, settings fixed (see Ranked).
-var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0, "practice": false, "ranked": false}
+var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0, "practice": false, "ranked": false, "scripted": []}
 var state := "lobby"  # lobby | match
 var game: ArenaMatch = null
 ## peer -> {name, cls, pref}
@@ -324,6 +324,8 @@ func lobby_entries(rng: RandomNumberGenerator = null) -> Array:
 	for peer in players:
 		var p: Dictionary = players[peer]
 		humans.append({"peer": peer, "name": p.name, "cls": p.cls, "spec": p.get("spec", ""), "pref": p.pref})
+	if not (cfg.scripted as Array).is_empty():  # tournament: fixed rivals with their own skill, HP and damage
+		return MatchConfig.scripted_entries(cfg.scripted, humans)
 	return MatchConfig.build_entries(int(cfg.mode), humans, rng)
 
 
