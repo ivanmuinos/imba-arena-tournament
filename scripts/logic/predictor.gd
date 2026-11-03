@@ -45,7 +45,7 @@ func on_state(me: Dictionary, phase: String, now_ms: float) -> void:
 
 
 ## Advances the local unit one frame. `age_s` = seconds since the last snapshot arrived.
-func step(dt: float, input: Vector2, me: Dictionary, cls: String, fighting: bool, map: GameMap, age_s: float, now_ms: float) -> void:
+func step(dt: float, input: Vector2, me: Dictionary, cls: String, phase: String, map: GameMap, age_s: float, now_ms: float) -> void:
 	var cc: Dictionary = me.cc
 	if cc.has("fear") or me.get("dashing", false):
 		# Server-driven movement: follow it instead of predicting.
@@ -56,7 +56,7 @@ func step(dt: float, input: Vector2, me: Dictionary, cls: String, fighting: bool
 		m.vz = 0.0
 		return
 	var casting_still: bool = me.cast != null and input.length() < 1e-6
-	var can_move: bool = fighting and me.alive and not cc.has("stun") and not cc.has("incap") and not cc.has("root") and not casting_still
+	var can_move: bool = Rules.can_walk_in(phase) and me.alive and not cc.has("stun") and not cc.has("incap") and not cc.has("root") and not casting_still
 	Rules.step_mover(m, input.x, input.y, dt, speed_for(cls, me), can_move, map)
 	if age_s < 0.1 and now_ms > predict_until:
 		var c := 1.0 - exp(-(2.0 if m.dash_left > 0.0 else 7.0) * dt)

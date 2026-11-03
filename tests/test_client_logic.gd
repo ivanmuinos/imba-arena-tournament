@@ -69,23 +69,36 @@ func test_predictor_moves_like_the_server() -> void:
 	p.place(0.0, 40.0)
 	var me := _me(0.0, 40.0)
 	for i in 60:
-		p.step(1.0 / 60.0, Vector2(0, -1), me, "mage", true, map, 1.0, 0.0)
+		p.step(1.0 / 60.0, Vector2(0, -1), me, "mage", "fight", map, 1.0, 0.0)
 	near(40.0 - p.m.z, 6.1, 0.3, "avanza ~velocidad de clase en 1 s")
 
 
-func test_predictor_does_not_move_when_stunned_or_in_prep() -> void:
+func test_predictor_walks_during_the_door_countdown_like_the_server() -> void:
+	var map := GameMap.create("test")
+	var p := Predictor.new()
+	p.place(0.0, 40.0)
+	var me := _me(0.0, 40.0)
+	for i in 60:
+		p.step(1.0 / 60.0, Vector2(0, -1), me, "mage", "prep", map, 1.0, 0.0)
+	near(40.0 - p.m.z, 6.1, 0.3, "avanza igual que en la pelea")
+	check(Vector2(p.m.vx, p.m.vz).length() > 0.5, "tiene velocidad: sin ella no se anima y parece que flota")
+	check(Rules.can_walk_in("prep") and Rules.can_walk_in("fight"), "se camina en la cuenta regresiva y en la pelea")
+	check(not Rules.can_walk_in("between") and not Rules.can_walk_in("over"), "no entre rondas ni al terminar")
+
+
+func test_predictor_does_not_move_when_stunned_or_between_rounds() -> void:
 	var map := GameMap.create("test")
 	var p := Predictor.new()
 	p.place(0.0, 40.0)
 	var me := _me(0.0, 40.0)
 	me.cc = {"stun": 1000}
 	for i in 30:
-		p.step(1.0 / 60.0, Vector2(0, -1), me, "mage", true, map, 1.0, 0.0)
+		p.step(1.0 / 60.0, Vector2(0, -1), me, "mage", "fight", map, 1.0, 0.0)
 	near(p.m.z, 40.0, 0.01, "aturdido")
 	me.cc = {}
 	for i in 30:
-		p.step(1.0 / 60.0, Vector2(0, -1), me, "mage", false, map, 1.0, 0.0)
-	near(p.m.z, 40.0, 0.01, "en preparación")
+		p.step(1.0 / 60.0, Vector2(0, -1), me, "mage", "between", map, 1.0, 0.0)
+	near(p.m.z, 40.0, 0.01, "entre rondas")
 
 
 func test_predictor_converges_to_server_and_snaps_on_big_error() -> void:
@@ -94,7 +107,7 @@ func test_predictor_converges_to_server_and_snaps_on_big_error() -> void:
 	p.place(0.0, 40.0)
 	var me := _me(1.0, 40.0)
 	for i in 120:
-		p.step(1.0 / 60.0, Vector2.ZERO, me, "mage", true, map, 0.01, 1000.0)
+		p.step(1.0 / 60.0, Vector2.ZERO, me, "mage", "fight", map, 0.01, 1000.0)
 	near(p.m.x, 1.0, 0.05, "corrige hacia el servidor")
 	me = _me(20.0, 10.0)
 	p.on_state(me, "fight", 1000.0)
@@ -109,6 +122,6 @@ func test_predicted_blink_is_instant_and_ignores_corrections() -> void:
 	check(p.predict_movement(GameData.find_ability("mage", "blink"), Vector2(0, -1), me, map, 1000.0), "predice la traslación")
 	near(p.m.z, 32.0, 0.01, "8 m hacia adelante")
 	for i in 5:
-		p.step(1.0 / 60.0, Vector2.ZERO, me, "mage", true, map, 0.01, 1100.0)
+		p.step(1.0 / 60.0, Vector2.ZERO, me, "mage", "fight", map, 0.01, 1100.0)
 	near(p.m.z, 32.0, 0.05, "no lo corrige el snapshot viejo")
 	check(not p.predict_movement(GameData.ability("warrior", 4), Vector2(0, -1), me, map, 1000.0), "otras habilidades no")
