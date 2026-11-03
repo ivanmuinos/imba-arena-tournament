@@ -126,6 +126,11 @@ func add_overlay(c: Control, top: float, margin := 12.0, from_right := true) -> 
 	c.resized.connect(place)
 
 
+## Adds a full-screen layer (modal panel) to the scaled HUD root; it fills the window in design pixels.
+func add_modal(c: Control) -> void:
+	_root.add_child(c)
+
+
 ## True when a screen position is over one of the interactive overlays (practice panel, tutorial card): the world ignores that click.
 func blocks_mouse(pos: Vector2) -> bool:
 	for c in _overlays:

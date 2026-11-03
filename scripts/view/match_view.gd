@@ -51,6 +51,10 @@ var gfx_choice := "auto"
 var gfx_level := "alta"
 ## Practice arena (the yard) / guided tutorial inside it.
 var practice := false
+## Offline and tournament matches: Esc (with nothing else to cancel) offers to give up. `forfeit_tournament` words it as a loss.
+var forfeit_enabled := false
+var forfeit_tournament := false
+var forfeit_panel: ForfeitPanel = null
 var tutorial := false
 var practice_panel: PracticePanel = null
 
@@ -138,6 +142,10 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	hud.practice = practice
 	if practice and not tutorial:
 		_build_practice_panel()
+	if forfeit_enabled and not practice:
+		forfeit_panel = ForfeitPanel.new()
+		hud.add_modal(forfeit_panel)
+		forfeit_panel.confirmed.connect(func(): forfeit_requested.emit())
 	controller.setup(my_cls, my_team, my_spec)
 	controller.ready_at = hud.ready_at
 	predictor.place(mine_spawn().x, mine_spawn().y)
@@ -548,6 +556,11 @@ var _held_actions := {}
 func _input(event: InputEvent) -> void:
 	if not _active:
 		return
+	if forfeit_panel != null and forfeit_panel.visible:  # modal: the world gets nothing, the panel's own buttons still work
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+			get_viewport().set_input_as_handled()
+			forfeit_panel.close()
+		return
 	if event is InputEventKey and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		_release_gameplay()
 		return
@@ -621,6 +634,9 @@ func _input(event: InputEvent) -> void:
 				controller.cancel_ground()
 			elif not me.is_empty() and me.get("cast") != null:
 				client.send_stop_cast()  # Esc cancels the cast in progress (movement and jumping do too)
+			elif ForfeitPanel.esc_opens(false, false, controller.target >= 0, forfeit_panel != null):
+				_release_gameplay()
+				forfeit_panel.open(ForfeitPanel.message(forfeit_tournament))
 			else:
 				controller.clear_target()
 				hud.set_friend(-1)

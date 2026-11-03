@@ -9,6 +9,7 @@ extends Node
 ##   --practice[=tutorial]   the training yard (or the guided tutorial in it)
 ##   --tournament=<mode>:<tier>   start a cup offline (mode 1-3, tier bronze|silver|gold|gladiator; resumes a run in progress
 ##                       of the same mode and tier); unlocks are ignored here (smoke tests, screenshots)
+##   --forfeit-demo     open the forfeit panel 2 s into an offline match (screenshots)
 ##   --save-dir=PATH    keep tournament.json and profile.json in this folder instead of user:// (smoke tests)
 ##   --god              (playtests) human players take no damage and cannot be crowd controlled
 ##   --autopilot        bots drive the human units too (demos, smoke tests)
@@ -615,12 +616,16 @@ func _on_match_started(msg: Dictionary) -> void:
 	_match.demo_target = args.has("target")
 	_match.gfx_choice = gfx_choice
 	_match.tutorial = _tutorial_next
+	_match.forfeit_enabled = offline
+	_match.forfeit_tournament = tsession != null
 	_match.chat = _chat
 	add_child(_match)
 	_match.start(client, msg)
 	_match.finished.connect(_on_match_finished)
 	if offline and not _match.practice:
 		_match.forfeit_requested.connect(_on_forfeit)
+		if args.has("forfeit-demo"):  # visual check of the forfeit panel
+			get_tree().create_timer(2.0).timeout.connect(func(): if _match != null and _match.forfeit_panel != null: _match.forfeit_panel.open(ForfeitPanel.message(tsession != null)))
 	if _match.practice:
 		_match.practice_switch.connect(_on_practice_switch)
 		_match.leave_requested.connect(func(): _to_menu.call_deferred())
