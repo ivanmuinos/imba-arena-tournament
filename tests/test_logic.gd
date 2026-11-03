@@ -181,3 +181,11 @@ func test_dampening_debuff_entry() -> void:
 	eq(e.text, "23%", "el porcentaje se redondea")
 	check(e.name.contains("Amortiguación") and e.name.contains("23%"), "nombre en español con el valor")
 	check(ResourceLoader.exists("res://assets/icons/%s.svg" % e.icon), "tiene ícono")
+
+
+func test_focus_key_and_shift_cast_keys_are_free() -> void:
+	var kb := Keybinds.new("user://test_focus_keybinds.json")
+	eq(kb.key_of("focus"), "F", "F marca el foco")
+	eq(kb.action_for("F"), "focus", "F no la usa otra acción")
+	for i in 5:
+		eq(kb.action_for("Shift+%s" % kb.key_of("slot_%d" % i)), "", "Shift + poder %d queda libre para el foco" % i)

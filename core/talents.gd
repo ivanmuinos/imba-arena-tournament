@@ -2,7 +2,8 @@ class_name Talents
 extends RefCounted
 ## Talent rows per kit (data/talents.json): each row offers 3 choices, a player picks one per unlocked row.
 ## A talent is data only: "mul" / "add" change a number of one ability (or of the kit when it names no ability),
-## "swap" replaces an ability with one from the class's reserve, on the same slot.
+## "set" gives an ability a mechanic field that ArenaMatch reads (bounce, nth, leech, killReset...; "also" sets its
+## companion fields), "swap" replaces an ability with one from the class's reserve, on the same slot.
 ## Picks are an Array with one index per row (-1 = nothing picked).
 
 const PATH := "res://data/talents.json"
@@ -90,6 +91,16 @@ static func apply(kit: Dictionary, cls: String, spec: String, picks) -> Dictiona
 		var t: Dictionary = te[0]
 		var e: Dictionary = te[1]
 		var op := str(e.op)
+		if op == "set":
+			var ss := _slot_of(abilities, str(e.ability))
+			if ss < 0:
+				continue
+			var sa: Dictionary = (abilities[ss] as Dictionary).duplicate(true)
+			sa[str(e.field)] = e.value
+			for k in e.get("also", {}):
+				sa[k] = e.also[k]
+			abilities[ss] = _marked(sa, cls, spec, t, _kind(str(e.field)))
+			continue
 		if op != "mul" and op != "add":
 			continue
 		var field := str(e.field)
@@ -120,14 +131,16 @@ static func mark_kind(t: Dictionary) -> String:
 
 static func _kind(field: String) -> String:
 	match field:
-		"dmg": return "dmg"
-		"heal": return "heal"
-		"cd": return "cd"
-		"cast": return "cast"
+		"dmg", "ultGain", "healCut", "block": return "dmg"
+		"heal", "leech", "allyHeal", "drainHeal", "hotHps": return "heal"
+		"cd", "stillCd", "cdOf", "killReset", "charges": return "cd"
+		"cast", "instantAfterCrits", "noPushback", "curseHaste", "castMove": return "cast"
 		"range": return "range"
-		"burnDps", "dotDps": return "burn"
-		"slowPct", "shatter": return "frost"
-		"crit": return "crit"
+		"burnDps", "dotDps", "poison", "curseMark", "spread": return "burn"
+		"slowPct", "shatter", "slowStack": return "frost"
+		"crit", "vsSlowed", "behind", "critVsSlowed": return "crit"
+		"bounce": return "bounce"
+		"nth": return "nth"
 	return "dmg"
 
 
@@ -161,16 +174,59 @@ static func describe(cls: String, spec: String, t: Dictionary) -> String:
 			"mul":
 				var pct := roundi((float(e.value) - 1.0) * 100.0)
 				parts.append("%s: %s %s%d%%" % [target, _field_name(str(e.field)), "+" if pct >= 0 else "", pct])
+			"set":
+				parts.append(_mechanic(cls, spec, target, e))
 			"add":
 				var f := str(e.field)
 				var v := float(e.value)
-				var txt := ("+%d%%" % roundi(v * 100.0)) if f in ["slowPct", "crit"] else ("+%s" % _num(v))
-				if f == "range":
+				var txt := ("+%d%%" % roundi(v * 100.0)) if f in ["slowPct", "crit", "block"] else ("+%s" % _num(v))
+				if f == "cast":
+					txt = "%s%s s" % ["+" if v >= 0 else "−", _num(absf(v) / 1000.0)]
+				elif f == "range":
 					txt += " m"
 				elif f == "shatter":
 					txt = "+×%s" % _num(v)
 				parts.append(("%s %s" % [_field_name(f), txt]) if target == "" else ("%s: %s %s" % [target, _field_name(f), txt]))
 	return ". ".join(parts)
+
+
+## Text of a "set" mechanic.
+static func _mechanic(cls: String, spec: String, target: String, e: Dictionary) -> String:
+	var v = e.value
+	var also: Dictionary = e.get("also", {})
+	var pct := func(x) -> int: return roundi(float(x) * 100.0)
+	match str(e.field):
+		"bounce": return "%s rebota a un 2.º enemigo cercano con el %d%% del daño" % [target, pct.call(v)]
+		"nth":
+			match str(also.get("nthEffect", "crit")):
+				"freeze": return "%s: 1 de cada %d congela al objetivo %s s" % [target, int(v), _num(float(also.get("nthMs", 1000)) / 1000.0)]
+				"pierce": return "%s: 1 de cada %d atraviesa a los enemigos" % [target, int(v)]
+			return "%s: 1 de cada %d es crítico seguro" % [target, int(v)]
+		"instantAfterCrits": return "%s instantánea después de %d críticos" % [target, int(v)]
+		"noPushback": return "%s no se retrasa cuando recibís daño" % target
+		"curseHaste": return "%s se lanza %d%% más rápido contra un objetivo con tu maldición" % [target, pct.call(v)]
+		"castMove": return "%s se puede lanzar mientras te movés" % target
+		"leech": return "%s te cura el %d%% de su daño" % [target, pct.call(v)]
+		"allyHeal": return "%s cura al aliado más herido el %d%% de su daño" % [target, pct.call(v)]
+		"drainHeal": return "%s cura %d%% más" % [target, roundi((float(v) - 1.0) * 100.0)]
+		"hotHps": return "%s deja una curación de %d en %s s" % [target, roundi(float(v) * float(also.get("hotMs", 6000)) / 1000.0), _num(float(also.get("hotMs", 6000)) / 1000.0)]
+		"curseMark": return "%s marca al objetivo: tus maldiciones le hacen +%d%% de daño por %s s" % [target, pct.call(v), _num(float(also.get("markMs", 6000)) / 1000.0)]
+		"spread": return "%s también maldice a un enemigo cercano" % target
+		"poison": return "%s envenena: %s de daño por segundo durante %s s" % [target, _num(float(v)), _num(float(also.get("poisonMs", 6000)) / 1000.0)]
+		"slowStack": return "%s ralentiza %d%% por golpe (hasta %d%%)" % [target, pct.call(v), pct.call(float(v) * float(also.get("slowStacks", 3)))]
+		"stillCd": return "%s %d%% más rápido si estás quieto" % [target, pct.call(v)]
+		"critVsSlowed": return "%s es crítico seguro contra enemigos ralentizados o enraizados" % target
+		"vsSlowed": return "%s +%d%% de daño contra enemigos ralentizados o enraizados" % [target, pct.call(v)]
+		"behind": return "%s +%d%% de daño por la espalda" % [target, pct.call(v)]
+		"ultGain": return "%s carga la definitiva %d%% más" % [target, roundi((float(v) - 1.0) * 100.0)]
+		"healCut": return "%s reduce la curación del objetivo %d%% (en vez de 50%%)" % [target, pct.call(v)]
+		"killReset":
+			return ("%s se reinicia si mata" % target) if str(v) == str(e.ability) else ("Si %s mata, se reinicia %s" % [target, _ability_name(cls, spec, str(v))])
+		"cdOf":
+			var ids: Array = v if v is Array else [v]
+			return "%s baja %s s la recarga de %s" % [target, _num(float(also.get("cdBy", 1000)) / 1000.0), _ability_name(cls, spec, str(ids[0]))]
+		"charges": return "%s tiene %d cargas" % [target, int(v)]
+	return "%s: %s" % [target, str(e.field)]
 
 
 ## Icon of a talent: its own, else the ability it swaps in or changes.
@@ -214,6 +270,7 @@ static func _field_name(f: String) -> String:
 		"range": return "alcance"
 		"shatter": return "astillado"
 		"crit": return "Probabilidad de crítico"
+		"block": return "Probabilidad de bloqueo"
 	return f
 
 

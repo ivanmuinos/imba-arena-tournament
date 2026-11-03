@@ -677,6 +677,9 @@ func _input(event: InputEvent) -> void:
 			return
 		if kb_action == "" and k.shift_pressed and not k.ctrl_pressed and not k.alt_pressed:
 			kb_action = keybinds.action_for(OS.get_keycode_string(k.keycode))  # Shift held (often an ability key) + a plain key
+			if kb_action.begins_with("slot_") and _cast_on_focus(int(kb_action.substr(5))):
+				get_viewport().set_input_as_handled()
+				return  # Shift + an ability key: on your focus, without changing your target
 		if kb_action != "":
 			get_viewport().set_input_as_handled()
 			_do_action(kb_action)
@@ -743,6 +746,8 @@ func _do_action(action: String) -> void:
 	elif action.begins_with("macro_"):
 		if MacroStore.ENABLED:
 			run_macro(int(action.substr(6)) - 1)
+	elif action == "focus":
+		_toggle_focus()
 	elif action == "self":
 		_select_party(0)
 	elif action.begins_with("ally_"):
@@ -1014,6 +1019,28 @@ func _unit_name(id: int) -> String:
 		if int(r.id) == id:
 			return str(r.name)
 	return "?"
+
+
+## Focus key: your target becomes your focus (Shift + an ability key casts on it); on the focus itself or with nothing
+## selected it clears it.
+func _toggle_focus() -> void:
+	if controller.target < 0 or controller.target == controller.focus:
+		if controller.focus >= 0:
+			controller.set_focus(-1)
+			hud.error("Sin foco")
+		return
+	controller.set_focus(controller.target)
+	hud.error("Foco: %s · Shift + poder para lanzárselo" % _unit_name(controller.target))
+	gameplay_event.emit("focus_set")
+
+
+## Shift + an ability key with a focus that is still there: the ability goes to the focus. False (nothing sent and no
+## focus to use) lets the key cast on the normal target instead.
+func _cast_on_focus(slot: int) -> bool:
+	if me.is_empty() or controller.focus < 0 or controller.focus_unit(_ctx()).is_empty():
+		return false
+	_cast_on(slot, controller.focus)
+	return true
 
 
 ## _cast on a given unit (-2: the normal target). Returns whether a cast went out.
@@ -1306,6 +1333,8 @@ func _aim_and_target(_focus: Vector2, now: float) -> void:
 		var mode := ""
 		if id == controller.target:
 			mode = "friend" if _team_of(id) == my_team else "lock"
+		elif id == controller.focus:
+			mode = "focus"
 		elif id == _hover:
 			mode = "hover"
 		v.set_targeted(mode)

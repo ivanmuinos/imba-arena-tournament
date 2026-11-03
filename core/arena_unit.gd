@@ -85,6 +85,17 @@ var pact_until := 0.0
 var wall_until := 0.0
 var marked_until := 0.0
 var mortal_until := 0.0
+## Healing taken is cut by this much while Mortal Strike lasts (talents can raise it).
+var mortal_pct := 0.5
+## Talent mechanics: "every Nth cast" counters (ability id -> casts so far), crits towards an instant Pyroblast,
+## and the warlock's mark (curse ticks deal +curse_mark until curse_mark_until).
+var stacks := {}
+## Passive barrier (kit "barrier", Frost mage): up while barrier_on, back at barrier_ready after it breaks.
+var barrier_on := false
+var barrier_ready := 0.0
+var crit_streak := 0
+var curse_mark := 0.0
+var curse_mark_until := 0.0
 ## Healed while a sheep (Polymorph), shown as one number per second.
 var poly_heal_acc := 0.0
 var poly_heal_t := 0.0
@@ -150,6 +161,13 @@ func equip(slot: int, ability_id: String) -> bool:
 func reset_effects() -> void:
 	curses.clear()
 	charges.clear()
+	stacks.clear()
+	barrier_on = false
+	barrier_ready = 0.0
+	crit_streak = 0
+	curse_mark = 0.0
+	curse_mark_until = 0.0
+	mortal_pct = 0.5
 	tempest_stacks = 0
 	cast = {}
 	auto_on = false

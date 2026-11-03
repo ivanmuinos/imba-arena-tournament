@@ -15,7 +15,7 @@ const OF := {
 	"stab": "physical", "eviscerate": "physical", "cheapshot": "physical", "kick": "physical",
 	"smite": "holy", "heal": "holy", "pwshield": "holy", "dispel": "holy", "hymn": "holy",
 	"scream": "shadow", "silence": "shadow", "blind": "shadow", "vanish": "shadow", "deathmark": "shadow",
-	"renew": "nature",
+	"renew": "nature", "poison": "nature",
 	"rifle": "physical", "headshot": "physical", "flashbang": "holy", "kevlar": "physical", "knife": "physical", "bash": "physical", "awp": "physical",
 	"slash": "physical", "tempest": "physical", "windwall": "frost", "sweep": "physical", "flow": "frost", "upcut": "physical", "lastbreath": "physical", "tornado": "frost",
 	"pass": "physical", "chip": "physical", "nutmeg": "physical", "dribble": "physical", "onetwo": "physical", "tackle": "physical", "golazo": "physical",

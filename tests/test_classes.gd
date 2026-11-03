@@ -113,7 +113,7 @@ func test_assassin_kills_a_mage_fast_but_not_a_warrior() -> void:
 
 func test_everyone_needs_longer_to_kill_the_warrior_than_a_mage() -> void:
 	for pair in [["hunter", "", [1, 0]], ["warlock", "", [5, 0]], ["rogue", "", [2, 1, 0]]]:
-		var vs_mage := _ttk(pair[0], pair[1], "mage", "frost", pair[2])
+		var vs_mage := _ttk(pair[0], pair[1], "mage", "fire", pair[2])  # Fire: the mage without the frost barrier
 		var vs_war := _ttk(pair[0], pair[1], "warrior", "", pair[2])
 		check(vs_mage > 0.0, "%s mata al mago (%.1f)" % [pair[0], vs_mage])
 		check(vs_war < 0.0 or vs_war > vs_mage * 1.15, "%s tarda bastante más en matar al guerrero (%.1f vs %.1f)" % [pair[0], vs_war, vs_mage])
@@ -201,6 +201,7 @@ func test_damage_pushes_a_cast_back_twice() -> void:
 	var b: ArenaUnit = m.units[1]
 	var now: float = m.get_meta("now")
 	check(m.cast_ability(a, 0, b.x, b.z, now, b.id), "empieza la descarga de escarcha")
+	a.absorb = 0.0  # without the frost barrier (absorbed hits never push the cast back)
 	var end0: float = a.cast.ends_at
 	for i in 3:
 		m._damage(a, 5.0, b, now + 100.0, "shot")
