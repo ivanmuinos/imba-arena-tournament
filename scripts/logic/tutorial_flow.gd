@@ -1,5 +1,5 @@
 class_name TutorialFlow
-extends RefCounted
+extends StepFlow
 ## "Cómo jugar": the interactive tutorial as pure data + a tiny state machine (no nodes, fully unit-tested).
 ## The tutorial runs inside the practice yard; TutorialOverlay feeds it gameplay events and draws the current step.
 ##
@@ -12,11 +12,8 @@ const KEYS := ["1", "2", "3", "4", "R"]
 ## Abilities that cut a cast. A kit without one practises plain crowd control instead.
 const INTERRUPTS := ["pummel", "kick", "counter", "silence"]
 
-var steps: Array = []
-var index := 0
 var cls := "mage"
 var spec := ""
-var finished := false
 
 
 func _init(p_cls := "mage", p_spec := "") -> void:
@@ -38,13 +35,11 @@ func _abilities() -> Array:
 
 
 static func _obj(id: String, text: String, event: String) -> Dictionary:
-	return {"id": id, "text": text, "event": event, "done": false}
+	return StepFlow.obj(id, text, event)
 
 
 func _step(id: String, title: String, text: String, objectives: Array, extra := {}) -> void:
-	var s := {"id": id, "title": title, "text": text, "objectives": objectives, "manual": objectives.is_empty(), "arrow": "", "on_enter": ""}
-	s.merge(extra, true)
-	steps.append(s)
+	add_step(id, title, text, objectives, extra)
 
 
 ## First sentence of a description (what the ability does), kept short for the checklist.
@@ -147,59 +142,3 @@ func _build() -> void:
 		"Cada equipo arranca en su [b]sala de inicio[/b] con las puertas cerradas (10 s antes de cada ronda). Ahí podés usar escudos y curas.\n\nCuando las puertas se abren, empieza la pelea. Gana la ronda el equipo que elimina a todos los rivales; gana la partida el primero en ganar [b]2 rondas[/b] (al mejor de 3).\n\nSi la ronda se estira, aparece la [b]amortiguación[/b]: pasados 40 s la curación recibida baja cada vez más (2% por segundo), así los duelos de sanadores terminan.",
 		[], {"arrow": "score"})
 	_step("done", "¡Listo!", "Ya sabés lo básico. Probá la [b]Arena de práctica[/b] para repetir rotaciones con medidor de daño, o jugá contra bots.", [], {"final": true})
-
-
-func current() -> Dictionary:
-	return steps[mini(index, steps.size() - 1)]
-
-
-func is_done() -> bool:
-	return finished
-
-
-## Feeds a gameplay event. Returns true when something changed (an objective got checked or the step advanced).
-func push(event: String) -> bool:
-	if finished:
-		return false
-	var s := current()
-	var changed := false
-	for o in s.objectives:
-		if not o.done and o.event == event:
-			o.done = true
-			changed = true
-	if changed and not s.manual and _objectives_done(s):
-		_advance()
-	return changed
-
-
-func _objectives_done(s: Dictionary) -> bool:
-	for o in s.objectives:
-		if not o.done:
-			return false
-	return true
-
-
-## "Continuar" on information steps (and "Saltar" on any step).
-func next() -> void:
-	if finished:
-		return
-	_advance()
-
-
-func _advance() -> void:
-	if index >= steps.size() - 1:
-		finished = true
-		return
-	index += 1
-
-
-func progress() -> Vector2:
-	return Vector2(index + 1, steps.size())
-
-
-func objective_events() -> Array:
-	var out: Array = []
-	for o in current().objectives:
-		if not o.done:
-			out.append(o.event)
-	return out
