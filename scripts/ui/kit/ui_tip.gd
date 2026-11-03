@@ -60,6 +60,10 @@ func set_ability(a: Dictionary, key: String) -> void:
 	_key.text = key
 	_meta.text = meta_line(a)
 	_desc.text = str(a.desc).trim_prefix("DEFINITIVA: ")
+	if a.has("talent"):  # changed by a talent (Talents.apply): say which and how
+		_desc.text += "
+
+Talento %s: %s." % [a.talent.name, a.talent.text]
 	_usage.text = usage_line(a, key)
 	reset_size()
 

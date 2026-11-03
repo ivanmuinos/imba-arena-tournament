@@ -183,6 +183,10 @@ func _make_talent_button(row: int, i: int) -> Button:
 	ic.custom_minimum_size = Vector2(30, 30)
 	ic.material = HudArt.circle_mask()
 	v.add_child(ic)
+	var mark := TalentMark.new()
+	mark.seal = 0.5
+	ic.add_child(mark)
+	b.set_meta("mark", mark)
 	var name := UiKit.label("", 12, UiKit.INK)
 	name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name.custom_minimum_size = Vector2(70, 0)
@@ -228,6 +232,7 @@ func _refresh_talents(cls: String, sid: String) -> void:
 			if t.is_empty():
 				continue
 			(b.get_meta("icon") as TextureRect).texture = Icons.tex(Talents.icon(cls, sid, t))
+			(b.get_meta("mark") as TalentMark).kind = Talents.mark_kind(t)
 			(b.get_meta("name") as Label).text = str(t.name)
 			b.disabled = locked
 			b.modulate.a = 0.45 if locked else 1.0
@@ -265,6 +270,9 @@ func _make_slot(i: int) -> Button:
 	ic.material = HudArt.circle_mask()  # the painted icons are round: shown in a circle, ringed below
 	b.add_child(ic)
 	b.set_meta("icon", ic)
+	var mark := TalentMark.new()
+	ic.add_child(mark)
+	b.set_meta("mark", mark)
 	var key := UiKit.heading("", 12, UiKit.MUTED, 700, 1, HORIZONTAL_ALIGNMENT_CENTER)
 	key.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	key.offset_top = -12
@@ -354,6 +362,7 @@ func select(id: String, from_user := false) -> void:
 		var a: Dictionary = spec.abilities[i]
 		slot.set_meta("ability", a)
 		(slot.get_meta("icon") as TextureRect).texture = Icons.tex(str(a.icon))
+		(slot.get_meta("mark") as TalentMark).kind = TalentMark.kind_of(a)
 		var kl: Label = slot.get_meta("key")
 		kl.text = Keybinds.shared().slot_label(i)
 		kl.add_theme_color_override("font_color", UiKit.GOLD if a.get("ult", false) else UiKit.MUTED)

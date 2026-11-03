@@ -65,38 +65,79 @@ static func random_picks(cls: String, spec: String, rng: RandomNumberGenerator) 
 
 
 ## The kit with the picked talents applied. Never modifies GameData: abilities are copied before they change.
+## Every ability a talent touches gets `talent: {id, name, kind, text}` (TalentMark draws the kind on its icon,
+## tooltips print the text). A swap marks "swap"; a kit-wide change marks the ability named by the talent's "icon".
 static func apply(kit: Dictionary, cls: String, spec: String, picks) -> Dictionary:
 	var p := normalize(cls, spec, picks)
 	if not p.any(func(v): return v >= 0):
 		return kit
 	var out := kit.duplicate()
 	var abilities: Array = (kit.abilities as Array).duplicate()
-	var effects: Array = []
+	var chosen: Array = []  # [talent, effect]
 	for row in p.size():
 		if p[row] >= 0:
-			effects.append_array(talent(cls, spec, row, p[row]).get("effects", []))
-	for e in effects:  # swaps first, so a number change can target the ability swapped in
+			var t := talent(cls, spec, row, p[row])
+			for e in t.get("effects", []):
+				chosen.append([t, e])
+	for te in chosen:  # swaps first, so a number change can target the ability swapped in
+		var e: Dictionary = te[1]
 		if str(e.op) == "swap":
 			var slot := _slot_of(abilities, str(e.ability))
 			var a := GameData.find_ability(cls, str(e.to), spec)
 			if slot >= 0 and not a.is_empty():
-				abilities[slot] = a
-	for e in effects:
+				abilities[slot] = _marked(a, cls, spec, te[0], "swap")
+	for te in chosen:
+		var t: Dictionary = te[0]
+		var e: Dictionary = te[1]
 		var op := str(e.op)
 		if op != "mul" and op != "add":
 			continue
 		var field := str(e.field)
 		if not e.has("ability"):
 			out[field] = _change(op, out.get(field, 0.0), float(e.value))
+			var shown := _slot_of(abilities, str(t.get("icon", "")))
+			if shown >= 0:
+				abilities[shown] = _marked(abilities[shown], cls, spec, t, _kind(field))
 			continue
 		var slot := _slot_of(abilities, str(e.ability))
 		if slot < 0:
 			continue
 		var a: Dictionary = (abilities[slot] as Dictionary).duplicate(true)
 		a[field] = _change(op, a.get(field, 0.0), float(e.value))
-		abilities[slot] = a
+		abilities[slot] = _marked(a, cls, spec, t, _kind(field))
 	out.abilities = abilities
 	return out
+
+
+## Mark kind of a talent: what its seal shows (see TalentMark).
+static func mark_kind(t: Dictionary) -> String:
+	for e in t.get("effects", []):
+		if str(e.op) == "swap":
+			return "swap"
+	var effects: Array = t.get("effects", [])
+	return _kind(str(effects[0].field)) if not effects.is_empty() else ""
+
+
+static func _kind(field: String) -> String:
+	match field:
+		"dmg": return "dmg"
+		"heal": return "heal"
+		"cd": return "cd"
+		"cast": return "cast"
+		"range": return "range"
+		"burnDps", "dotDps": return "burn"
+		"slowPct", "shatter": return "frost"
+		"crit": return "crit"
+	return "dmg"
+
+
+## A copy of the ability carrying the talent that changed it (a swap keeps its mark when numbers change it later).
+static func _marked(a: Dictionary, cls: String, spec: String, t: Dictionary, kind: String) -> Dictionary:
+	var m := a.duplicate(true)
+	if str(m.get("talent", {}).get("id", "")) == str(t.id):
+		return m
+	m["talent"] = {"id": t.id, "name": t.name, "kind": kind, "text": describe(cls, spec, t)}
+	return m
 
 
 ## GameData.kit plus talents, cached (the HUD asks every frame).

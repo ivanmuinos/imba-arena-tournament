@@ -211,3 +211,23 @@ func test_award_keeps_talents_and_v1_file_loads() -> void:
 	eq(ProgressStore.new(path).talents("mage", "fire"), [-1, 2], "ganar XP no borra los talentos")
 	eq(ProgressStore.new(path).talents("mage", "frost"), [-1, -1], "cada especialización tiene los suyos")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+# ---------------------------------------------------------------- marks (TalentMark)
+
+func test_talented_abilities_carry_their_mark() -> void:
+	var k := Talents.kit("mage", "fire", [0, 2])
+	eq(TalentMark.kind_of(k.abilities[0]), "burn", "Brasas: sello de quemadura")
+	eq(TalentMark.kind_of(k.abilities[1]), "swap", "Rompehechizos: sello de cambio (aunque después le cambie la recarga)")
+	eq(str(k.abilities[1].talent.name), "Rompehechizos", "el talento queda en la habilidad")
+	eq(TalentMark.kind_of(k.abilities[2]), "", "lo que no cambia no lleva sello")
+	eq(TalentMark.kind_of(GameData.find_ability("mage", "fireball", "fire")), "", "GameData sin sello")
+	eq(TalentMark.kind_of(Talents.kit("rogue", "", [2, -1]).abilities[0]), "crit", "el crítico del kit se marca en la Puñalada")
+
+
+func test_every_talent_has_a_mark_kind() -> void:
+	for k in KITS:
+		var cs := _split(k)
+		for row in Talents.rows(cs[0], cs[1]):
+			for t in row:
+				check(Talents.mark_kind(t) in ["dmg", "heal", "cd", "cast", "range", "burn", "frost", "crit", "swap"], "%s: sello %s" % [t.id, Talents.mark_kind(t)])
