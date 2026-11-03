@@ -31,6 +31,8 @@ func _ready() -> void:
 	social.offset_top = TopBar.HEIGHT
 	social.join_pressed.connect(func(id): menu.steam_join.emit(id))
 	social.notice.connect(menu.set_status)
+	social.invite_pressed.connect(func(friend): menu.invite_friend(friend))
+	menu.online_changed.connect(func(): social.invite_enabled = menu.online_ready())
 	add_child(social)
 	dm_window = DmWindow.new()
 	dm_window.menu = menu

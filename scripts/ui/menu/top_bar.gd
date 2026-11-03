@@ -13,7 +13,7 @@ signal quit_pressed
 const HEIGHT := 64.0
 ## Width of the profile card, which is also the width of the friends column under it.
 const SIDE := 280.0
-const TABS := [["hub", "Inicio"], ["champions", "Campeones"], ["howto", "Cómo jugar"], ["tournament", "Torneo"]]
+const TABS := [["hub", "Inicio"], ["champions", "Campeones"], ["howto", "Cómo jugar"], ["tournament", "Torneo"], ["teams", "Equipos"]]
 
 var play: MButton
 var back: MButton
@@ -64,6 +64,7 @@ func _init() -> void:
 		b.pressed.connect(func(): tab_pressed.emit(t[0]))
 		row.add_child(b)
 		_tabs[t[0]] = b
+	_tabs["teams"].visible = false  # only when the online features are on (MenuScreen.set_online)
 	back = MButton.new("Volver", "ghost", "ui_back")
 	back.custom_minimum_size = Vector2(120, 38)
 	back.add_theme_font_size_override("font_size", 16)
@@ -207,6 +208,11 @@ func _icon_button(icon_id: String, tip: String) -> Button:
 
 func tab(id: String) -> Button:
 	return _tabs.get(id)
+
+
+func show_tab(id: String, on: bool) -> void:
+	if _tabs.has(id):
+		(_tabs[id] as Button).visible = on
 
 
 ## id: a tab id, "play" (JUGAR and the play flow) or "" (nothing highlighted, e.g. settings).
