@@ -384,3 +384,23 @@ func test_frostbolt_sometimes_roots() -> void:
 		if b.root_until > now:
 			roots += 1
 	check(roots > 10 and roots < 60, "enraíza a veces: %d de 200" % roots)
+
+
+func test_frost_barrier_absorbs_and_comes_back_after_breaking() -> void:
+	var m := _duel("frost")
+	var a: ArenaUnit = m.units[0]
+	var b: Dictionary = a.spec().barrier
+	check(a.barrier_on and a.absorb >= float(b.absorb), "empieza la ronda con el escudo")
+	var hp := a.hp
+	m._damage(a, float(b.absorb) - 10.0, m.units[1], now, "")
+	eq(a.hp, hp, "absorbe")
+	m._damage(a, 30.0, m.units[1], now, "")
+	check(a.hp < hp, "roto, el resto pega")
+	_adv(m, 100)
+	check(not a.barrier_on, "se rompió")
+	_adv(m, float(b.cdMs) - 500)
+	check(not a.barrier_on, "todavía no vuelve")
+	_adv(m, 600)
+	check(a.barrier_on and a.absorb >= float(b.absorb), "vuelve a los %d s" % int(float(b.cdMs) / 1000))
+	var fire := _duel("fire")
+	check(not fire.units[0].barrier_on, "el mago de fuego no lo tiene")

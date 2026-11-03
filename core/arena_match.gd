@@ -1379,7 +1379,9 @@ func tick(now: float) -> void:
 		Rules.step_mover(u, movement.x, movement.y, dt, speed, can_move, map)
 		if feared: u.rot = atan2(u.x - u.fear_x, u.z - u.fear_z)
 		elif not frozen: u.rot = atan2(u.aim_x - u.x, u.aim_z - u.z)
-		if fighting: _step_effects(u, now)
+		if fighting:
+			_step_effects(u, now)
+			if u.spec().has("barrier"): _step_barrier(u, now)
 	var alive_units := units.filter(func(u): return u.alive)
 	Rules.separate(alive_units)
 	for u in alive_units:
@@ -1457,6 +1459,21 @@ func _step_effects(u: ArenaUnit, now: float) -> void:
 		fx.append({"k": "swing", "id": u.id, "heavy": true})
 		for e in _enemies_within(u, u.x, u.z, spec.range):
 			_damage(e, spec.dmg, u, now, spec.id)
+
+
+## Frost mage passive: an absorb shield that comes back `cdMs` after it breaks (up at the start of every round).
+func _step_barrier(u: ArenaUnit, now: float) -> void:
+	var b: Dictionary = u.spec().barrier
+	if u.barrier_on:
+		if u.absorb <= 0.0 or now >= u.absorb_until:
+			u.barrier_on = false
+			u.barrier_ready = now + float(b.cdMs)
+		return
+	if now >= u.barrier_ready:
+		u.barrier_on = true
+		u.absorb = maxf(u.absorb if now < u.absorb_until else 0.0, float(b.absorb))
+		u.absorb_until = maxf(u.absorb_until, now + 600000.0)
+		_label(u, "ESCUDO DE ESCARCHA", "#9be7ff")
 
 
 func _apply_curse(t: ArenaUnit, src: ArenaUnit, spec: Dictionary, now: float, quiet := false) -> void:

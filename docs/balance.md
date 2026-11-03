@@ -740,3 +740,15 @@ Mismo comando (`--talent-eval --n=8`, los 5 mapas, 280 duelos por talento), tres
 ### Mago Escarcha: Descarga sin recarga, Lanza ×3
 
 La Descarga de escarcha queda sin recarga y fuera del tiempo global, con daño 56 → 49 para conservar el daño por segundo. El astillado de la Lanza de hielo pasa de ×2,5 a ×3. En duelos de bots (560, semillas 1 y 2), el Escarcha pasa de 30–32% a 35,4%: contra el guerrero gana 59%, contra el asesino 50% y contra el brujo 2,5%.
+
+### Mago Escarcha: escudo de escarcha (pasiva)
+
+Pasiva de la especialización (`barrier` en `data/classes.json`, `ArenaMatch._step_barrier`): un escudo de absorción activo al empezar la ronda, que vuelve `cdMs` después de romperse. En duelos de bots (560, semillas 1 y 2):
+
+| Escudo | Total | vs guerrero | vs sacerdote | vs brujo | vs fuego |
+|---|---|---|---|---|---|
+| Sin escudo | 35,4% | 58,8% | 51,2% | 2,5% | 17,5% |
+| 60, vuelve a los 15 s | 60,4% | 93,8% | 93,8% | 22,5% | 30,0% |
+| **35, vuelve a los 20 s** (elegido) | **44,5%** | 71,2% | 75,0% | 1,2% | 20,0% |
+
+Contra el brujo sigue perdiendo casi siempre, y no es por falta de vida: hay que mirar ese cruce por separado.

@@ -90,6 +90,9 @@ var mortal_pct := 0.5
 ## Talent mechanics: "every Nth cast" counters (ability id -> casts so far), crits towards an instant Pyroblast,
 ## and the warlock's mark (curse ticks deal +curse_mark until curse_mark_until).
 var stacks := {}
+## Passive barrier (kit "barrier", Frost mage): up while barrier_on, back at barrier_ready after it breaks.
+var barrier_on := false
+var barrier_ready := 0.0
 var crit_streak := 0
 var curse_mark := 0.0
 var curse_mark_until := 0.0
@@ -159,6 +162,8 @@ func reset_effects() -> void:
 	curses.clear()
 	charges.clear()
 	stacks.clear()
+	barrier_on = false
+	barrier_ready = 0.0
 	crit_streak = 0
 	curse_mark = 0.0
 	curse_mark_until = 0.0

@@ -191,7 +191,8 @@
         "icon": "spec_frost",
         "color": "#5fc8ff",
         "role": "Control y desgaste",
-        "desc": "Pega un poco menos pero ralentiza y enraíza: combiná la nova con la lanza de hielo para astillar.",
+        "desc": "Pega un poco menos pero ralentiza y enraíza: combiná la nova con la lanza de hielo para astillar. Pasiva: un escudo de escarcha absorbe 35 de daño y vuelve 20 s después de romperse.",
+        "barrier": {"absorb": 35, "cdMs": 20000},
         "stats": {
           "hp": 2,
           "mobility": 3,
