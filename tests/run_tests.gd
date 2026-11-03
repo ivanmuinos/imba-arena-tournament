@@ -8,6 +8,9 @@ func _init() -> void:
 	await process_frame  # the tree is only fully running after the first frame (UI tests need _ready)
 	GameData.ensure_loaded()
 	TestBase.tree = self
+	# Never the player's real arrangement: suites press keys and read labels assuming the canonical bar.
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_shared_bar_layouts.json"))
+	BarLayout._shared = BarLayout.new("user://test_shared_bar_layouts.json")
 	var total := 0
 	var failed: Array[String] = []
 	# Optional filter: ./run_tests.sh logic net  -> only suites whose path contains one of the words.

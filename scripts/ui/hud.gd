@@ -352,7 +352,7 @@ func set_spectator(dead: bool, observed: String) -> void:
 
 func _show_ability_tip(index: int) -> void:
 	_tip_slot = index
-	_ability_tip.set_ability(_my_abilities()[index], Keybinds.shared().slot_label(index))
+	_ability_tip.set_ability(_my_abilities()[index], Keybinds.shared().slot_label(_bar_pos(index)))
 	_ability_tip.modulate.a = 0.0
 	_ability_tip.show()
 	_place_ability_tip.call_deferred(index)
@@ -563,6 +563,15 @@ func _fit_bar() -> void:
 	_bar_holder.custom_minimum_size = _bar_frame.size * bar_scale
 
 
+func _kit_key() -> String:
+	return Talents.key(my_cls, my_spec)
+
+
+## The button an ability sits on. `_slots` stays indexed by canonical slot, so cooldowns and charges never need this.
+func _bar_pos(slot: int) -> int:
+	return BarLayout.shared().pos_of(_kit_key(), slot)
+
+
 func _build_bar() -> void:
 	bar_scale = float(SettingsStore.shared().get_value("bar_scale"))
 	_bar_frame.clear()
@@ -580,7 +589,7 @@ func _build_bar() -> void:
 		slot.mouse_filter = Control.MOUSE_FILTER_PASS
 		slot.mouse_entered.connect(_show_ability_tip.bind(i))
 		slot.mouse_exited.connect(_ability_tip.hush)
-		_track_hover(slot, "slot_%d" % i)
+		_track_hover(slot, "slot_%d" % _bar_pos(i))
 		var charge := ColorRect.new()
 		charge.color = Color(1.0, 0.7, 0.2, 0.35)
 		charge.position = Vector2(2, 58)
@@ -621,8 +630,10 @@ func _build_bar() -> void:
 		slot.add_child(charges)
 		slot.add_child(key)
 		slot.add_child(cd)
-		_bar_frame.add_button(slot)
 		_slots.append({"root": slot, "sweep": sweep, "cd": cd, "charge": charge, "icon": icon, "ult": ult, "auto": a.get("auto", false), "key": key, "charges": charges})
+	for slot in BarLayout.shared().order(_kit_key()):
+		if slot < _slots.size():
+			_bar_frame.add_button(_slots[slot].root)
 	_build_trinket(dim_tex)
 	_build_macro_bar()
 	refresh_keys()
@@ -650,7 +661,7 @@ func refresh_keys() -> void:
 	var kb := Keybinds.shared()
 	for i in _slots.size():
 		var sl: Dictionary = _slots[i]
-		(sl.key as Label).text = ("Auto · " if sl.auto else "") + kb.slot_label(i)
+		(sl.key as Label).text = ("Auto · " if sl.auto else "") + kb.slot_label(_bar_pos(i))
 	if not _trinket.is_empty():
 		(_trinket.key as Label).text = kb.label("trinket")
 	for m in _macro_buttons:

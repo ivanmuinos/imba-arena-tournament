@@ -677,7 +677,7 @@ func _input(event: InputEvent) -> void:
 			return
 		if kb_action == "" and k.shift_pressed and not k.ctrl_pressed and not k.alt_pressed:
 			kb_action = keybinds.action_for(OS.get_keycode_string(k.keycode))  # Shift held (often an ability key) + a plain key
-			if kb_action.begins_with("slot_") and _cast_on_focus(int(kb_action.substr(5))):
+			if kb_action.begins_with("slot_") and _cast_on_focus(_bar_slot(int(kb_action.substr(5)))):
 				get_viewport().set_input_as_handled()
 				return  # Shift + an ability key: on your focus, without changing your target
 		if kb_action != "":
@@ -708,7 +708,7 @@ func _input(event: InputEvent) -> void:
 	if not event.is_pressed(): return
 	get_viewport().set_input_as_handled()
 	if action.begins_with("slot_"):
-		_cast(int(action.trim_prefix("slot_")))
+		_cast(_bar_slot(int(action.trim_prefix("slot_"))))
 		return
 	match action:
 		"cancel":
@@ -740,9 +740,14 @@ func _input(event: InputEvent) -> void:
 
 
 ## A key binding's action (see Keybinds.ACTIONS).
+## The ability on a bar button: `slot_N` actions name the button, casts use the canonical slot.
+func _bar_slot(pos: int) -> int:
+	return BarLayout.shared().slot_at(Talents.key(my_cls, my_spec), pos)
+
+
 func _do_action(action: String) -> void:
 	if action.begins_with("slot_"):
-		_cast(int(action.substr(5)))
+		_cast(_bar_slot(int(action.substr(5))))
 	elif action.begins_with("macro_"):
 		if MacroStore.ENABLED:
 			run_macro(int(action.substr(6)) - 1)

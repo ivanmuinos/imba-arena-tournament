@@ -27,8 +27,10 @@ func _init(p_cls := "mage", p_spec := "") -> void:
 
 
 ## The key the player actually has on that slot (Keybinds), so a rebound bar reads right in the tutorial too.
-static func key_of(slot: int) -> String:
-	return Keybinds.shared().slot_label(slot) if slot >= 0 and slot < KEYS.size() else "?"
+func key_of(slot: int) -> String:
+	if slot < 0 or slot >= KEYS.size():
+		return "?"
+	return Keybinds.shared().slot_label(BarLayout.shared().pos_of(Talents.key(cls, spec), slot))
 
 
 func _abilities() -> Array:
