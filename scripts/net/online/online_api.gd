@@ -19,8 +19,8 @@ const EXPIRY_MARGIN := 60.0
 
 var base_url := ""
 var anon_key := ""
-## Off until Online.ENABLED: nothing is sent.
-var enabled := Online.ENABLED
+## Off until Online.on() (the shipped flag or the developer's --online): nothing is sent.
+var enabled := Online.on()
 ## Session JWT from auth-steam and its expiry (unix seconds).
 var token := ""
 var token_expires := 0.0

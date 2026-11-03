@@ -3,16 +3,28 @@ extends RefCounted
 ## Switchboard for the online features (teams, and later queues): shipped OFF. Nothing in the game reaches the network
 ## unless `ENABLED` is true and the config is valid. Supabase being down, paused or unconfigured only hides the features.
 
-## Turned on at the end of S17, with the queue. Until then OnlineApi refuses to send anything.
+## Shipped OFF: there is no cloud project yet. Developers turn it on for a run with `--online` or IMBA_ONLINE=1 (see
+## `dev_flag`), against the local Supabase; flipping this constant is the one-line switch for the day there is a backend.
 const ENABLED := false
+const ENV_FLAG := "IMBA_ONLINE"
 const CONFIG_PATH := "res://data/online.json"
 const ENV_URL := "IMBA_ONLINE_URL"
 const ENV_KEY := "IMBA_ONLINE_ANON_KEY"
 
 
-## True when online features may be shown: the flag is on and there is somewhere to talk to.
+## The switch itself: the shipped constant or the developer's run flag.
+static func on() -> bool:
+	return ENABLED or dev_flag(OS.get_cmdline_user_args(), {ENV_FLAG: OS.get_environment(ENV_FLAG)})
+
+
+## `--online` after `--`, or IMBA_ONLINE=1 / true in the environment. Never set in a shipped build's launch options.
+static func dev_flag(user_args: PackedStringArray, env: Dictionary) -> bool:
+	return user_args.has("--online") or str(env.get(ENV_FLAG, "")) in ["1", "true"]
+
+
+## True when online features may be shown: the switch is on and there is somewhere to talk to.
 static func enabled() -> bool:
-	return ENABLED and config_valid(config())
+	return on() and config_valid(config())
 
 
 ## data/online.json ({url, anon_key}) with the IMBA_ONLINE_* environment variables on top. The file holds the LOCAL
