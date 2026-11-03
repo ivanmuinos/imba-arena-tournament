@@ -51,6 +51,11 @@ var god := false
 var nocd := false
 var meters := {}  # unit id -> PracticeMeter
 
+## Lesson only: the scenario driving this match (LessonStage; anything with step(match, now)) and the structured log of
+## what happened, for objectives and medals. Both stay null in every other match, so they cost nothing there.
+var stage: RefCounted = null
+var journal = null  # Array of {e, at, ...} while a lesson runs, drained by the network layer
+
 ## Outgoing events for everyone in the match (drained by the network layer).
 var fx: Array = []
 var broadcasts: Array = []
@@ -60,6 +65,7 @@ var errors: Array = []
 var _next_id := 1
 var _first_round := true
 var _next_power_at := 0.0
+var _last_now := 0.0  # clock of the last tick, for commands that are not handed the time
 var _dt := 1.0 / 60.0
 var C: Dictionary
 
@@ -257,7 +263,18 @@ func stop_auto(u: ArenaUnit) -> void:
 
 ## Esc: drops the cast in progress (no cooldown is applied).
 func cancel_cast(u: ArenaUnit) -> void:
+	if not u.cast.is_empty() and journal != null:
+		_ev("cast_cancel", _last_now, {"u": u.id, "ability": str(u.ability(u.cast.slot).id), "why": "esc"})
 	u.cast = {}
+
+
+## A journal entry. Without a lesson it returns at once.
+func _ev(kind: String, now: float, fields: Dictionary) -> void:
+	if journal == null:
+		return
+	fields["e"] = kind
+	fields["at"] = now
+	journal.append(fields)
 
 
 func jump(u: ArenaUnit, now: float) -> void:
@@ -266,6 +283,7 @@ func jump(u: ArenaUnit, now: float) -> void:
 	u.jump_at = now
 	if not u.cast.is_empty():
 		_error(u, "%s cancelado: saltaste" % u.ability(u.cast.slot).name)
+		_ev("cast_cancel", now, {"u": u.id, "ability": str(u.ability(u.cast.slot).id), "why": "jump"})
 		u.cast = {}  # jumping cancels a cast, like moving does
 
 
@@ -318,6 +336,7 @@ func use_trinket(u: ArenaUnit, now: float) -> bool:
 			u.set(f, now)
 	_label(u, "ABALORIO", "#ffd166")
 	fx.append({"k": "trinket", "id": u.id})
+	_ev("trinket", now, {"u": u.id})
 	return true
 
 
@@ -684,6 +703,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 	if lock != null:
 		dir = Vector2(lock.x - u.x, lock.z - u.z).normalized()
 	fx.append({"k": "cast", "id": u.id, "ability": spec.id})
+	_ev("cast", now, {"u": u.id, "ability": str(spec.id)})
 	var id: String = spec.id
 
 	match id:
@@ -1132,10 +1152,12 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 		amount *= src.dmg_mult
 	if now < t.shield_until:
 		if src != null: fx.append({"k": "absorb", "id": t.id})
+		_ev("absorb", now, {"t": t.id, "by": src.id if src != null else -1, "ability": ability})
 		return
 	var chance := block_chance(t, src, now, ability)
 	if chance > 0.0 and block_rng.randf() < chance:
 		fx.append({"k": "block", "id": t.id, "by": src.id})
+		_ev("block", now, {"t": t.id, "by": src.id, "ability": ability})
 		return
 	var crit := false
 	var a: Dictionary = src.ability_by_id(ability) if src != null and ability != "" and not _dot_tick else {}
@@ -1159,6 +1181,7 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 			amount -= soaked
 			if amount <= 0:
 				fx.append({"k": "absorb", "id": t.id})
+				_ev("absorb", now, {"t": t.id, "by": src.id, "ability": ability})
 				return
 		if t.absorb > 0 and now < t.absorb_until:
 			var soaked := minf(t.absorb, amount)
@@ -1166,12 +1189,18 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 			amount -= soaked
 			if amount <= 0:
 				fx.append({"k": "absorb", "id": t.id})
+				_ev("absorb", now, {"t": t.id, "by": src.id, "ability": ability})
 				return
 		if now < t.fear_until:
 			t.fear_dmg += amount
-			if t.fear_dmg > 40: t.fear_until = 0.0  # fear breaks after enough damage
+			if t.fear_dmg > 40:
+				t.fear_until = 0.0  # fear breaks after enough damage
+				_ev("cc_break", now, {"t": t.id, "cat": "fear", "by": src.id})
 	t.hp -= amount
-	if now < t.incap_until: t.incap_until = 0.0  # sheep / freeze / blind break on damage
+	_ev("dmg", now, {"t": t.id, "by": src.id if src != null else -1, "amt": amount, "ability": ability, "dot": _dot_tick, "crit": crit})
+	if now < t.incap_until:
+		t.incap_until = 0.0  # sheep / freeze / blind break on damage
+		_ev("cc_break", now, {"t": t.id, "cat": "incap", "by": src.id if src != null else -1})
 	if not t.cast.is_empty() and int(t.cast.get("pushes", 0)) < int(C.PUSHBACK_MAX) and not t.ability(t.cast.slot).get("noPushback", false):
 		t.cast.ends_at += float(C.PUSHBACK_MS)  # WoW pushback: each hit delays the cast, at most twice
 		t.cast.pushes = int(t.cast.get("pushes", 0)) + 1
@@ -1232,6 +1261,7 @@ func _heal(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, quiet := fal
 		meter_for(src).record_heal(real, now)
 	src.ult = minf(100, src.ult + real * C.ULT_PER_DAMAGE * 0.5)
 	if not quiet: fx.append({"k": "heal", "id": t.id, "amt": roundi(real)})
+	_ev("heal", now, {"t": t.id, "by": src.id, "amt": real})
 
 
 func _die(t: ArenaUnit, now: float) -> void:
@@ -1241,6 +1271,7 @@ func _die(t: ArenaUnit, now: float) -> void:
 	t.cast = {}
 	t.dash_left = 0.0
 	fx.append({"k": "death", "id": t.id})
+	_ev("death", now, {"t": t.id})
 	for o in units:
 		if o.auto_target == t.id:
 			o.auto_on = false
@@ -1270,13 +1301,16 @@ func _cc(t: ArenaUnit, cat: String, base_ms: float, now: float, incap_kind := "p
 		return
 	if now < t.shield_until or now < t.storm_until:
 		_label(t, "INMUNE", "#7fdbff")
+		_ev("cc_immune", now, {"t": t.id, "cat": cat, "why": "shield" if now < t.shield_until else "storm"})
 		return
 	var r := Rules.apply_dr(t.dr.get(cat, {}), base_ms, now)
 	t.dr[cat] = r.dr
 	var ms: float = r.ms
 	if ms <= 0:
 		_label(t, "INMUNE", "#aaaaaa")
+		_ev("cc_immune", now, {"t": t.id, "cat": cat, "why": "dr"})
 		return
+	_ev("cc", now, {"t": t.id, "cat": cat, "kind": incap_kind if cat == "incap" else "", "ms": ms, "dr": ms / base_ms})
 	var until := now + ms
 	match cat:
 		"stun": t.stun_until = maxf(t.stun_until, until)
@@ -1300,6 +1334,7 @@ func _interrupt(t: ArenaUnit, now: float) -> void:
 	if t.dummy == "caster":
 		t.dummy_next = now + PracticeYard.INTERRUPT_GAP_MS
 	t.cds[t.cast.slot] = maxf(t.cds[t.cast.slot], now + INTERRUPT_LOCK_MS)
+	_ev("interrupt", now, {"t": t.id, "ability": str(t.ability(t.cast.slot).id)})
 	t.cast = {}
 	_label(t, "INTERRUMPIDO", "#ff6b6b")
 
@@ -1338,11 +1373,14 @@ func _auto_attack(u: ArenaUnit, now: float) -> void:
 # ---------------------------------------------------------------- simulation
 
 func tick(now: float) -> void:
+	_last_now = now
 	for u in units:
 		if u.brain != null:
 			u.brain.think(self, u, now)
 	if practice:
 		_practice_pre(now)
+	if stage != null:
+		stage.step(self, now)
 	if phase == "prep" and now >= phase_ends_at:
 		phase = "fight"
 		fight_start = now
@@ -1494,6 +1532,7 @@ func _progress_cast(u: ArenaUnit, now: float) -> void:
 		u.cast = {}
 		if moving and now >= u.fear_until:
 			_error(u, "%s cancelado: te moviste" % spec.name)
+			_ev("cast_cancel", now, {"u": u.id, "ability": str(spec.id), "why": "moved"})
 		return
 	if c.lock >= 0:
 		var t := _lock_target(u, c.lock, now)
@@ -1726,6 +1765,7 @@ func _step_powers(now: float) -> void:
 
 func _apply_power(u: ArenaUnit, kind: String, now: float) -> void:
 	fx.append({"k": "power", "id": u.id, "kind": kind})
+	_ev("gem", now, {"u": u.id, "kind": kind})
 	if kind == "heal":
 		var amt := minf(u.max_hp - u.hp, u.max_hp * 0.35)
 		u.hp += amt
@@ -1770,6 +1810,8 @@ func _reset_dummy(u: ArenaUnit, now: float) -> void:
 
 ## A fighter "reaches 0": dummies refill (they never die), the player gets back up at the start point at once.
 func _practice_down(t: ArenaUnit, now: float) -> void:
+	if t.dummy == "":
+		_ev("down", now, {"t": t.id})
 	if t.dummy != "":
 		t.hp = t.max_hp * (PracticeYard.ALLY_START if t.dummy == "ally" else 1.0)
 		return
