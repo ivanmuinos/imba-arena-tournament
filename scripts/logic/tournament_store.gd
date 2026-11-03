@@ -50,17 +50,7 @@ static func _valid_run(r: Dictionary) -> bool:
 
 
 func save() -> void:
-	var tmp := path + ".tmp"
-	var f := FileAccess.open(tmp, FileAccess.WRITE)
-	if f == null:
-		return
-	f.store_string(JSON.stringify({"v": 1, "won": won, "streaks": streaks, "run": run}))
-	f.close()
-	var from := ProjectSettings.globalize_path(tmp)
-	var to := ProjectSettings.globalize_path(path)
-	if DirAccess.rename_absolute(from, to) != OK:  # some platforms refuse to replace an existing file
-		DirAccess.remove_absolute(to)
-		DirAccess.rename_absolute(from, to)
+	AtomicFile.write_text(path, JSON.stringify({"v": 1, "won": won, "streaks": streaks, "run": run}))
 
 
 func cups(mode: int, tier_id: String) -> int:

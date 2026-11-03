@@ -1,0 +1,304 @@
+{
+ "version": 1,
+ "xp": {
+  "bot": {
+   "win": 70,
+   "loss": 30
+  },
+  "tournament": {
+   "win": 90,
+   "loss": 40
+  },
+  "online": {
+   "win": 80,
+   "loss": 40
+  }
+ },
+ "curve": {
+  "base": 130,
+  "growth": 1.15,
+  "max_need": 2500,
+  "max_level": 20
+ },
+ "items": [
+  {
+   "id": "title_mage",
+   "kind": "title",
+   "name": "Aprendiz de la Llama",
+   "source": "challenge"
+  },
+  {
+   "id": "ring_mage",
+   "kind": "ring",
+   "name": "Anillo de Mago",
+   "value": "#4aa3ff",
+   "source": "challenge"
+  },
+  {
+   "id": "recolor_mage",
+   "kind": "recolor",
+   "name": "Mago: Escarcha",
+   "cls": "mage",
+   "palette": "Escarcha",
+   "source": "challenge"
+  },
+  {
+   "id": "title_warrior",
+   "kind": "title",
+   "name": "Recluta de Hierro",
+   "source": "challenge"
+  },
+  {
+   "id": "ring_warrior",
+   "kind": "ring",
+   "name": "Anillo de Guerrero",
+   "value": "#e8c14a",
+   "source": "challenge"
+  },
+  {
+   "id": "recolor_warrior",
+   "kind": "recolor",
+   "name": "Guerrero: Acero negro",
+   "cls": "warrior",
+   "palette": "Acero negro",
+   "source": "challenge"
+  },
+  {
+   "id": "title_rogue",
+   "kind": "title",
+   "name": "Filo Silencioso",
+   "source": "challenge"
+  },
+  {
+   "id": "ring_rogue",
+   "kind": "ring",
+   "name": "Anillo de Asesino",
+   "value": "#7bd88f",
+   "source": "challenge"
+  },
+  {
+   "id": "recolor_rogue",
+   "kind": "recolor",
+   "name": "Asesino: Sombra violeta",
+   "cls": "rogue",
+   "palette": "Sombra violeta",
+   "source": "challenge"
+  },
+  {
+   "id": "title_hunter",
+   "kind": "title",
+   "name": "Ojo de Halcón",
+   "source": "challenge"
+  },
+  {
+   "id": "ring_hunter",
+   "kind": "ring",
+   "name": "Anillo de Cazador",
+   "value": "#c9884a",
+   "source": "challenge"
+  },
+  {
+   "id": "recolor_hunter",
+   "kind": "recolor",
+   "name": "Cazador: Bosque",
+   "cls": "hunter",
+   "palette": "Bosque",
+   "source": "challenge"
+  },
+  {
+   "id": "title_warlock",
+   "kind": "title",
+   "name": "Pacto Menor",
+   "source": "challenge"
+  },
+  {
+   "id": "ring_warlock",
+   "kind": "ring",
+   "name": "Anillo de Brujo",
+   "value": "#b06be0",
+   "source": "challenge"
+  },
+  {
+   "id": "recolor_warlock",
+   "kind": "recolor",
+   "name": "Brujo: Ascua verde",
+   "cls": "warlock",
+   "palette": "Ascua verde",
+   "source": "challenge"
+  },
+  {
+   "id": "title_priest",
+   "kind": "title",
+   "name": "Voz de la Luz",
+   "source": "challenge"
+  },
+  {
+   "id": "ring_priest",
+   "kind": "ring",
+   "name": "Anillo de Sacerdote",
+   "value": "#f2f2f2",
+   "source": "challenge"
+  },
+  {
+   "id": "recolor_priest",
+   "kind": "recolor",
+   "name": "Sacerdote: Oro sagrado",
+   "cls": "priest",
+   "palette": "Oro sagrado",
+   "source": "challenge"
+  },
+  {
+   "id": "title_lv2",
+   "kind": "title",
+   "name": "Recluta",
+   "source": "level"
+  },
+  {
+   "id": "ring_lv3",
+   "kind": "ring",
+   "name": "Anillo nivel 3",
+   "value": "#9aa4b2",
+   "source": "level"
+  },
+  {
+   "id": "recolor_mage_lv4",
+   "kind": "recolor",
+   "name": "Mago: Medianoche",
+   "cls": "mage",
+   "palette": "Medianoche",
+   "source": "level"
+  },
+  {
+   "id": "title_lv5",
+   "kind": "title",
+   "name": "Aspirante",
+   "source": "level"
+  },
+  {
+   "id": "ring_lv6",
+   "kind": "ring",
+   "name": "Anillo nivel 6",
+   "value": "#ff7a59",
+   "source": "level"
+  },
+  {
+   "id": "recolor_warrior_lv7",
+   "kind": "recolor",
+   "name": "Guerrero: Bronce",
+   "cls": "warrior",
+   "palette": "Bronce",
+   "source": "level"
+  },
+  {
+   "id": "title_lv8",
+   "kind": "title",
+   "name": "Veterano del Foso",
+   "source": "level"
+  },
+  {
+   "id": "ring_lv9",
+   "kind": "ring",
+   "name": "Anillo nivel 9",
+   "value": "#35d0c9",
+   "source": "level"
+  },
+  {
+   "id": "recolor_rogue_lv10",
+   "kind": "recolor",
+   "name": "Asesino: Carmesí",
+   "cls": "rogue",
+   "palette": "Carmesí",
+   "source": "level"
+  },
+  {
+   "id": "title_lv11",
+   "kind": "title",
+   "name": "Duelista",
+   "source": "level"
+  },
+  {
+   "id": "ring_lv12",
+   "kind": "ring",
+   "name": "Anillo nivel 12",
+   "value": "#ff5fa2",
+   "source": "level"
+  },
+  {
+   "id": "recolor_hunter_lv13",
+   "kind": "recolor",
+   "name": "Cazador: Otoño",
+   "cls": "hunter",
+   "palette": "Otoño",
+   "source": "level"
+  },
+  {
+   "id": "title_lv14",
+   "kind": "title",
+   "name": "Campeón de Brasa",
+   "source": "level"
+  },
+  {
+   "id": "ring_lv15",
+   "kind": "ring",
+   "name": "Anillo nivel 15",
+   "value": "#8dff5f",
+   "source": "level"
+  },
+  {
+   "id": "recolor_warlock_lv16",
+   "kind": "recolor",
+   "name": "Brujo: Abismo",
+   "cls": "warlock",
+   "palette": "Abismo",
+   "source": "level"
+  },
+  {
+   "id": "title_lv17",
+   "kind": "title",
+   "name": "Leyenda de la Arena",
+   "source": "level"
+  },
+  {
+   "id": "ring_lv18",
+   "kind": "ring",
+   "name": "Anillo nivel 18",
+   "value": "#ffd23f",
+   "source": "level"
+  },
+  {
+   "id": "recolor_priest_lv19",
+   "kind": "recolor",
+   "name": "Sacerdote: Plata lunar",
+   "cls": "priest",
+   "palette": "Plata lunar",
+   "source": "level"
+  },
+  {
+   "id": "title_lv20",
+   "kind": "title",
+   "name": "Gladiador Eterno",
+   "source": "level"
+  }
+ ],
+ "level_rewards": {
+  "2": "title_lv2",
+  "3": "ring_lv3",
+  "4": "recolor_mage_lv4",
+  "5": "title_lv5",
+  "6": "ring_lv6",
+  "7": "recolor_warrior_lv7",
+  "8": "title_lv8",
+  "9": "ring_lv9",
+  "10": "recolor_rogue_lv10",
+  "11": "title_lv11",
+  "12": "ring_lv12",
+  "13": "recolor_hunter_lv13",
+  "14": "title_lv14",
+  "15": "ring_lv15",
+  "16": "recolor_warlock_lv16",
+  "17": "title_lv17",
+  "18": "ring_lv18",
+  "19": "recolor_priest_lv19",
+  "20": "title_lv20"
+ }
+}
