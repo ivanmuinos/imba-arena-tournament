@@ -35,7 +35,7 @@ const BASE_TIME := 1_000_000.0  # sim clock start; keeps "ms since" fields away 
 ## queue_sides {steam id text: "red"|"blue"} + queue_host (the host's steam id text): a lobby made by the normal queue.
 ## The online backend chose host and sides; only those players enter, they are placed by Steam id (preferences and
 ## settings changes are ignored), and it starts by itself (see QUEUE_START_MS).
-var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0, "practice": false, "ranked": false, "scripted": [], "queue_sides": {}, "queue_host": ""}
+var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0, "practice": false, "ranked": false, "scripted": [], "queue_sides": {}, "queue_host": "", "lesson": ""}
 var state := "lobby"  # lobby | match
 var game: ArenaMatch = null
 ## peer -> {name, cls, pref}
@@ -69,6 +69,8 @@ func _init(p_cfg := {}) -> void:
 	cfg.mode = n.mode
 	cfg.diff = n.diff
 	cfg.map = GameMap.PRACTICE_ID if bool(cfg.get("practice", false)) else n.map
+	if str(cfg.lesson) != "":
+		cfg.map = GameMap.ACADEMY_ID
 	_step_ms = 1000.0 / GameData.C.SIM_HZ
 
 
@@ -431,8 +433,17 @@ func all_ready() -> bool:
 	return players.size() <= 1 or players.values().all(func(p): return p.get("ready", false))
 
 
+## An Academia lesson runs for one local player only. `cfg.lesson` can only be set when creating the server (no lobby message
+## touches it), and this refuses it anyway if any network transport is attached.
+func _lesson_allowed() -> bool:
+	return players.size() == 1 and not LessonScenarios.scenario(str(cfg.lesson)).is_empty() and _transports.all(func(t): return t is LoopbackTransport)
+
+
 func start_match(skip_ready := false) -> bool:
 	if state != "lobby" or players.is_empty() or not (skip_ready or all_ready()):
+		return false
+	var lesson := str(cfg.lesson)
+	if lesson != "" and not _lesson_allowed():
 		return false
 	# "random": the host picks (seeded) and every client receives the resolved arena in the match message.
 	var map_id: String = cfg.map
@@ -445,6 +456,16 @@ func start_match(skip_ready := false) -> bool:
 		var peer: int = players.keys()[0]
 		var p: Dictionary = players[peer]
 		game = ArenaMatch.new(2, PracticeYard.entries(p.name, p.cls, p.get("spec", ""), peer, p.get("talents", [])), sim_now, cfg.diff, map_id)
+	elif lesson != "":
+		map_id = GameMap.ACADEMY_ID
+		resolved_map = map_id
+		var peer: int = players.keys()[0]
+		var p: Dictionary = players[peer]
+		var sc := LessonScenarios.scenario(lesson)
+		game = ArenaMatch.new(2, LessonScenarios.entries(sc, p.name, p.cls, p.get("spec", ""), peer, p.get("talents", [])), sim_now, cfg.diff, map_id)
+		game.journal = []
+		game.stage = LessonStage.new(sc)
+		game.stage.setup(game, sim_now)
 	else:
 		var entries := lobby_entries()
 		ranked_teams = team_ratings(entries) if bool(cfg.ranked) else {}
@@ -465,6 +486,9 @@ func start_match(skip_ready := false) -> bool:
 		var msg := {"t": "match", "you": u.id, "mode": cfg.mode, "map": map_id, "roster": roster}
 		if not ranked_teams.is_empty():
 			msg["ranked"] = ranked_teams
+		if lesson != "":
+			msg["lesson"] = lesson
+			msg["spawn"] = {"x": u.x, "z": u.z}
 		_send(peer, msg)
 	match_started.emit()
 	return true

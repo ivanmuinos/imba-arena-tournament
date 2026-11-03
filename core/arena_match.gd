@@ -78,7 +78,7 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 	mode = p_mode
 	diff = p_diff
 	map = GameMap.create(map_id)
-	practice = map.id == GameMap.PRACTICE_ID
+	practice = map.id == GameMap.PRACTICE_ID or map.id == GameMap.ACADEMY_ID
 	for e in entries:
 		var u := ArenaUnit.new()
 		u.id = _next_id
@@ -93,10 +93,12 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 		u.diff = str(e.get("diff", ""))
 		u.skill = float(e.get("skill", -1.0))
 		u.dmg_mult = float(e.get("dmg_mult", 1.0))
-		if u.peer == 0 and u.dummy == "":
+		u.lesson_key = str(e.get("lesson_key", ""))
+		u.mortal = bool(e.get("mortal", false))
+		if u.peer == 0 and u.dummy == "" and not bool(e.get("no_brain", false)):
 			u.brain = _new_brain(u)
 		u.max_hp = float(e.hp) if u.dummy != "" else float(u.spec().hp) * float(e.get("hp_mult", 1.0))
-		if u.dummy != "":
+		if u.dummy != "" or u.lesson_key != "":
 			u.home = Vector2(float(e.x), float(e.z))
 		if practice and u.peer != 0:
 			meters[u.id] = PracticeMeter.new()
@@ -1270,11 +1272,17 @@ func _die(t: ArenaUnit, now: float) -> void:
 	t.hp = 0.0
 	t.cast = {}
 	t.dash_left = 0.0
-	fx.append({"k": "death", "id": t.id})
+	if t.dummy == "crate":
+		t.dormant = true  # gone: no corpse
+		fx.append({"k": "crate_break", "x": t.x, "z": t.z})
+	else:
+		fx.append({"k": "death", "id": t.id})
 	_ev("death", now, {"t": t.id})
 	for o in units:
 		if o.auto_target == t.id:
 			o.auto_on = false
+	if practice:
+		return  # no rounds and no kill feed in a lesson
 	var killer: ArenaUnit = null
 	if t.last_hit_by >= 0 and now - t.last_hit_at < 8000:
 		killer = unit_by_id(t.last_hit_by)
@@ -1297,7 +1305,7 @@ const INCAP_LABEL := {"disorient": ["DESORIENTADO", "#ffb060"], "poly": ["¡OVEJ
 
 
 func _cc(t: ArenaUnit, cat: String, base_ms: float, now: float, incap_kind := "poly") -> void:
-	if not t.alive or (god and t.peer != 0):
+	if not t.alive or (god and t.peer != 0) or t.dummy == "crate":
 		return
 	if now < t.shield_until or now < t.storm_until:
 		_label(t, "INMUNE", "#7fdbff")
@@ -1781,9 +1789,11 @@ func _apply_power(u: ArenaUnit, kind: String, now: float) -> void:
 
 # ---------------------------------------------------------------- practice arena
 
-## Dampening is a round mechanic: the yard never has it.
+## Dampening is a round mechanic: the yard never has it, and a lesson only when it teaches it.
 func _damp(now: float) -> float:
-	return 0.0 if practice else Rules.dampening(now - fight_start)
+	if practice and (stage == null or not stage.damp):
+		return 0.0
+	return Rules.dampening(now - fight_start)
 
 
 func meter_for(u: ArenaUnit) -> PracticeMeter:
@@ -1810,6 +1820,9 @@ func _reset_dummy(u: ArenaUnit, now: float) -> void:
 
 ## A fighter "reaches 0": dummies refill (they never die), the player gets back up at the start point at once.
 func _practice_down(t: ArenaUnit, now: float) -> void:
+	if t.mortal:
+		_die(t, now)
+		return
 	if t.dummy == "":
 		_ev("down", now, {"t": t.id})
 	if t.dummy != "":
@@ -1842,7 +1855,7 @@ func _practice_pre(now: float) -> void:
 				u.cds.fill(0.0)
 				u.charges.clear()
 			continue
-		if focus != null:
+		if focus != null and u.dummy != "crate":
 			u.aim_x = focus.x
 			u.aim_z = focus.z
 		u.input = Vector2.ZERO
@@ -1886,7 +1899,7 @@ func _dummy_caster(u: ArenaUnit, now: float) -> void:
 
 ## Practice controls: "reset" (meter, dummies, cooldowns), "nocd" (on/off) and "ult" (ultimate ready).
 func practice_command(u: ArenaUnit, cmd: String, on: bool, now: float) -> void:
-	if not practice or not u.alive:
+	if not practice or not u.alive or stage != null:  # a lesson has no practice controls: medals could be faked with them
 		return
 	match cmd:
 		"reset":
@@ -1960,6 +1973,7 @@ func snapshot_for(viewer: ArenaUnit, now: float) -> Dictionary:
 	if ch.any(func(v): return v >= 0): snap.you.ch = ch
 	var st := stacks_shown(viewer)
 	if st.any(func(v): return v >= 0): snap.you.st = st
+	if stage != null: snap.you.lesson = stage.client_state(self)
 	return snap
 
 
@@ -1974,7 +1988,7 @@ func _snapshot(viewer: ArenaUnit, now: float) -> Dictionary:
 		"damp": _damp(now) if phase == "fight" else 0.0,
 		"gates": map.gates_open,
 		"ft": (now - fight_start) if phase == "fight" else 0.0,
-		"units": units.filter(func(u): return team_can_see(viewer.team, u, now)).map(func(u): return _snap_unit(u, now)),
+		"units": units.filter(func(u): return not u.dormant and team_can_see(viewer.team, u, now)).map(func(u): return _snap_unit(u, now)),
 		"projs": projs.map(func(p): return {"id": p.id, "kind": p.spec.id, "x": p.x, "z": p.z, "vx": p.vx, "vz": p.vz}),
 		"aoes": aoes.map(func(a): return {"id": a.id, "kind": a.get("kind", "meteor"), "x": a.x, "z": a.z, "r": a.spec.aoe, "left": maxf(0.0, (a.until if a.get("kind", "meteor") == "blizzard" else a.at) - now)}),
 		"traps": traps.filter(func(t): return t.owner.team == viewer.team).map(func(t): return {"id": t.id, "x": t.x, "z": t.z, "armed": now >= t.armed_at}),
