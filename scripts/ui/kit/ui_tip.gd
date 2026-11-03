@@ -68,7 +68,7 @@ static func usage_line(a: Dictionary, key: String) -> String:
 	var action: String = {
 		"auto": "Seleccioná un enemigo. Pulsá %s para activar o detener el autoataque.",
 		"hostile": "Seleccioná un enemigo con clic o Tab y pulsá %s.",
-		"friendly": "Seleccioná un aliado (F1–F3) y pulsá %s. Sin aliado, se aplica sobre vos.",
+		"friendly": "Elegí a quién: F1 vos, F2–F3 tus aliados, y pulsá %s. Sin aliado elegido, se aplica sobre vos.",
 		"ground": "Pulsá %s y apuntá al suelo: clic izquierdo confirma; clic derecho o Esc cancela.",
 		"self": "Pulsá %s: se aplica sobre vos o alrededor tuyo.",
 		"direction": "Orientá tu personaje y pulsá %s: se usa en la dirección indicada por la habilidad.",
