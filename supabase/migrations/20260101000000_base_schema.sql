@@ -42,7 +42,7 @@ begin
   if p_raw is null or char_length(p_raw) > p_max * 4 then
     raise exception 'invalid_name';
   end if;
-  v := pg_catalog.regexp_replace(p_raw, '[\x01-\x1f\x7f-\x9f؜​-‏ -‮⁠-⁩﻿]', ' ', 'g');
+  v := pg_catalog.regexp_replace(p_raw, '[\x01-\x1f\x7f-\x9f\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]', ' ', 'g');
   v := pg_catalog.btrim(pg_catalog.regexp_replace(v, '\s+', ' ', 'g'));
   if char_length(v) < p_min or char_length(v) > p_max then
     raise exception 'invalid_name';

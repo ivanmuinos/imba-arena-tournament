@@ -1,6 +1,7 @@
 -- S12: base schema closed for writing. Clients read at most what they should and write nothing directly.
 begin;
 select plan(28);
+delete from public.players;  -- the database may hold data from manual runs; this transaction is rolled back
 
 -- Every table in public has row level security on (a new table without it fails this test).
 select is(
@@ -61,12 +62,12 @@ select throws_ok($$update public.players set name = 'x' where steam_id = 7001$$,
 select throws_ok($$delete from public.players where steam_id = 7001$$, '42501', null, 'authenticated no borra');
 
 -- touch_player: sets her own name, sanitized.
-select lives_ok($$select public.touch_player(E'  Ana‮  la\tgrande  ')$$, 'Ana actualiza su nombre');
+select lives_ok($$select public.touch_player(E'  Ana\u202e  la\tgrande  ')$$, 'Ana actualiza su nombre');
 reset role;
 select is((select name from public.players where steam_id = 7001), 'Ana la grande', 'nombre sin controles bidi ni espacios repetidos');
 set local role authenticated;
 select throws_ok($$select public.touch_player(repeat('a', 33))$$, 'P0001', 'invalid_name', 'nombre demasiado largo');
-select throws_ok($$select public.touch_player(E'‮ ⁦')$$, 'P0001', 'invalid_name', 'nombre vacio tras limpiar');
+select throws_ok($$select public.touch_player(E'\u202e \u2066')$$, 'P0001', 'invalid_name', 'nombre vacio tras limpiar');
 select set_config('request.jwt.claims', '{"sub":"7003","role":"authenticated"}', true);
 select lives_ok($$select public.touch_player('Nueva')$$, 'Un jugador sin fila se crea');
 reset role;

@@ -21,10 +21,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
-ok() { pass=$((pass+1)); echo "  ok   $1"; }
+ok() { pass=$((pass+1)); echo "  ok   $1"; if [ -n "${DEBUG:-}" ]; then echo "       $LAST" | cut -c1-200; fi; }
 bad() { failn=$((failn+1)); echo "  FAIL $1 -- $2"; }
-expect() { # name, actual, expected-substring
-  case "$2" in *"$3"*) ok "$1";; *) bad "$1" "got: $2";; esac
+expect() { LAST="$2"; # name, actual, expected: an HTTP status ("200") must be the status itself; anything else is a substring
+  case "$3" in
+    [0-9][0-9][0-9]) if [ "${2%% *}" = "$3" ]; then ok "$1"; else bad "$1" "got: $2"; fi;;
+    *) case "$2" in *"$3"*) ok "$1";; *) bad "$1" "got: $2";; esac;;
+  esac
 }
 
 # A stand-in for the Steam Web API: ticket aa.. is steam id 76561198000000001, bb.. is rejected, cc.. is a Steam outage.
