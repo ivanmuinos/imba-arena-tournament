@@ -2,7 +2,10 @@ class_name InputLogic
 extends RefCounted
 ## Key/mouse mapping that does not depend on the scene tree.
 
-const SLOT_BY_KEY := {KEY_1: 0, KEY_2: 1, KEY_3: 2, KEY_4: 3, KEY_5: 4, KEY_6: 5, KEY_7: 6}
+## Default key / controller button per ability slot: basic, 3 abilities, ultimate (R).
+const SLOT_KEYS := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_R]
+const SLOT_PADS := [JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B, JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_RIGHT]
+const SLOT_BY_KEY := {KEY_1: 0, KEY_2: 1, KEY_3: 2, KEY_4: 3, KEY_R: 4}
 const DRAG_PX := 5.0
 const FOLLOW_RATE := 4.0
 const TURN_RATE := 2.6
@@ -15,7 +18,7 @@ static func stick(raw: Vector2) -> Vector2:
 
 
 static func pad_slot(button: int) -> int:
-	return [JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B, JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_LEFT].find(button)
+	return SLOT_PADS.find(button)
 
 
 static func slot_for_key(keycode: int) -> int:

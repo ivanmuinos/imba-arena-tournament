@@ -259,7 +259,7 @@ func _refresh_bindings() -> void:
 	var kit := GameData.kit(str(menu.st.get_value("cls")), str(menu.st.get_value("spec")))
 	_bind_caption.text = "Teclas de %s%s (clic y apretá la nueva · Esc: sin tecla · en partida también con el modo teclas)" % [
 		kit.name, " · " + str(kit.spec_name) if kit.has("spec_name") else ""]
-	for i in 7:
+	for i in int(GameData.C.SLOT_COUNT):
 		var a := "slot_%d" % i
 		var name := slot_name(i)
 		if _bind_labels.has(a):

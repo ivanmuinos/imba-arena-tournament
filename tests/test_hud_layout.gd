@@ -137,3 +137,7 @@ func test_hud_sizes_apply_live_from_the_settings() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_hud_scales.cfg"))
 	SettingsStore.path = path
 	SettingsStore.clear_shared()
+
+
+func test_action_bar_has_one_hole_per_button_and_no_empty_ones() -> void:
+	eq(ActionBarFrame.HOLES_X.size(), int(GameData.C.SLOT_COUNT) + 1, "un hueco por habilidad más el abalorio, ninguno vacío")

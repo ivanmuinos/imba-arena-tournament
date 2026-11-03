@@ -82,7 +82,7 @@ func _ready() -> void:
 	_abil_row = HBoxContainer.new()
 	_abil_row.add_theme_constant_override("separation", 8)
 	col.add_child(_abil_row)
-	for i in 7:
+	for i in int(GameData.C.SLOT_COUNT):
 		var slot := _make_slot(i)
 		_abil_row.add_child(slot)
 		_slots.append(slot)
@@ -211,7 +211,7 @@ func select(id: String, from_user := false) -> void:
 	for s in STATS:
 		(_bars[s[0]] as StatBar).animate_to(float(spec.stats[s[0]]), tint)
 		(_bars[s[0]] as StatBar).tooltip_text = HowToContent.stat_tip(spec, s[0])
-	for i in 7:
+	for i in int(GameData.C.SLOT_COUNT):
 		var slot: Button = _slots[i]
 		var a: Dictionary = spec.abilities[i]
 		slot.set_meta("ability", a)

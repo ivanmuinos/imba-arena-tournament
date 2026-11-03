@@ -105,21 +105,21 @@ func test_counterspell_interrupts_silences_and_locks() -> void:
 	var m := _duel("mage", "mage")
 	var red := m.units[0]
 	var blue := m.units[1]
-	check(m.cast_ability(blue, 1, red.x, red.z, now), "Piroexplosión empieza")
+	check(m.cast_ability(blue, old(blue, 1), red.x, red.z, now), "Piroexplosión empieza")
 	check(not blue.cast.is_empty(), "está casteando")
-	check(m.cast_ability(red, 5, blue.x, blue.z, now, blue.id), "Contrahechizo")
+	check(m.cast_ability(red, old(red, 5), blue.x, blue.z, now, blue.id), "Contrahechizo")
 	check(blue.cast.is_empty(), "interrumpido")
 	check(blue.silence_until > now, "silenciado")
-	check(not m.cast_ability(blue, 2, red.x, red.z, now), "silenciado no puede castear")
-	check(blue.cds[1] >= now + 3900, "hechizo bloqueado 4 s")
+	check(not m.cast_ability(blue, old(blue, 2), red.x, red.z, now), "silenciado no puede castear")
+	check(blue.cds[old(blue, 1)] >= now + 3900, "hechizo bloqueado 4 s")
 
 
 func test_charge_closes_gap_and_stuns() -> void:
 	var m := _duel("warrior", "mage")
 	var a := m.units[0]
 	var b := m.units[1]
-	check(not m.cast_ability(a, 1, b.x, b.z, now, b.id), "Golpe mortal fuera de alcance")
-	check(m.cast_ability(a, 2, b.x, b.z, now, b.id), "Carga")
+	check(not m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "Golpe mortal fuera de alcance")
+	check(m.cast_ability(a, old(a, 2), b.x, b.z, now, b.id), "Carga")
 	_advance(m, 400)
 	check(Vector2(a.x - b.x, a.z - b.z).length() < 2.5, "llegó al objetivo")
 	check(b.stun_until > now, "aturdido")
@@ -166,7 +166,7 @@ func test_priest_bot_heals_while_an_enemy_is_on_it() -> void:
 	p.x += 4.0
 	e.x = p.x + 1.0  # enemy warrior glued to the priest (idle human, never attacks)
 	e.z = p.z
-	p.cds[3] = now + 60_000  # Psychic Scream on cooldown
+	p.cds[old(p, 3)] = now + 60_000  # Psychic Scream on cooldown
 	a.hp = a.max_hp * 0.35
 	var hp0 := a.hp
 	_advance(m, 4000)
@@ -203,7 +203,7 @@ func test_disengage_always_leaps_backwards_from_the_aim() -> void:
 	var x0 := h.x
 	var z0 := h.z
 	# The client sends a point in front of the hunter; the leap goes the other way.
-	check(m.cast_ability(h, 4, h.x + 12.0, h.z, now), "Retirada")
+	check(m.cast_ability(h, old(h, 4), h.x + 12.0, h.z, now), "Retirada")
 	_advance(m, 500)
 	check(h.x < x0 - 3.0, "saltó hacia atrás (%.1f → %.1f)" % [x0, h.x])
 	near(h.z, z0, 0.5, "sin desvío lateral")
@@ -217,15 +217,15 @@ func test_mortal_strike_halves_healing() -> void:
 	a.x = b.x + 1.5
 	a.z = b.z
 	b.hp = 100.0
-	m.cast_ability(h, 1, b.x, b.z, now, b.id)
+	m.cast_ability(h, old(h, 1), b.x, b.z, now, b.id)
 	_advance(m, 1600)
 	var healed := b.hp - 100.0
 	check(healed > 30, "la Sanación cura (%s)" % healed)
 	b.hp = 100.0
-	h.cds[1] = 0.0
-	m.cast_ability(a, 1, b.x, b.z, now, b.id)
+	h.cds[old(h, 1)] = 0.0
+	m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id)
 	var after := b.hp
-	m.cast_ability(h, 1, b.x, b.z, now, b.id)
+	m.cast_ability(h, old(h, 1), b.x, b.z, now, b.id)
 	_advance(m, 1600)
 	check(b.hp - after < healed * 0.6, "Herida mortal reduce la curación")
 
@@ -236,9 +236,9 @@ func test_absorb_shield_soaks_damage() -> void:
 	var b := m.units[1]
 	a.x = b.x + 1.5
 	a.z = b.z
-	m.cast_ability(m.units[2], 2, b.x, b.z, now, b.id)
+	m.cast_ability(m.units[2], old(m.units[2], 2), b.x, b.z, now, b.id)
 	var hp := b.hp
-	m.cast_ability(a, 1, b.x, b.z, now, b.id)
+	m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id)
 	eq(b.hp, hp, "el escudo absorbe")
 
 
@@ -248,7 +248,7 @@ func test_fear_makes_enemies_run_away() -> void:
 	var h := m.units[2]
 	a.x = h.x + 3
 	a.z = h.z
-	m.cast_ability(h, 3, h.x, h.z, now)
+	m.cast_ability(h, old(h, 3), h.x, h.z, now)
 	check(a.fear_until > now, "aterrorizado")
 	var d0 := Vector2(a.x - h.x, a.z - h.z).length()
 	_advance(m, 1000)
@@ -350,7 +350,7 @@ func test_melee_ability_on_target_starts_auto_attack() -> void:
 	var a := m.units[0]
 	var b := m.units[1]
 	_adjacent(m)
-	check(m.cast_ability(a, 1, b.x, b.z, now, b.id), "Golpe mortal")
+	check(m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "Golpe mortal")
 	check(a.auto_on and a.auto_target == b.id, "enciende el auto-ataque")
 
 
@@ -382,16 +382,16 @@ func test_dampening_reduces_healing_and_nobody_burns_outside_the_old_zone() -> v
 	var b := m.units[1]
 	var h := m.units[2]
 	b.hp = 100.0
-	m.cast_ability(h, 1, b.x, b.z, now, b.id)
+	m.cast_ability(h, old(h, 1), b.x, b.z, now, b.id)
 	_advance(m, 1600)
 	var normal := b.hp - 100.0
 	# jump the fight clock forward: heal again at ~45% dampening
 	m.fight_start -= float(GameData.C.DAMP_START_MS) + 45000.0 / maxf(1.0, float(GameData.C.DAMP_PER_S) * 100.0) * 1.0
 	b.hp = 100.0
-	h.cds[1] = 0.0
+	h.cds[old(h, 1)] = 0.0
 	var damp := Rules.dampening(now - m.fight_start)
 	check(damp > 0.2, "hay amortiguación (%.2f)" % damp)
-	m.cast_ability(h, 1, b.x, b.z, now, b.id)
+	m.cast_ability(h, old(h, 1), b.x, b.z, now, b.id)
 	_advance(m, 1600)
 	var damped := b.hp - 100.0
 	check(damped < normal * (1.0 - damp * 0.7), "la curación se reduce (%.1f -> %.1f con %.0f%%)" % [normal, damped, damp * 100.0])
@@ -414,11 +414,11 @@ func test_spamming_the_same_or_another_spell_never_restarts_or_cancels_a_cast() 
 	a.x = b.x
 	a.z = b.z - 12.0
 	a.rot = 0.0
-	check(m.cast_ability(a, 1, b.x, b.z, now, b.id), "pirotecnia empieza a lanzarse")
+	check(m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "pirotecnia empieza a lanzarse")
 	var started: float = a.cast.start_at
 	for i in 10:
 		_advance(m, 60)
-		check(not m.cast_ability(a, 1, b.x, b.z, now, b.id), "repetir la misma no hace nada")
+		check(not m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "repetir la misma no hace nada")
 		check(not m.cast_ability(a, 0, b.x, b.z, now, b.id), "otra tampoco")
 		eq(a.cast.get("start_at", -1.0), started, "el lanzamiento no se reinició (%d)" % i)
 	var hp := b.hp
@@ -432,14 +432,14 @@ func test_jump_and_escape_cancel_a_cast_without_cooldown() -> void:
 	var b := m.units[1]
 	a.x = b.x
 	a.z = b.z - 12.0
-	m.cast_ability(a, 1, b.x, b.z, now, b.id)
+	m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id)
 	m.jump(a, now)
 	check(a.cast.is_empty(), "saltar cancela el lanzamiento")
-	a.cds[1] = 0.0
-	m.cast_ability(a, 1, b.x, b.z, now, b.id)
+	a.cds[old(a, 1)] = 0.0
+	m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id)
 	m.cancel_cast(a)
 	check(a.cast.is_empty(), "Esc cancela el lanzamiento")
-	check(a.cds[1] <= now + 1.0, "cancelar no deja recarga")
+	check(a.cds[old(a, 1)] <= now + 1.0, "cancelar no deja recarga")
 
 
 func test_melee_needs_facing_but_with_a_generous_cone_and_range_leeway() -> void:
@@ -449,19 +449,19 @@ func test_melee_needs_facing_but_with_a_generous_cone_and_range_leeway() -> void
 	a.x = b.x
 	a.z = b.z - 2.0
 	a.rot = PI   # facing away
-	check(not m.cast_ability(a, 1, b.x, b.z, now, b.id), "de espaldas no pega")
+	check(not m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "de espaldas no pega")
 	a.rot = 1.2  # ~70 degrees off: still inside the 180 degree cone
-	check(m.cast_ability(a, 1, b.x, b.z, now, b.id), "70 grados de costado todavía pega")
+	check(m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "70 grados de costado todavía pega")
 	var m2 := _duel("rogue", "warrior")
 	var r := m2.units[0]
 	var t := m2.units[1]
 	r.rot = 0.0
 	r.x = t.x
 	r.z = t.z - 4.4   # range 3 + 0.8 leeway = 3.8: out when the target stands still
-	check(not m2.cast_ability(r, 1, t.x, t.z, now, t.id), "quieto a 4.4 m: fuera de alcance")
+	check(not m2.cast_ability(r, old(r, 1), t.x, t.z, now, t.id), "quieto a 4.4 m: fuera de alcance")
 	t.vx = 0.0
 	t.vz = 5.0
-	check(m2.cast_ability(r, 1, t.x, t.z, now, t.id), "a 4.4 m pero corriendo: la tolerancia para blancos móviles alcanza")
+	check(m2.cast_ability(r, old(r, 1), t.x, t.z, now, t.id), "a 4.4 m pero corriendo: la tolerancia para blancos móviles alcanza")
 
 
 func test_auto_attack_warns_once_when_it_cannot_hit() -> void:
@@ -531,7 +531,9 @@ func test_priest_bot_stays_close_to_and_in_sight_of_the_team_when_nobody_needs_h
 	var human: ArenaUnit = r[1]
 	var pri: ArenaUnit = r[2]
 	for e in [r[3], r[4]]:
-		e.stun_until = now + 1.0e9   # enemies frozen in place at the far end: nobody gets hurt
+		e.stun_until = now + 1.0e9   # enemies frozen in place (no trinket to break it): nobody gets hurt
+		e.trinket_ready = now + 1.0e9
+	human.hp = human.max_hp   # the warm-up may have reached him: start this check with nobody hurt
 	pri.x = 0.0   # the priest starts far from his team (arena centre; the human waits in his start room)
 	pri.z = -2.0
 	var far0 := Vector2(pri.x - human.x, pri.z - human.z).length()

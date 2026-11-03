@@ -66,13 +66,15 @@ func step(dt: float, input: Vector2, me: Dictionary, cls: String, fighting: bool
 
 ## Blink (mage) and Disengage (hunter) feel instant: apply them locally, the server confirms.
 ## `dir` = direction to move in (blink) / to flee from (disengage). Returns true if predicted.
-func predict_movement(cls: String, slot: int, dir: Vector2, me: Dictionary, map: GameMap, now_ms: float) -> bool:
-	if slot != 4 or (cls != "mage" and cls != "hunter") or me.cc.has("stun") or me.cc.has("incap"):
+## `spec` is the ability being cast: matched by id, not slot (both are in reserve right now; a kit that equips one predicts it).
+func predict_movement(spec: Dictionary, dir: Vector2, me: Dictionary, map: GameMap, now_ms: float) -> bool:
+	if spec.get("id") != "blink" and spec.get("id") != "disengage":
+		return false
+	if me.cc.has("stun") or me.cc.has("incap"):
 		return false
 	var len := maxf(dir.length(), 1e-6)
 	var d := dir / len
-	var spec := GameData.ability(cls, 4)
-	if cls == "mage":
+	if spec.id == "blink":
 		var p := Rules.blink_target(map, m.x, m.z, d.x, d.y, spec.dist)
 		m.x = p.x
 		m.z = p.y

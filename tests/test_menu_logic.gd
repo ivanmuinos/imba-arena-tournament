@@ -381,7 +381,7 @@ func test_key_settings_name_the_abilities_of_your_champion() -> void:
 	s.menu_enter()
 	var fire := GameData.abilities("mage", "fire")
 	eq((s._bind_labels.slot_0 as Label).text, str(fire[0].name), "la tecla 1 dice qué habilidad es")
-	eq((s._bind_labels.slot_6 as Label).text, "Definitiva: " + str(fire[6].name), "la definitiva")
+	eq((s._bind_labels.slot_4 as Label).text, "Definitiva: " + str(fire[4].name), "la definitiva")
 	check(s._bind_caption.text.contains("Fuego"), "dice de qué campeón son")
 	m.st.set_value("cls", "rogue")
 	s.menu_enter()

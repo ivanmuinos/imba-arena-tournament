@@ -11,7 +11,7 @@ signal gameplay_event(name: String)
 
 const PICK_MIN_RADIUS := 22.0  # px: far-away units stay clickable
 ## ControlBindings actions that, on the keyboard, belong to Keybinds (only their controller buttons apply).
-const KEYBINDS_OWNED := ["slot_0", "slot_1", "slot_2", "slot_3", "slot_4", "slot_5", "slot_6", "jump", "target", "mute", "ally_0", "ally_1", "ally_2"]
+const KEYBINDS_OWNED := ["slot_0", "slot_1", "slot_2", "slot_3", "slot_4", "jump", "target", "mute", "ally_0", "ally_1", "ally_2"]
 
 var client: GameClient
 var chat: ChatPanel
@@ -1008,7 +1008,7 @@ func _cast(slot: int) -> bool:
 		hud.error("Stick derecho: apuntar · A: colocar · R3: cancelar" if _pad_aim else "Clic izquierdo para colocar · clic derecho o Esc para cancelar")
 	if not res.msg.is_empty():
 		client.send_cast(res.msg)
-		if predictor.predict_movement(my_cls, slot, res.aim_dir, me, world.map, _now_ms()):
+		if predictor.predict_movement(controller.ability(slot), res.aim_dir, me, world.map, _now_ms()):
 			cam.kick(0.6)
 		return true
 	return false

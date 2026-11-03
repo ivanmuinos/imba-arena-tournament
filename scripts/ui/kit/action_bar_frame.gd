@@ -1,17 +1,18 @@
 class_name ActionBarFrame
 extends Control
-## The action bar from the HUD kit (see HudArt): the skull-and-lava bar with eight holes for the buttons, the red orb
+## The action bar from the HUD kit (see HudArt): the skull-and-lava bar with six holes for the buttons (basic, 3
+## abilities, ultimate and the trinket; bar6.png, cut from the kit's 8-hole bar by tools/build_bar6.gd), the red orb
 ## (your health) on the left and the blue orb (the ultimate's charge) on the right; both empty from the top.
 
 const S := 0.5  # kit px -> HUD px
 const BUTTON := 60.0  # the HUD's buttons, scaled into the holes
 const BAR := {"origin": Vector2(430, 36), "at": Vector2(365, 18)}
 const RED := {"tex": "orb_red_frame", "origin": Vector2(22, 16), "at": Vector2(0, 0), "orb": [Vector2(273, 204), 98.0], "fill": "orb_red"}
-const BLUE := {"tex": "orb_blue_frame", "origin": Vector2(22, 793), "at": Vector2(1770, 2), "orb": [Vector2(243, 989), 97.0], "fill": "orb_blue"}
-const HOLES_X := [639, 765, 892, 1019, 1161, 1287, 1412, 1540]  # left edge of each hole's inside (kit px)
+const BLUE := {"tex": "orb_blue_frame", "origin": Vector2(22, 793), "at": Vector2(1517, 2), "orb": [Vector2(243, 989), 97.0], "fill": "orb_blue"}
+const HOLES_X := [639, 766, 893, 1035, 1161, 1287]  # left edge of each hole's inside (kit px, bar6 placed at BAR.at)
 const HOLE_Y := 191
 const HOLE := 102.0
-const SIZE := Vector2(2212, 344)
+const SIZE := Vector2(1959, 344)
 
 var _buttons: Array = []
 var _hp: TextureProgressBar
@@ -23,7 +24,7 @@ var _ult_text: Label
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	custom_minimum_size = SIZE * S
-	var bar := HudArt.art("bar")
+	var bar := HudArt.art("bar6")
 	bar.position = BAR.at * S
 	bar.size = bar.texture.get_size() * S
 	add_child(bar)

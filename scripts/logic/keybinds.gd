@@ -6,15 +6,17 @@ extends RefCounted
 
 const PATH := "user://keybinds.json"
 const MACROS := 6
-const VERSION := 2
+const VERSION := 3
 ## Version 1 bar (1, 2, Q, E, Shift, F, R): a saved slot still on its old default moves to the number keys, so Q/E strafe.
-const V1_SLOTS := {"slot_2": "Q", "slot_3": "E", "slot_4": "Shift", "slot_5": "F", "slot_6": "R"}
+const V1_SLOTS := {"slot_2": "Q", "slot_3": "E", "slot_4": "Shift"}
+## Version 2 bar had 7 slots (1-7, ultimate on slot_6): the kits now have 5 (basic + 3 + ultimate on slot_4). Slot 4 used
+## to be a normal ability, so it goes back to its new default; a custom ultimate key carries over to the new ultimate slot.
+const V2_ULT_DEFAULT := "7"
 
 ## [action, label shown in Controles, default key]
 const ACTIONS := [
 	["slot_0", "Habilidad 1 (básica)", "1"], ["slot_1", "Habilidad 2", "2"], ["slot_2", "Habilidad 3", "3"],
-	["slot_3", "Habilidad 4", "4"], ["slot_4", "Habilidad 5", "5"], ["slot_5", "Habilidad 6", "6"],
-	["slot_6", "Definitiva", "7"], ["trinket", "Abalorio PvP", "T"], ["jump", "Saltar", "Space"],
+	["slot_3", "Habilidad 4", "4"], ["slot_4", "Definitiva", "R"], ["trinket", "Abalorio PvP", "T"], ["jump", "Saltar", "Space"],
 	["target_next", "Siguiente objetivo", "Tab"], ["ally_1", "Aliado 1", "F1"], ["ally_2", "Aliado 2", "F2"],
 	["ally_3", "Aliado 3", "F3"], ["mute", "Silenciar", "M"], ["bind_mode", "Modo teclas (reasignar en partida)", "Ctrl+K"],
 	["macro_1", "Macro 1", "Ctrl+1"], ["macro_2", "Macro 2", "Ctrl+2"], ["macro_3", "Macro 3", "Ctrl+3"],
@@ -56,10 +58,17 @@ func load_file() -> void:
 	for a in keys:
 		if parsed.has(a):
 			keys[a] = str(parsed[a]).substr(0, 40)
-	if int(parsed.get("_v", 1)) < VERSION:
+	var v := int(parsed.get("_v", 1))
+	if v < 2:
 		for a in V1_SLOTS:
 			if keys[a] == V1_SLOTS[a] and action_for(defaults()[a]) == "":
 				keys[a] = defaults()[a]
+	if v < 3:
+		var ult := str(parsed.get("slot_6", V2_ULT_DEFAULT)).substr(0, 40)
+		keys.slot_4 = ""
+		var want: String = defaults().slot_4 if ult == V2_ULT_DEFAULT or ult == "" else ult
+		if action_for(want) == "":
+			keys.slot_4 = want
 
 
 func save() -> void:

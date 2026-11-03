@@ -184,10 +184,10 @@ func test_global_cooldown_like_wow() -> void:
 	var a: ArenaUnit = m.units[0]
 	var b: ArenaUnit = m.units[1]
 	var now: float = m.get_meta("now")
-	check(m.cast_ability(a, 1, b.x, b.z, now, b.id), "lanza de hielo")
-	check(not m.cast_ability(a, 2, b.x, b.z, now + 500.0, b.id), "nova durante el GCD: no")
-	check(m.cast_ability(a, 5, b.x, b.z, now + 500.0, b.id), "contrahechizo está fuera del GCD")
-	check(m.cast_ability(a, 2, b.x, b.z, now + 1550.0, b.id), "pasado 1,5 s, sí")
+	check(m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "lanza de hielo")
+	check(not m.cast_ability(a, old(a, 2), b.x, b.z, now + 500.0, b.id), "nova durante el GCD: no")
+	check(m.cast_ability(a, old(a, 5), b.x, b.z, now + 500.0, b.id), "contrahechizo está fuera del GCD")
+	check(m.cast_ability(a, old(a, 2), b.x, b.z, now + 1550.0, b.id), "pasado 1,5 s, sí")
 	var r := _fight_duel("rogue", "", "mage")
 	eq(ArenaMatch.gcd_ms(r.units[0]), 1000.0, "el asesino tiene GCD de 1 s")
 	check(not ArenaMatch.on_gcd(r.units[0].ability(0)), "el ataque automático no usa GCD")
@@ -219,3 +219,27 @@ func test_trinket_breaks_control_once_every_two_minutes() -> void:
 	a.stun_until = now + 4000.0
 	check(not m.use_trinket(a, now + 1000.0), "no otra vez enseguida")
 	check(m.use_trinket(a, now + float(GameData.C.TRINKET_CD_MS)), "a los 2 minutos, sí")
+
+
+## The kit rule: basic + 3 abilities + ultimate, and among the 3, 1-2 that deal damage and 1-2 that control (the
+## healer's damage is its basic attack; its abilities heal, shield and control).
+func test_kits_have_three_abilities_with_damage_and_crowd_control() -> void:
+	for cls in GameData.playable_ids():
+		var specs: Array = GameData.spec_ids(cls) if not GameData.spec_ids(cls).is_empty() else [""]
+		for sid in specs:
+			var kit := GameData.abilities(cls, sid)
+			var name := "%s%s" % [cls, "/" + sid if sid != "" else ""]
+			eq(kit.size(), 5, "%s: básico, 3 habilidades y definitiva" % name)
+			check(kit[int(GameData.C.ULT_SLOT)].get("ult", false), "%s: la definitiva en la R" % name)
+			var dmg := 0
+			var cc := 0
+			for a in kit.slice(1, int(GameData.C.ULT_SLOT)):
+				var controls: bool = not a.get("friendly", false) and (a.has("ccMs") or a.has("slowPct"))
+				if controls:
+					cc += 1
+				elif a.has("dmg") or a.has("dotDps"):
+					dmg += 1
+			check(cc >= 1 and cc <= 2, "%s: 1 o 2 de control (%d)" % [name, cc])
+			if cls not in BotBrain.HEALERS:
+				check(dmg >= 1 and dmg <= 2, "%s: 1 o 2 de daño (%d)" % [name, dmg])
+			check(not GameData.reserve(cls, sid).is_empty(), "%s: lo que salió del kit queda en reserva" % name)

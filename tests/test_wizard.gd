@@ -38,9 +38,9 @@ func _fly(m: ArenaMatch, from: float, ms: float) -> void:
 func test_wizard_is_complete() -> void:
 	check(GameData.classes.has("wizard"), "Aprendiz registrado")
 	var kit := GameData.kit("wizard")
-	eq(kit.abilities.size(), 7, "siete habilidades")
+	eq(kit.abilities.size(), int(GameData.C.SLOT_COUNT), "básico, 3 habilidades y definitiva")
 	check(ResourceLoader.exists("res://assets/icons/%s.svg" % kit.icon), "icono de clase")
-	for a in kit.abilities:
+	for a in kit.abilities + GameData.reserve("wizard"):  # the reserve stays playable-ready too
 		check(SpellKinds.TABLE.has(a.id), "objetivo explícito: " + a.id)
 		check(SpellSchools.explicit(a.id), "escuela: " + a.id)
 		check(ResourceLoader.exists("res://assets/icons/%s.svg" % a.icon), "icono: " + a.id)
@@ -68,7 +68,7 @@ func test_confusion_cast_keeps_its_target() -> void:
 	var m := _match()
 	var z: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[3]
-	check(m.cast_ability(z, _slot("confuse"), t.x, t.z, 1000, t.id), "empieza a lanzar")
+	check(m.cast_ability(z, slot_of(z, "confuse"), t.x, t.z, 1000, t.id), "empieza a lanzar")
 	for i in 90:
 		m.tick(1000 + i * (1000.0 / 60.0))
 	eq(t.incap_kind, "disorient", "queda desorientado")
@@ -79,15 +79,15 @@ func test_broom_ward_and_guardian() -> void:
 	var z: ArenaUnit = m.units[0]
 	var ally: ArenaUnit = m.units[1]
 	var rogue: ArenaUnit = m.units[2]
-	m._execute(z, _slot("broom"), z.x, z.z + 5, -1, 1000)
+	m._execute(z, slot_of(z, "broom"), z.x, z.z + 5, -1, 1000)
 	check(z.dash_left > 0.0 and z.dash_vz > 0.0, "sale volando hacia adelante")
 	check(z.haste_until >= 3000, "y corre más rápido")
 	z.dash_left = 0.0
-	m._execute(z, _slot("wardshield"), z.x, z.z, -1, 1000)
+	m._execute(z, slot_of(z, "wardshield"), z.x, z.z, -1, 1000)
 	eq(z.absorb, 75.0, "el escudo absorbe 75")
 	ally.hp = 100.0
 	z.ult = 100.0
-	m._execute(z, _slot("guardian"), z.x, z.z, -1, 2000)
+	m._execute(z, slot_of(z, "guardian"), z.x, z.z, -1, 2000)
 	check(rogue.fear_until > 3000, "el enemigo cercano huye")
 	near(ally.hp, 145.0, 0.01, "el aliado se cura 45")
 

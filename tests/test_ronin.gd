@@ -37,9 +37,9 @@ func _slot(id: String) -> int:
 func test_ronin_is_complete() -> void:
 	check(GameData.classes.has("ronin"), "Ronin registrado")
 	var kit := GameData.kit("ronin")
-	eq(kit.abilities.size(), 7, "siete habilidades")
+	eq(kit.abilities.size(), int(GameData.C.SLOT_COUNT), "básico, 3 habilidades y definitiva")
 	check(ResourceLoader.exists("res://assets/icons/%s.svg" % kit.icon), "icono de clase")
-	for a in kit.abilities:
+	for a in kit.abilities + GameData.reserve("ronin"):  # the reserve stays playable-ready too
 		check(SpellKinds.TABLE.has(a.id), "objetivo explícito: " + a.id)
 		check(SpellSchools.explicit(a.id), "escuela: " + a.id)
 		check(ResourceLoader.exists("res://assets/icons/%s.svg" % a.icon), "icono: " + a.id)
@@ -55,17 +55,17 @@ func test_third_tempest_in_a_row_throws_a_tornado_that_knocks_up() -> void:
 	t.max_hp = 10000
 	t.hp = 10000
 	var hp := t.hp
-	m._execute(r, _slot("tempest"), t.x, t.z, t.id, 1000)
+	m._execute(r, slot_of(r, "tempest"), t.x, t.z, t.id, 1000)
 	check(_hit(hp - t.hp, 26.0, m), "estocada: 26 (o su crítico): %s" % (hp - t.hp))
 	eq(m.projs.size(), 0, "la primera no tira tornado")
-	m._execute(r, _slot("tempest"), t.x, t.z, t.id, 2000)
+	m._execute(r, slot_of(r, "tempest"), t.x, t.z, t.id, 2000)
 	eq(m.projs.size(), 0, "la segunda tampoco")
-	m._execute(r, _slot("tempest"), t.x, t.z, t.id, 3000)
+	m._execute(r, slot_of(r, "tempest"), t.x, t.z, t.id, 3000)
 	eq(m.projs.size(), 1, "la tercera seguida lanza el tornado")
 	for i in 60:
 		m._step_projectiles(3000 + i * (1000.0 / 60.0))
 	check(t.stun_until > 3500, "el tornado lo deja en el aire")
-	m._execute(r, _slot("tempest"), t.x, t.z, t.id, 20000)
+	m._execute(r, slot_of(r, "tempest"), t.x, t.z, t.id, 20000)
 	eq(r.tempest_stacks, 1, "las cargas se pierden si pasan más de 6 s")
 
 
@@ -74,7 +74,7 @@ func test_wind_wall_eats_enemy_projectiles_but_not_its_own_team() -> void:
 	var r: ArenaUnit = m.units[0]
 	var mage: ArenaUnit = m.units[1]
 	mage.z = 14.0
-	m._execute(r, _slot("windwall"), r.x, r.z + 5.0, -1, 1000)  # wall 2.5 m in front (towards +z)
+	m._execute(r, slot_of(r, "windwall"), r.x, r.z + 5.0, -1, 1000)  # wall 2.5 m in front (towards +z)
 	eq(m.windwalls.size(), 1, "muro levantado")
 	var hp := r.hp
 	m._spawn_proj(mage, GameData.ability("mage", 0), Vector2(0, -1), r)
@@ -92,14 +92,14 @@ func test_sweep_dashes_through_and_last_breath_teleports_and_knocks_up() -> void
 	var r: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[1]
 	var hp := t.hp
-	m._execute(r, _slot("sweep"), t.x, t.z, t.id, 1000)
+	m._execute(r, slot_of(r, "sweep"), t.x, t.z, t.id, 1000)
 	check(_hit(hp - t.hp, 20.0, m), "corte de 20 (o su crítico): %s" % (hp - t.hp))
 	check(r.dash_left > 0.0 and r.dash_vz > 0.0, "sale disparado hacia el objetivo")
 	var far: ArenaUnit = m.units[2]
 	far.z = 14.0
 	hp = far.hp
 	r.ult = 100.0
-	m._execute(r, _slot("lastbreath"), far.x, far.z, far.id, 2000)
+	m._execute(r, slot_of(r, "lastbreath"), far.x, far.z, far.id, 2000)
 	check(Vector2(r.x - far.x, r.z - far.z).length() < 2.0, "aparece junto al objetivo")
 	check(_hit(hp - far.hp, 90.0, m), "90 de daño (o su crítico): %s" % (hp - far.hp))
 	check(far.stun_until > 3000, "lo deja en el aire")
