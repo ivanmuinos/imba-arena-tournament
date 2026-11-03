@@ -4,3 +4,7 @@ export/
 *.log
 .DS_Store
 tools/bin/
+
+# Claude Code: worktrees por issue y config personal
+.claude/worktrees/
+.claude/settings.local.json

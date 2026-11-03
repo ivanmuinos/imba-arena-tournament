@@ -1,0 +1,36 @@
+name: Feature / idea
+description: Algo nuevo para el juego. Escribilo de forma que se pueda pasar tal cual como prompt.
+labels: ["feature"]
+body:
+  - type: textarea
+    id: que
+    attributes:
+      label: Qué queremos
+      description: La idea en 1-3 frases, desde el punto de vista del jugador.
+    validations:
+      required: true
+  - type: textarea
+    id: aceptacion
+    attributes:
+      label: Criterios de aceptación
+      description: Cómo sabemos que está terminado. Lista verificable.
+      placeholder: |
+        - [ ] ...
+        - [ ] Tests nuevos/actualizados en tests/
+    validations:
+      required: true
+  - type: textarea
+    id: archivos
+    attributes:
+      label: Archivos / zonas que toca
+      description: Escenas, scripts o datos que probablemente cambien. Sirve para detectar choques con otras branches.
+      placeholder: scripts/..., scenes/..., data/...
+  - type: textarea
+    id: fuera
+    attributes:
+      label: Fuera de alcance
+      description: Lo que NO entra en este ticket (va en otro issue).
+  - type: textarea
+    id: notas
+    attributes:
+      label: Notas / referencias

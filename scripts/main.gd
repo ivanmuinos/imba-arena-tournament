@@ -3,6 +3,7 @@ extends Node
 ## Also the entry point of the dedicated server (`godot --headless --path . -- --server`).
 ##
 ## Command line (after `--`):
+##   --version          print `Imba Arena Tournament v<config/version>` and quit
 ##   --server [--port=7777] [--mode=2|3] [--map=magma|moon] [--diff=easy|normal|hard] [--wait=SEC]
 ##   --offline | --host | --join=IP[:PORT]   skip the menu   (+ --name= --cls= --team= --mode= --map= --diff=)
 ##   --practice[=tutorial]   the training yard (or the guided tutorial in it)
@@ -66,6 +67,11 @@ func _ready() -> void:
 	GameData.ensure_loaded()
 	_headless = DisplayServer.get_name() == "headless"
 	args = _parse(OS.get_cmdline_user_args())
+	if args.has("version"):  # before any window/menu work: just answer and leave
+		print(version_line())
+		_ui.free()  # never added to the tree
+		get_tree().quit(0)
+		return
 	for k in ["render-scale", "upscaler", "shadows", "ssr", "ssao", "sdfgi", "volumetric_fog", "glow", "msaa", "fx_lights", "shadow_size", "embers", "dof"]:
 		if args.has(k):
 			var raw := str(args[k])
@@ -175,7 +181,12 @@ func _ready() -> void:
 		_start_join(cfg, parts[0], int(parts[1]) if parts.size() > 1 else DEFAULT_PORT)
 
 
-func _parse(list: PackedStringArray) -> Dictionary:
+## What `--version` prints; the version is the handshake's (GameServer.game_version()).
+static func version_line() -> String:
+	return "%s v%s" % [str(ProjectSettings.get_setting("application/config/name", "Imba Arena Tournament")), GameServer.game_version()]
+
+
+static func _parse(list: PackedStringArray) -> Dictionary:
 	var d := {}
 	for a in list:
 		if not a.begins_with("--"):

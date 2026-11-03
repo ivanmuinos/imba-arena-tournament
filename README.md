@@ -4,6 +4,11 @@ Arenas PvP 2v2 / 3v3 con controles estilo World of Warcraft, cuatro arenas estra
 llenan los lugares libres y juego online por IP (ENet) o por Steam. Port del prototipo web (`../magma-arena`) a Godot 4
 en GDScript.
 
+## Cómo trabajar en el proyecto
+
+Ideas → issues → `/issue N` en Claude Code → PR → CI → merge. Guía completa (setup, flujo, reglas): **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+Issues: https://github.com/ivanmuinos/imba-arena-tournament/issues
+
 ## Estado
 
 | Etapa | Qué | Estado |
@@ -44,7 +49,8 @@ línea LF (`.gitattributes`) porque Godot reescribe los recursos con LF.
 
 Opciones de línea de comandos (tras `--`): `--map=random|bridge|pillars|tomb|living`, `--cls=`, `--mode=2|3`, `--diff=`, `--gfx=auto|alta|media|baja`,
 `--name=`, `--team=`, `--host`, `--join=IP[:PUERTO]`, `--autopilot`, `--drive` (jugador scripteado), `--target` (mantiene un enemigo seleccionado),
-`--log`, `--shot=PREFIJO --shot-times=3,10` (capturas), `--time-scale=N`, `--rounds=N`, `--no-capture`.
+`--log`, `--shot=PREFIJO --shot-times=3,10` (capturas), `--time-scale=N`, `--rounds=N`, `--no-capture`,
+`--version` (imprime `Imba Arena Tournament v<versión>` y sale; ej. `godot --headless --path . -- --version`).
 Para capturas de menús: `--menu=hub|play|setup:practice|join|champions:rogue|settings:audio` (+ `--menu-tip=N` abre el tooltip de la habilidad N), `--lobby-demo`, `--end-demo`, `--menu-script=1:key,2:go:play,3:press:ui_down` (acciones temporizadas).
 
 ## Arenas
@@ -204,7 +210,7 @@ Regenerar arte: `blender -b --python tools/blender/build_characters.py` y `build
 ## Tests
 
 ```sh
-./run_tests.sh              # todos (263); falla ante cualquier test o error de script
+./run_tests.sh              # todos (366); falla ante cualquier test o error de script
 ./run_tests.sh net steam    # sólo las suites cuyo archivo contiene esas palabras; -v imprime cada test
 ./tests/smoke.sh            # humo headless: menú, partida offline, jugador scripteado en 2 mapas, servidor dedicado + cliente ENet
 ```
