@@ -608,6 +608,21 @@ func heal(x: float, z: float) -> void:
 	burst(Vector3(x, _y(x, z) + 0.4, z), 16, 1.2, Color("#c8ffd0"), 1.1, 0.3, -1.5)
 
 
+## A cast heal landing (Sanación, Recrecimiento): a ring of light on the ground, a pillar, a bright flash at the chest
+## and motes rising around the target; gold for holy, green for nature.
+func heal_spell(x: float, z: float, school: String) -> void:
+	var y := _y(x, z)
+	var pal := SpellSchools.palette(school)
+	var chest := Vector3(x, y + 1.25 * UnitView.VS, z)
+	_flash_ground(Vector3(x, y + 0.14, z), school, 0.9, 2.2)
+	_flash_column(Vector3(x, y, z), school, 0.85, 1.25)
+	_flash_sphere(chest, school, 0.5, 0.45, 2.2)
+	_light_flash(chest, pal.mid, 4.5, 0.55)
+	burst(chest, 30, 3.2, pal.core, 0.6, 0.3)  # sparkle
+	burst(Vector3(x, y + 0.2, z), 46, 1.4, pal.edge, 1.5, 0.38, -4.5)  # motes rising from the feet
+	burst(Vector3(x, y + 0.9, z), 20, 0.8, pal.mid, 1.2, 0.22, -3.0)
+
+
 func boom(x: float, z: float, r: float, kind: String) -> void:
 	var meteor := kind == "meteor"
 	var y := _y(x, z)

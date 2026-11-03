@@ -107,7 +107,7 @@ static func reward_lines(rec: Dictionary) -> Array:
 	var lines: Array = []
 	if int(rec.xp) <= 0:
 		return lines
-	lines.append("+%d XP · Nivel %d" % [int(rec.xp), int(rec.level_after)])
+	lines.append("+%d XP de cuenta · Nivel %d" % [int(rec.xp), int(rec.level_after)])
 	for up in rec.level_ups:
 		lines.append("¡SUBISTE AL NIVEL %d!" % int(up.level))
 	for id in rec.completed:

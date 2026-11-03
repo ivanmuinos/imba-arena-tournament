@@ -9,7 +9,6 @@ extends Node
 ##   --practice[=tutorial]   the training yard (or the guided tutorial in it)
 ##   --tournament=<mode>:<tier>   start a cup offline (mode 1-3, tier bronze|silver|gold|gladiator; resumes a run in progress
 ##                       of the same mode and tier); unlocks are ignored here (smoke tests, screenshots)
-##   --forfeit-demo     open the forfeit panel 2 s into an offline match (screenshots)
 ##   --save-dir=PATH    keep tournament.json and profile.json in this folder instead of user:// (smoke tests)
 ##   --god              (playtests) human players take no damage and cannot be crowd controlled
 ##   --autopilot        bots drive the human units too (demos, smoke tests)
@@ -196,7 +195,10 @@ func _ready() -> void:
 			{"name": "Ana", "team": "red", "cls": "mage", "dmg": 1480, "kills": 2, "deaths": 1, "heal": 0},
 			{"name": "Ignis", "team": "blue", "cls": "rogue", "dmg": 1120, "kills": 1, "deaths": 2, "heal": 0},
 			{"name": "Brasa", "team": "red", "cls": "priest", "dmg": 210, "kills": 0, "deaths": 1, "heal": 1650},
-			{"name": "Ceniza", "team": "blue", "cls": "warrior", "dmg": 900, "kills": 1, "deaths": 2, "heal": 0}], "JUGAR OTRA", {"lines": ["Avanzás a la ronda: Semifinal.", "Próximo rival: Los Cuervos.", "+90 XP · Nivel 3", "¡SUBISTE AL NIVEL 3!", "Desbloqueaste: Anillo gris (anillo)"]} if args.has("end-extra") else {})
+			{"name": "Ceniza", "team": "blue", "cls": "warrior", "dmg": 900, "kills": 1, "deaths": 2, "heal": 0},
+			{"name": "Ascua", "team": "red", "cls": "hunter", "dmg": 1210, "kills": 1, "deaths": 0, "heal": 0},
+			{"name": "Vulcano", "team": "blue", "cls": "warlock", "dmg": 980, "kills": 0, "deaths": 2, "heal": 140}], "JUGAR OTRA", {"lines": ["Avanzás a la ronda: Semifinal.", "Próximo rival: Los Cuervos.", "+90 XP de cuenta · Nivel 3", "¡SUBISTE AL NIVEL 3!", "Desbloqueaste: Anillo gris (anillo)"]} if args.has("end-extra") else {})
+		_end.show_progress({"cls": "mage", "gain": 296, "level_before": 4, "level_after": 5, "xp": 120, "xp_next": 450, "first_win": true, "vs_bots": false})
 	elif args.has("lobby-demo"):  # visual check of the lobby
 		_show("lobby")
 		_lobby.show_lobby({"mode": 3, "map": "tomb", "diff": "normal", "you": 1, "host": 1, "members": [{"peer": 1, "pref": "red"}, {"peer": 2, "pref": "any"}],
@@ -764,11 +766,9 @@ func _on_match_started(msg: Dictionary) -> void:
 	_match.finished.connect(_on_match_finished)
 	if offline and not _match.practice:
 		_match.forfeit_requested.connect(_on_forfeit)
-		if args.has("forfeit-demo"):  # visual check of the forfeit panel
-			get_tree().create_timer(2.0).timeout.connect(func(): if _match != null and _match.forfeit_panel != null: _match.forfeit_panel.open(ForfeitPanel.message(tsession != null)))
+	_match.leave_requested.connect(func(): _to_menu.call_deferred())  # practice panel or the Esc menu
 	if _match.practice:
 		_match.practice_switch.connect(_on_practice_switch)
-		_match.leave_requested.connect(func(): _to_menu.call_deferred())
 		if _tutorial_next:
 			var tut := TutorialOverlay.new()
 			tut.attach(_match, TutorialFlow.new(str(last_cfg.cls), str(last_cfg.get("spec", ""))))
@@ -784,10 +784,12 @@ func _on_match_finished(end: Dictionary, rows: Array) -> void:
 		_match = null
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var mine := ""
+	var my_cls := ""
 	if client != null:
 		for r in client.roster:
 			if r.id == client.unit_id:
 				mine = r.team
+				my_cls = str(r.cls)
 	var won: bool = end.winner == mine
 	var my_stats := {}
 	for st in end.get("stats", []):
@@ -812,12 +814,25 @@ func _on_match_finished(end: Dictionary, rows: Array) -> void:
 	_show("end")
 	_set_preview(last_cfg.get("map", "random"))
 	_end.show_result(won, end.score, rows, again_text, extra)
+	_end.show_progress(_award_progress(end, mine, my_cls))
 
 
 ## "Rendirse" confirmed in the match: the server ends it with the local player's team losing.
 func _on_forfeit() -> void:
 	if server != null and server.forfeit_local():
 		_forfeited = true
+
+
+## XP for your champion (Progress). Offline matches are against bots only: half XP.
+func _award_progress(end: Dictionary, team: String, cls: String) -> Dictionary:
+	if cls == "" or client == null:
+		return {}
+	var mine := {}
+	for s in end.get("stats", []):
+		if int(s.id) == client.unit_id:
+			mine = s
+	return ProgressStore.shared().award(cls, end.winner == team, float(mine.get("dmg", 0)), float(mine.get("heal", 0)), offline,
+		Time.get_date_string_from_system())
 
 
 func _again() -> void:
@@ -981,6 +996,12 @@ func _process(delta: float) -> void:
 				ev.keycode = KEY_SPACE
 				ev.pressed = true
 				_menu._input(ev)
+			"esc":  # a real Esc key press, through the whole input chain (the in-match menu)
+				for down in [true, false]:
+					var ke := InputEventKey.new()
+					ke.keycode = KEY_ESCAPE
+					ke.pressed = down
+					Input.parse_input_event(ke)
 			"press":  # an input action as if typed/pressed on a gamepad (ui_down, ui_accept, ui_cancel...)
 				for down in [true, false]:
 					var ae := InputEventAction.new()

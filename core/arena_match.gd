@@ -625,7 +625,9 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			_label(u, "FILOTORMENTA", "#ffd166")
 		# ---- priest
 		"heal":
-			if target != null: _heal(target, spec.heal, u, now)
+			if target != null:
+				fx.append({"k": "healspell", "id": target.id, "ability": spec.id})  # always shown, even at full health
+				_heal(target, spec.heal, u, now)
 		"pwshield":
 			if target != null:
 				target.absorb = spec.heal
@@ -656,7 +658,9 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 					_heal(a, spec.heal, u, now)
 		# ---- druid
 		"regrowth":
-			if target != null: _heal(target, spec.heal, u, now)
+			if target != null:
+				fx.append({"k": "healspell", "id": target.id, "ability": spec.id})
+				_heal(target, spec.heal, u, now)
 		"rejuv":
 			if target != null:
 				target.hot_until = now + float(spec.durationMs)
@@ -1230,7 +1234,7 @@ func _step_effects(u: ArenaUnit, now: float) -> void:
 		_sheep_heal_number(u)  # the sheep ended or broke: show what it healed
 	if now < u.storm_until and now >= u.storm_next:
 		u.storm_next = now + 500
-		var spec := u.ability(6)
+		var spec := u.ability(int(C.ULT_SLOT))
 		fx.append({"k": "swing", "id": u.id, "heavy": true})
 		for e in _enemies_within(u, u.x, u.z, spec.range):
 			_damage(e, spec.dmg, u, now, spec.id)
@@ -1435,7 +1439,7 @@ func _step_traps(now: float) -> void:
 			keep.append(tr)
 			continue
 		fx.append({"k": "trap", "x": tr.x, "z": tr.z})
-		_cc(victim, "incap", GameData.ability("hunter", 2).ccMs, now, "freeze")
+		_cc(victim, "incap", GameData.find_ability("hunter", "trap").ccMs, now, "freeze")
 	traps = keep
 
 

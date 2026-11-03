@@ -29,6 +29,8 @@ func test_equipped_items_are_read_from_the_profile() -> void:
 	eq(Cosmetics.ring_color(Color.RED), Color(str(Challenges.item("ring_mage").value)), "color del anillo")
 	eq(Cosmetics.skin_for("mage"), "recolor_mage", "recoloreado del mago")
 	eq(Cosmetics.skin_for("warrior"), "", "otra clase sin recoloreado")
+	eq(Cosmetics.rig_skin("mage"), {"id": "recolor_mage", "recolor": Cosmetics.tint("recolor_mage")}, "la skin reemplaza el recoloreado de la clase")
+	eq(Cosmetics.rig_skin("warrior"), {}, "otra clase sin skin")
 	Cosmetics.profile = null
 
 
@@ -46,10 +48,8 @@ func test_every_recolor_item_has_a_valid_tint() -> void:
 
 
 func test_skin_replaces_the_base_recolor_and_changes_the_cache_key() -> void:
-	var base := {"hue": 0.1, "sat": 0.0, "val": 0.0}
-	eq(Cosmetics.effective_recolor(base, "recolor_mage").hue, Cosmetics.tint("recolor_mage").hue, "la skin reemplaza la base")
-	eq(Cosmetics.effective_recolor(base, ""), base, "sin skin queda la base")
-	eq(Cosmetics.effective_recolor({}, ""), {}, "sin nada, sin recoloreado")
+	Cosmetics.profile = null
+	eq(Cosmetics.rig_skin("mage"), {}, "sin perfil: sin skin")
 	check(CharacterRig.recolor_key("mage", "Mage", "a") != CharacterRig.recolor_key("mage", "Mage", "b"), "la clave distingue skins")
 	check(CharacterRig.recolor_key("mage", "Mage", "") != CharacterRig.recolor_key("mage", "Mage", "a"), "y la ausencia de skin")
 

@@ -81,14 +81,14 @@ func test_kit_specific_steps_follow_the_class() -> void:
 			if s.id == "control":
 				return s
 		return {}
-	eq(ctrl.call(warrior).objectives[0].event, "interrupt", "el guerrero interrumpe con Golpe de escudo")
+	eq(ctrl.call(warrior).objectives[0].event, "cc", "el guerrero practica control (las interrupciones están en reserva)")
 	eq(ctrl.call(priest).objectives[0].event, "cc", "el sacerdote practica control (no interrumpe)")
 	var ab := func(f: TutorialFlow) -> Dictionary:
 		for s in f.steps:
 			if s.id == "abilities":
 				return s
 		return {}
-	eq(ab.call(priest).objectives.size(), 5, "cinco habilidades en el paso de habilidades")
+	eq(ab.call(priest).objectives.size(), 3, "tres habilidades en el paso de habilidades")
 	check(str(ab.call(priest).objectives[0].text).contains("Sanación"), "usa los nombres reales de la clase")
 	check(str(ab.call(priest).objectives[0].text).contains("aliado"), "avisa de las curas a aliados")
 
@@ -100,7 +100,7 @@ func test_ultimate_step_grants_the_ult_and_events_use_real_ability_ids() -> void
 		if s.id == "ult":
 			ult = s
 	eq(ult.on_enter, "ult", "la definitiva se deja lista")
-	eq(ult.objectives[0].event, "cast:%s" % GameData.ability("rogue", 6).id, "evento con el id real")
+	eq(ult.objectives[0].event, "cast:%s" % GameData.ability("rogue", int(GameData.C.ULT_SLOT)).id, "evento con el id real")
 
 
 func test_skip_and_progress() -> void:

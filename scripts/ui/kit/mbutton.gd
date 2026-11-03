@@ -115,29 +115,23 @@ func _draw_bg() -> void:
 	var r := Rect2(Vector2.ZERO, size)
 	var dis := disabled
 	match variant:
-		"primary", "accent", "steam":
-			var base: Color = {"primary": UiKit.LAVA, "accent": UiKit.GOLD, "steam": Color("#66c0f4")}[variant]
-			if dis:
-				base = Color(0.3, 0.25, 0.22)
-			var cut := minf(14.0, r.size.y * 0.3)
-			var poly := _shape(r, cut)
+		"primary", "accent":  # the orange button of the interface kit; accent is the same, gilded
 			if glow > 0.01:  # outer halo
 				for i in 3:
-					var g := _shape(r.grow(3.0 + i * 3.0), cut + i * 2.0)
-					_bg.draw_colored_polygon(g, Color(base.r, base.g, base.b, 0.10 * glow / (i + 1)))
-			var top := base.lightened(0.28 + 0.12 * glow)
-			var bot := base.darkened(0.18)
-			var cols := PackedColorArray([top, top, bot, bot, bot, top])
-			_bg.draw_polygon(poly, cols)
-			if shine >= 0.0:  # diagonal sweep clipped to the rect
-				var cx := lerpf(-r.size.y, r.size.x + r.size.y, shine)
-				var w := r.size.y * 0.9
-				var pts := PackedVector2Array([Vector2(cx, 0), Vector2(cx + w, 0), Vector2(cx + w - r.size.y * 0.6, r.size.y), Vector2(cx - r.size.y * 0.6, r.size.y)])
-				pts = Geometry2D.intersect_polygons(pts, poly)[0] if not Geometry2D.intersect_polygons(pts, poly).is_empty() else PackedVector2Array()
-				if pts.size() >= 3:
-					_bg.draw_colored_polygon(pts, Color(1, 1, 1, 0.38))
-			var edge := Color(1, 0.95, 0.8, 0.9) if not dis else Color(1, 1, 1, 0.15)
-			_bg.draw_polyline(poly + PackedVector2Array([poly[0]]), edge, 1.5, true)
+					_bg.draw_style_box(UiKit.box(Color(1.0, 0.55, 0.15, 0.10 * glow / (i + 1)), Color(0, 0, 0, 0), 12 + i * 3, 0, 0), r.grow(3.0 + i * 3.0))
+			var sb := UiKit.art_box("btn_primary", 17, 15, 12, 12)
+			sb.modulate_color = Color(0.45, 0.42, 0.4) if dis else (Color(1.0, 0.9, 0.55) if variant == "accent" else Color.WHITE)
+			_bg.draw_style_box(sb, r)
+			if glow > 0.01:
+				_bg.draw_style_box(UiKit.box(Color(1, 1, 1, 0.12 * glow), Color(0, 0, 0, 0), 8, 0, 0), r.grow(-4))
+			_draw_shine(r)
+		"steam":
+			var base := Color("#66c0f4") if not dis else Color(0.3, 0.25, 0.22)
+			var cut := minf(14.0, r.size.y * 0.3)
+			var poly := _shape(r, cut)
+			_bg.draw_polygon(poly, PackedColorArray([base.lightened(0.28 + 0.12 * glow), base.lightened(0.28 + 0.12 * glow), base.darkened(0.18), base.darkened(0.18), base.darkened(0.18), base.lightened(0.28 + 0.12 * glow)]))
+			_bg.draw_polyline(poly + PackedVector2Array([poly[0]]), Color(1, 0.95, 0.8, 0.9) if not dis else Color(1, 1, 1, 0.15), 1.5, true)
+			_draw_shine(r)
 		"ghost":
 			if glow > 0.01:
 				_bg.draw_rect(r, Color(1, 0.6, 0.3, 0.10 * glow))
@@ -152,17 +146,26 @@ func _draw_bg() -> void:
 			var fill := Color(1, 0.48, 0.1, 0.92) if on else Color(1, 1, 1, 0.05 + 0.07 * glow)
 			var sb := UiKit.box(fill, Color(1, 0.8, 0.5, 0.9) if on else Color(1, 1, 1, 0.12 + 0.2 * glow), UiKit.CORNER - 1, 1, 0)
 			_bg.draw_style_box(sb, r)
-		_:
-			var fill := Color(1, 1, 1, 0.05 + 0.08 * glow)
-			var border := Color(1.0, 0.62, 0.3, 0.30 + 0.55 * glow)
-			if dis:
-				fill = Color(1, 1, 1, 0.03)
-				border = Color(1, 1, 1, 0.08)
-			_bg.draw_style_box(UiKit.box(fill, border, UiKit.CORNER - 1, 1, 0), r)
+		_:  # the dark ember button of the interface kit
+			var sb := UiKit.art_box("btn_secondary", 11, 9, 9, 9)
+			sb.modulate_color = Color(0.5, 0.48, 0.46) if dis else Color.WHITE.lerp(Color(1.3, 1.15, 1.0), glow)
+			_bg.draw_style_box(sb, r)
 	if has_focus():
 		var f := UiKit.box(Color(0, 0, 0, 0), Color(1, 0.93, 0.75, 0.95), UiKit.CORNER + 2, 2, 0)
 		f.draw_center = false
 		_bg.draw_style_box(f, r.grow(4))
+
+
+## Diagonal light sweep across the button while `shine` runs (on hover).
+func _draw_shine(r: Rect2) -> void:
+	if shine < 0.0:
+		return
+	var cx := lerpf(-r.size.y, r.size.x + r.size.y, shine)
+	var w := r.size.y * 0.9
+	var pts := PackedVector2Array([Vector2(cx, 4), Vector2(cx + w, 4), Vector2(cx + w - r.size.y * 0.6, r.size.y - 4), Vector2(cx - r.size.y * 0.6, r.size.y - 4)])
+	var clip := Geometry2D.intersect_polygons(pts, PackedVector2Array([Vector2(4, 4), Vector2(r.size.x - 4, 4), Vector2(r.size.x - 4, r.size.y - 4), Vector2(4, r.size.y - 4)]))
+	if not clip.is_empty() and clip[0].size() >= 3:
+		_bg.draw_colored_polygon(clip[0], Color(1, 1, 1, 0.3))
 
 
 func _notification(what: int) -> void:

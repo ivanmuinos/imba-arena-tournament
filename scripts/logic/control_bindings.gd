@@ -6,11 +6,11 @@ const ACTIONS := {
 	"forward": "Avanzar", "back": "Retroceder", "left": "Girar izquierda", "right": "Girar derecha",
 	"strafe_left": "Paso lateral izquierdo", "strafe_right": "Paso lateral derecho",
 	"jump": "Saltar / confirmar área (mando)", "target": "Siguiente objetivo", "ally": "Siguiente aliado",
-	"ally_0": "Aliado 1", "ally_1": "Aliado 2", "ally_2": "Aliado 3",
+	"ally_0": "Seleccionarte a vos", "ally_1": "Aliado 1", "ally_2": "Aliado 2",
 	"cancel": "Cancelar / soltar objetivo", "face": "Mirar al objetivo", "mute": "Silenciar",
 	"orbit": "Seleccionar / orbitar cámara", "look": "Autoataque / mirar con cámara",
 	"slot_0": "Habilidad 1", "slot_1": "Habilidad 2", "slot_2": "Habilidad 3", "slot_3": "Habilidad 4",
-	"slot_4": "Habilidad 5", "slot_5": "Habilidad 6", "slot_6": "Habilidad 7",
+	"slot_4": "Definitiva",
 }
 var store: RefCounted
 
@@ -27,9 +27,9 @@ static func defaults() -> Dictionary:
 	out.look.key = ["m:2"]
 	var pad := {"jump": JOY_BUTTON_A, "target": JOY_BUTTON_RIGHT_SHOULDER, "ally": JOY_BUTTON_LEFT_SHOULDER, "cancel": JOY_BUTTON_RIGHT_STICK, "face": JOY_BUTTON_LEFT_STICK}
 	for a in pad: out[a].pad = ["p:%d" % pad[a]]
-	for i in 7:
-		out["slot_%d" % i].key = ["k:%d" % (KEY_1 + i)]
-		out["slot_%d" % i].pad = ["p:%d" % [JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B, JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_LEFT][i]]
+	for i in InputLogic.SLOT_KEYS.size():
+		out["slot_%d" % i].key = ["k:%d" % InputLogic.SLOT_KEYS[i]]
+		out["slot_%d" % i].pad = ["p:%d" % InputLogic.SLOT_PADS[i]]
 	return out
 
 static func valid(token: String, channel: String) -> bool:

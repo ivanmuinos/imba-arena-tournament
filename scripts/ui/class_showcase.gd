@@ -157,7 +157,7 @@ func show_class(cls: String, team := Color("#ffb84d"), spec := "") -> void:
 	if not CharacterRig.available(cls):
 		return
 	_rig = CharacterRig.new()
-	_rig.setup(cls, team, Cosmetics.skin_for(cls))  # previews what you will wear
+	_rig.setup(cls, team, Cosmetics.rig_skin(cls))  # previews what you will wear
 	_pivot.add_child(_rig.root)
 	_pivot.rotation.y = 0.5
 	_spin_v = 0.0

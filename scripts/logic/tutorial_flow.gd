@@ -8,7 +8,7 @@ extends RefCounted
 ## Events (strings): moved, jumped, cam_rmb, cam_lmb, zoom, click_target, tab_target, cast:<ability id>, cast_cancel, ground_cast,
 ## auto_on, los_hidden, interrupt, cc, debuff_seen, tooltip, trinket, focus_set, macro_cast, bind_mode_off. A step with `manual` also waits for next().
 
-const KEYS := ["1", "2", "3", "4", "5", "6", "7"]
+const KEYS := ["1", "2", "3", "4", "R"]
 ## Abilities that cut a cast. A kit without one practises plain crowd control instead.
 const INTERRUPTS := ["pummel", "kick", "counter", "silence"]
 
@@ -78,19 +78,19 @@ func _build() -> void:
 		_step("basic", "Tu hechizo básico", "[b]%s[/b]. %s" % [b.name, str(b.desc)],
 			[_obj("cast0", "Con un objetivo elegido, apretá [key]%s[/key]" % key_of(0), "cast:%s" % b.id)], {"arrow": "bar"})
 	var objs: Array = []
-	for slot in range(1, 6):
+	for slot in range(1, int(GameData.C.ULT_SLOT)):
 		var a: Dictionary = abs[slot]
 		var friendly := SpellKinds.kind(a) == "friendly"
 		var tail := " (sobre el aliado herido)" if friendly else ""
 		objs.append(_obj("slot%d" % slot, "[key]%s[/key] [b]%s[/b]: %s%s" % [key_of(slot), a.name, short(str(a.desc)), tail], "cast:%s" % a.id))
 	_step("abilities", "Tus habilidades", "Cada habilidad tiene su tecla y su cooldown (el número sobre el ícono). Probalas todas sobre los muñecos.", objs, {"arrow": "bar"})
 	var cast_slot := -1
-	for slot in range(0, 6):
+	for slot in range(0, int(GameData.C.ULT_SLOT)):
 		if float(abs[slot].get("cast", 0)) > 0.0 and not abs[slot].get("friendly", false):
 			cast_slot = slot
 			break
 	if cast_slot < 0:
-		for slot in range(0, 6):
+		for slot in range(0, int(GameData.C.ULT_SLOT)):
 			if float(abs[slot].get("cast", 0)) > 0.0:
 				cast_slot = slot
 				break
@@ -102,7 +102,7 @@ func _build() -> void:
 			[_obj("finish", "Lanzá [b]%s[/b] [key]%s[/key]%s y quedate quieto hasta que termine" % [c.name, key_of(cast_slot), where], "cast:%s" % c.id),
 			_obj("cancel", "Ahora lanzala y moveté a mitad: se cancela", "cast_cancel")], {"arrow": "cast", "slot": cast_slot})
 	var ground_slot := -1
-	for slot in range(1, 6):
+	for slot in range(1, int(GameData.C.ULT_SLOT)):
 		if SpellKinds.kind(abs[slot]) == "ground":
 			ground_slot = slot
 			break
@@ -113,7 +113,7 @@ func _build() -> void:
 	_step("los", "Línea de visión", "Los hechizos necesitan [b]línea de visión[/b]: los pilares y paredes tapan. El muñeco hechicero (a la derecha) lanza un hechizo largo.",
 		[_obj("hide", "Escondete detrás del pilar del centro-izquierda para que no te vea", "los_hidden")], {"arrow": "dummy:caster"})
 	var interrupt_slot := -1
-	for slot in range(1, 6):
+	for slot in range(1, int(GameData.C.ULT_SLOT)):
 		if INTERRUPTS.has(str(abs[slot].id)):
 			interrupt_slot = slot
 			break
@@ -127,9 +127,9 @@ func _build() -> void:
 	_step("debuffs", "Efectos y tooltips", "Debajo de cada objetivo ves sus efectos (debuffs) con el tiempo que les queda. Pasá el mouse por un ícono para leer qué hace.",
 		[_obj("debuff", "Elegí un muñeco con un efecto activo y mirá su cuadro arriba", "debuff_seen"),
 		_obj("tip", "Pasá el mouse sobre una habilidad de tu barra para leer su descripción", "tooltip")], {"arrow": "target_panel"})
-	var ult: Dictionary = abs[6]
+	var ult: Dictionary = abs[int(GameData.C.ULT_SLOT)]
 	var ult_where := " Se coloca en el suelo con el retículo: clic izquierdo confirma." if SpellKinds.kind(ult) == "ground" else ""
-	_step("ult", "La definitiva", "[b]%s[/b] [key]%s[/key] se carga haciendo y recibiendo daño. Para la práctica te la dejamos lista. %s%s" % [ult.name, key_of(6), short(str(ult.desc)), ult_where],
+	_step("ult", "La definitiva", "[b]%s[/b] [key]%s[/key] se carga haciendo y recibiendo daño. Para la práctica te la dejamos lista. %s%s" % [ult.name, key_of(int(GameData.C.ULT_SLOT)), short(str(ult.desc)), ult_where],
 		[_obj("ult", "Usá tu definitiva", "cast:%s" % ult.id)], {"arrow": "bar", "on_enter": "ult"})
 	var kb := Keybinds.shared()
 	_step("trinket", "El abalorio PvP", "Como en WoW: el [b]abalorio[/b] [key]%s[/key] rompe cualquier control (aturdimiento, oveja, miedo, raíces, silencio, ralentización) y tarda [b]2 minutos[/b] en volver. Guardalo para el control que te mata. Ojo: la [b]oveja te cura[/b] 10%% por segundo; muchas veces conviene esperarla." % kb.label("trinket"),

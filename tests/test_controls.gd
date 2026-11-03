@@ -7,10 +7,10 @@ func test_configurable_bindings_roundtrip_collision_and_defaults() -> void:
 	eq(binds.assign("slot_0", "key", "k:%d" % KEY_Q), "Ya usado por: Paso lateral izquierdo", "collision rejected")
 	eq(binds.label("slot_0", "key"), "1", "collision leaves old binding intact")
 	eq(binds.assign("slot_0", "key", "m:4"), "La rueda sólo se usa para zoom", "wheel cannot leave held actions stuck")
-	eq(binds.assign("slot_0", "key", "k:%d" % KEY_R), "", "rebind")
+	eq(binds.assign("slot_0", "key", "k:%d" % KEY_G), "", "rebind")
 	eq(binds.assign("slot_0", "pad", "p:4"), "", "controller rebind")
 	var e := InputEventKey.new()
-	e.physical_keycode = KEY_R
+	e.physical_keycode = KEY_G
 	e.pressed = true
 	eq(binds.action(e), "slot_0", "physical binding dispatch")
 	var file := "user://test_bindings.cfg"
@@ -86,15 +86,17 @@ func test_chat_focus_blocks_gameplay_and_bounds_history() -> void:
 	chat.free()
 
 func test_number_slots_and_strafe_keys() -> void:
-	for i in 7:
-		eq(InputLogic.slot_for_key(KEY_1 + i), i, "number binds every slot")
+	for i in 4:
+		eq(InputLogic.slot_for_key(KEY_1 + i), i, "number binds every ability slot")
+	eq(InputLogic.slot_for_key(KEY_R), int(GameData.C.ULT_SLOT), "R = definitiva")
+	eq(InputLogic.slot_for_key(KEY_5), -1, "no hay quinta habilidad")
 	eq(InputLogic.slot_for_key(KEY_Q), -1, "Q reserved for movement")
 	eq(InputLogic.slot_for_key(KEY_E), -1, "E reserved for movement")
 	eq(InputLogic.keyboard_move(false, false, false, false, false, false, true, false).strafe, -1, "Q strafes independently")
 	eq(InputLogic.stick(Vector2(0.1, 0.1)), Vector2.ZERO, "stick drift ignored")
 	near(InputLogic.stick(Vector2(0.6, 0)).x, 0.5, 0.001, "analog speed preserved")
-	for i in 7:
-		eq(InputLogic.pad_slot([JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B, JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_LEFT][i]), i, "all controller slots")
+	for i in int(GameData.C.SLOT_COUNT):
+		eq(InputLogic.pad_slot([JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B, JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_RIGHT][i]), i, "all controller slots")
 ## WoW-style controls: mouse modes, keyboard turn/strafe, click picking, off-screen indicator,
 ## spell kinds and the new target-based casting rules.
 
@@ -202,10 +204,10 @@ func test_every_ability_has_a_kind_consistent_with_its_flags() -> void:
 			if a.get("melee", false) and i > 0:
 				eq(k, "hostile", "%s cuerpo a cuerpo = objetivo hostil" % a.id)
 			eq(k == "auto", a.get("auto", false), "%s: sólo el auto-ataque es 'auto'" % a.id)
-	eq(SpellKinds.kind(GameData.ability("mage", 6)), "ground", "meteoros: suelo")
-	eq(SpellKinds.kind(GameData.ability("hunter", 2)), "ground", "trampa: suelo")
-	eq(SpellKinds.kind(GameData.ability("mage", 4)), "direction", "traslación: dirección")
-	eq(SpellKinds.kind(GameData.ability("mage", 2)), "self", "nova: sobre vos")
+	eq(SpellKinds.kind(GameData.find_ability("mage", "meteor")), "ground", "meteoros: suelo")
+	eq(SpellKinds.kind(GameData.find_ability("hunter", "trap")), "ground", "trampa: suelo")
+	eq(SpellKinds.kind(GameData.find_ability("mage", "blink")), "direction", "traslación: dirección")
+	eq(SpellKinds.kind(GameData.find_ability("mage", "nova")), "self", "nova: sobre vos")
 
 
 # ---------------------------------------------------------------- casting rules
@@ -287,7 +289,7 @@ func test_friendly_spells_go_to_selected_ally_else_self() -> void:
 
 func test_self_spells_need_no_target() -> void:
 	var pc := _pc("mage")
-	var r := pc.try_cast(2, _ctx(1000.0, []))  # nova
+	var r := pc.try_cast(3, _ctx(1000.0, []))  # nova
 	eq(r.msg.target, -1, "sin objetivo")
 	near(r.msg.ax, 0.0, 0.001, "centrada en vos")
 	eq(r.error, "", "sin error")
@@ -295,46 +297,49 @@ func test_self_spells_need_no_target() -> void:
 
 func test_direction_spells_use_facing_or_the_target() -> void:
 	var pc := _pc("mage")
-	var r := pc.try_cast(4, _ctx(1000.0, [], {"fwd": Vector2(1, 0)}))  # blink
+	pc.equip(3, "blink")  # blink and disengage are in reserve: equipped to keep the client side covered
+	var r := pc.try_cast(3, _ctx(1000.0, [], {"fwd": Vector2(1, 0)}))  # blink
 	check(r.msg.ax > 5.0 and absf(r.msg.az) < 0.01, "traslación hacia donde mirás")
 	eq(r.aim_dir.normalized().is_equal_approx(Vector2(1, 0)), true, "dirección para la predicción")
 	# Blink and Disengage follow your facing even with an enemy selected behind you (fleeing).
 	var behind := _unit(2, "blue", -8, 0)
 	var mage := _pc("mage")
+	mage.equip(3, "blink")
 	mage.select(2, _ctx(1000.0, [behind], {"fwd": Vector2(1, 0)}))
-	var b := mage.try_cast(4, _ctx(1000.0, [behind], {"fwd": Vector2(1, 0)}))
+	var b := mage.try_cast(3, _ctx(1000.0, [behind], {"fwd": Vector2(1, 0)}))
 	check(b.msg.ax > 5.0, "la traslación va hacia adelante aunque el objetivo esté atrás")
 	check(b.aim_dir.x > 0.0, "la predicción también va hacia adelante")
 	var hunter := _pc("hunter")
+	hunter.equip(3, "disengage")
 	var ahead := _unit(2, "blue", 8, 0)
 	hunter.select(2, _ctx(1000.0, [ahead], {"fwd": Vector2(0, 1)}))
-	var dis := hunter.try_cast(4, _ctx(1000.0, [ahead], {"fwd": Vector2(0, 1)}))  # disengage
+	var dis := hunter.try_cast(3, _ctx(1000.0, [ahead], {"fwd": Vector2(0, 1)}))  # disengage
 	check(dis.msg.az > 5.0 and absf(dis.msg.ax) < 0.01, "retirada: salto hacia atrás según tu frente, no según el objetivo")
 	hunter = _pc("hunter")
 	var e := _unit(2, "blue", 0, 10)
 	hunter.select(2, _ctx(1000.0, [e]))
-	var v := hunter.try_cast(6, _ctx(1000.0, [e]))  # volley
+	var v := hunter.try_cast(4, _ctx(1000.0, [e]))  # volley
 	near(v.msg.az, 10.0, 0.5, "la andanada sale hacia el objetivo seleccionado")
 
 
 func test_ground_spells_enter_placement_mode_and_confirm_with_the_cursor_point() -> void:
 	var pc := _pc("mage")
-	pc.ready_at[6] = 0.0
-	var r := pc.try_cast(6, _ctx(1000.0, []))
+	pc.ready_at[4] = 0.0
+	var r := pc.try_cast(4, _ctx(1000.0, []))
 	check(r.pending_ground, "meteoros: espera clic")
 	eq(r.msg, {}, "todavía no lanza")
-	eq(pc.pending_ground, 6, "modo colocar")
+	eq(pc.pending_ground, 4, "modo colocar")
 	var c := pc.confirm_ground(Vector2(0, 8), _ctx(1100.0, []))
-	eq(c.msg.slot, 6, "lanza el slot")
+	eq(c.msg.slot, 4, "lanza el slot")
 	near(c.msg.az, 8.0, 0.01, "en el punto del cursor")
 	eq(pc.pending_ground, -1, "sale del modo")
-	pc.try_cast(6, _ctx(1500.0, []))
+	pc.try_cast(4, _ctx(1500.0, []))
 	pc.cancel_ground()
 	eq(pc.pending_ground, -1, "cancelar")
-	pc.cast_lock[6] = 0.0
-	pc.try_cast(6, _ctx(2500.0, []))
+	pc.cast_lock[4] = 0.0
+	pc.try_cast(4, _ctx(2500.0, []))
 	var far := pc.confirm_ground(Vector2(0, 80), _ctx(2600.0, []))
-	check(far.msg.az <= GameData.ability("mage", 6).range + 0.01, "el punto se limita al alcance (%s)" % far.msg.az)
+	check(far.msg.az <= GameData.find_ability("mage", "meteor").range + 0.01, "el punto se limita al alcance (%s)" % far.msg.az)
 
 
 func test_auto_attack_toggle_for_melee_and_hunter_but_not_casters() -> void:
@@ -403,8 +408,8 @@ func test_no_casting_outside_fight_or_when_dead() -> void:
 
 func test_buffs_can_be_cast_during_prep() -> void:
 	var pc := _pc("priest")
-	var r := pc.try_cast(2, _ctx(1000.0, [], {"phase": "prep"}))  # power word: shield
-	eq(r.msg.slot, 2, "escudo en la sala de preparación")
+	var r := pc.try_cast(3, _ctx(1000.0, [], {"phase": "prep"}))  # power word: shield
+	eq(r.msg.slot, 3, "escudo en la sala de preparación")
 	pc.cast_lock[1] = 0.0
 	eq(pc.try_cast(1, _ctx(2000.0, [], {"phase": "prep"})).msg, {}, "una curación común no")
 
@@ -520,3 +525,21 @@ func test_foot_sync_scales_with_ground_speed() -> void:
 	check(LocoBlend.foot_sync(3.5, 7.0) < LocoBlend.foot_sync(7.0, 7.0), "más lento, el ciclo va más lento")
 	eq(LocoBlend.foot_sync(0.0, 7.0), 1.0, "quieto")
 	eq(LocoBlend.foot_sync(30.0, 7.0), 1.7, "tope")
+
+
+func test_f1_selects_yourself_and_f2_f3_your_allies() -> void:
+	eq(Keybinds.defaults().self, "F1", "F1: vos")
+	eq(Keybinds.defaults().ally_1, "F2", "F2: primer aliado")
+	eq(Keybinds.defaults().ally_2, "F3", "F3: segundo aliado")
+	check(not Keybinds.defaults().has("ally_3"), "no hay tercer aliado (en 3v3 son vos y dos más)")
+	eq(MatchView.party_order([4, 2, 6], 2), [2, 4, 6], "vos primero aunque no seas el primero del roster")
+	eq(MatchView.party_order([2], 2), [2], "solo: F1 sigue siendo vos")
+	# a friendly spell with yourself selected goes to you
+	var pc := _pc("priest")
+	var ally := _unit(3, "red", 0, 6)
+	var ctx := _ctx(1000.0, [ally])  # you are unit 1
+	pc.select(1, ctx)
+	eq(pc.try_cast(1, ctx).msg.target, 1, "Sanación con F1: a vos")
+	pc.cast_lock[1] = 0.0
+	pc.select(3, ctx)
+	eq(pc.try_cast(1, _ctx(3000.0, [ally])).msg.target, 3, "con F2: al aliado")

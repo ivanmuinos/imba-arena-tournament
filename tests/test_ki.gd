@@ -30,9 +30,9 @@ func _slot(id: String) -> int:
 func test_ki_is_complete() -> void:
 	check(GameData.classes.has("ki"), "Guerrero Ki registrado")
 	var kit := GameData.kit("ki")
-	eq(kit.abilities.size(), 7, "siete habilidades")
+	eq(kit.abilities.size(), int(GameData.C.SLOT_COUNT), "básico, 3 habilidades y definitiva")
 	check(ResourceLoader.exists("res://assets/icons/%s.svg" % kit.icon), "icono de clase")
-	for a in kit.abilities:
+	for a in kit.abilities + GameData.reserve("ki"):  # the reserve stays playable-ready too
 		check(SpellKinds.TABLE.has(a.id), "objetivo explícito: " + a.id)
 		check(SpellSchools.explicit(a.id), "escuela: " + a.id)
 		check(ResourceLoader.exists("res://assets/icons/%s.svg" % a.icon), "icono: " + a.id)
@@ -49,7 +49,7 @@ func test_ki_wave_hits_everyone_on_the_line() -> void:
 	g.ult = 100.0
 	var ha := a.hp
 	var hb := b.hp
-	check(m.cast_ability(g, _slot("kiwave"), b.x, b.z, 1000, b.id), "carga la onda")
+	check(m.cast_ability(g, slot_of(g, "kiwave"), b.x, b.z, 1000, b.id), "carga la onda")
 	for i in 110:
 		m.tick(1000 + i * (1000.0 / 60.0))
 	near(ha - a.hp, 140.0, 0.01, "le pega al primero de la línea")
@@ -61,14 +61,14 @@ func test_flash_step_awaken_guard_and_palm() -> void:
 	var m := _match()
 	var g: ArenaUnit = m.units[0]
 	var far: ArenaUnit = m.units[2]
-	m._execute(g, _slot("flashstep"), far.x, far.z, far.id, 1000)
+	m._execute(g, slot_of(g, "flashstep"), far.x, far.z, far.id, 1000)
 	check(Vector2(g.x - far.x, g.z - far.z).length() < 2.0, "aparece junto al objetivo")
-	m._execute(g, _slot("awaken"), g.x, g.z, -1, 1000)
+	m._execute(g, slot_of(g, "awaken"), g.x, g.z, -1, 1000)
 	check(g.haste_until >= 9000 and g.crit_until >= 9000, "despertar: velocidad y críticos 8 s")
-	m._execute(g, _slot("kiguard"), g.x, g.z, -1, 1000)
+	m._execute(g, slot_of(g, "kiguard"), g.x, g.z, -1, 1000)
 	eq(g.absorb, 65.0, "la guardia absorbe 65")
 	far.cast = {"slot": 1, "start_at": 1000, "ends_at": 3000, "ax": 0, "az": 0, "target_id": -1, "lock": -1, "pushes": 0}
-	m._execute(g, _slot("palm"), far.x, far.z, far.id, 1500)
+	m._execute(g, slot_of(g, "palm"), far.x, far.z, far.id, 1500)
 	check(far.cast.is_empty(), "la palma interrumpe")
 	check(far.dash_left > 0.0, "y lo empuja")
 

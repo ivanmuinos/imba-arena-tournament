@@ -1,6 +1,7 @@
 class_name Icons
 extends RefCounted
-## The SVG icon set (assets/icons, drawn by tools/icons/build_icons.py). No emoji anywhere: they break on Windows.
+## The SVG icon set (assets/icons, drawn by tools/icons/build_icons.py), plus PNG overrides. No emoji anywhere: they break
+## on Windows.
 
 static var _cache := {}
 static var _blank: ImageTexture = null
@@ -9,7 +10,9 @@ static var _blank: ImageTexture = null
 static func tex(id: String) -> Texture2D:
 	if _cache.has(id):
 		return _cache[id]
-	var path := "res://assets/icons/%s.svg" % id
+	var path := "res://assets/icons/%s.png" % id  # a hand-made PNG overrides the generated SVG of the same id
+	if not ResourceLoader.exists(path):
+		path = "res://assets/icons/%s.svg" % id
 	var t: Texture2D = load(path) if ResourceLoader.exists(path) else _blank_tex()
 	_cache[id] = t
 	return t

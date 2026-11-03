@@ -56,7 +56,9 @@ var lock_hint: Label
 var _frames_ally: VBoxContainer
 var _frames_enemy: VBoxContainer
 var _killfeed: VBoxContainer
-var _bar: HBoxContainer
+var _bar_frame: ActionBarFrame
+var _bar_holder: Control
+var bar_scale := 1.0
 var _my_debuffs: AuraRow
 var _my_cast: CastBar
 var _cast_track := CastTracker.new()
@@ -68,8 +70,8 @@ var _loc_time: Label
 var _tint: ColorRect
 var _vignette: TextureRect
 var _arrow: Polygon2D
-var _target_panel: PanelContainer
-var _focus_panel: PanelContainer
+var _target_panel: VBoxContainer
+var _focus_panel: VBoxContainer
 var _ff := {}
 var _tf := {}
 var _plate_layer := Control.new()
@@ -126,11 +128,6 @@ func add_overlay(c: Control, top: float, margin := 12.0, from_right := true) -> 
 	c.resized.connect(place)
 
 
-## Adds a full-screen layer (modal panel) to the scaled HUD root; it fills the window in design pixels.
-func add_modal(c: Control) -> void:
-	_root.add_child(c)
-
-
 ## True when a screen position is over one of the interactive overlays (practice panel, tutorial card): the world ignores that click.
 func blocks_mouse(pos: Vector2) -> bool:
 	for c in _overlays:
@@ -141,10 +138,10 @@ func blocks_mouse(pos: Vector2) -> bool:
 
 ## Screen rectangle of a HUD element the tutorial points at ("bar", "target_panel", "cast", "score", "frames"), or an empty Rect2.
 func rect_of(key: String) -> Rect2:
-	var c: Control = {"bar": _bar, "target_panel": _target_panel, "cast": _my_cast, "score": round_label, "frames": _frames_ally}.get(key)
+	var c: Control = {"bar": _bar_frame, "target_panel": _target_panel, "cast": _my_cast, "score": round_label, "frames": _frames_ally}.get(key)
 	if c == null or not c.is_visible_in_tree():
 		return Rect2()
-	return Rect2(c.global_position, c.size * ui_scale)
+	return c.get_global_rect()  # includes the bar's own scale
 
 
 ## Ability slot whose tooltip is showing (-1 when none).
@@ -197,7 +194,7 @@ func _build() -> void:
 
 	# Score bar.
 	var sb := PanelContainer.new()
-	sb.add_theme_stylebox_override("panel", UiKit.box(UiKit.PANEL, UiKit.LINE, 12, 2, 8))
+	sb.add_theme_stylebox_override("panel", HudArt.panel_style(12))
 	sb.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	sb.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	sb.position.y = 10
@@ -228,11 +225,12 @@ func _build() -> void:
 	_frames_enemy.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_frames_enemy.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_frames_enemy.position = Vector2(-16, 14)
+	_frames_enemy.resized.connect(func(): _frames_enemy.pivot_offset = Vector2(_frames_enemy.size.x, 0))  # scales from the right edge
 	_root.add_child(_frames_enemy)
 	_killfeed = VBoxContainer.new()
 	_killfeed.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_killfeed.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_killfeed.position = Vector2(16, -16)
+	_killfeed.position = Vector2(16, -190)  # above the action bar's left orb
 	_root.add_child(_killfeed)
 
 	_build_target_frame()
@@ -301,10 +299,12 @@ func _build() -> void:
 	_macro_bar.add_theme_constant_override("separation", 5)
 	_macro_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	bottom.add_child(_macro_bar)
-	_bar = HBoxContainer.new()
-	_bar.add_theme_constant_override("separation", 6)
-	_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	bottom.add_child(_bar)
+	_bar_frame = ActionBarFrame.new()  # the action bar art with its holes and orbs, scaled by the "bar_scale" setting
+	_bar_holder = Control.new()  # takes the frame's scaled size in the column: a container ignores its children's scale
+	_bar_holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_bar_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar_holder.add_child(_bar_frame)
+	bottom.add_child(_bar_holder)
 	_root.add_child(bottom)
 
 	# Loss-of-control alert.
@@ -339,7 +339,7 @@ func _build() -> void:
 	_ability_tip.custom_minimum_size.x = 440
 	# A flat card avoids an additional blurred screen copy during combat.
 	_ability_tip.material = null
-	_ability_tip.add_theme_stylebox_override("panel", UiKit.box(Color("#101925"), UiKit.GOLD, 10, 1, 16))
+	_ability_tip.add_theme_stylebox_override("panel", HudArt.panel_style(18))
 	_root.add_child(_ability_tip)
 
 
@@ -364,64 +364,71 @@ func _place_ability_tip(index: int) -> void:
 	if not _ability_tip.visible or index != _tip_slot or index >= _slots.size():
 		return
 	_ability_tip.size.y = 0
-	var slot: Control = _slots[index].root
-	var at := screen_to_ui(slot.global_position, ui_scale)
-	_ability_tip.pop(Vector2(clampf(at.x + 30 - _ability_tip.size.x / 2, 8, maxf(8, _root.size.x - _ability_tip.size.x - 8)), maxf(8, at.y - _ability_tip.size.y - 14)))
+	var slot := (_slots[index].root as Control).get_global_rect()
+	var at := screen_to_ui(slot.position, ui_scale)
+	_ability_tip.pop(Vector2(clampf(at.x + slot.size.x / ui_scale / 2 - _ability_tip.size.x / 2, 8, maxf(8, _root.size.x - _ability_tip.size.x - 8)), maxf(8, at.y - _ability_tip.size.y - 14)))
 
 
 func _build_target_frame() -> void:
-	_target_panel = PanelContainer.new()
+	_target_panel = VBoxContainer.new()
 	_target_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_target_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_target_panel.position = Vector2(0, 74)
-	_target_panel.custom_minimum_size = Vector2(380, 0)
+	_target_panel.position = Vector2(0, 66)
+	_target_panel.add_theme_constant_override("separation", 2)
 	_target_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 3)
-	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", 8)
-	_tf.icon = Icons.rect("class_mage", 40)
-	_tf.name = UiKit.label("", 21, UiKit.INK)
-	_tf.name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_tf.dist = UiKit.label("", 13, UiKit.MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
-	top.add_child(_tf.icon)
-	top.add_child(_tf.name)
-	top.add_child(_tf.dist)
-	v.add_child(top)
-	_tf.hp = Bar.new(24.0, Color("#ff4d4d"))
-	v.add_child(_tf.hp)
-	_tf.cast = Bar.new(12.0, Color("#ffd166"))
-	_tf.cast.visible = false
-	v.add_child(_tf.cast)
+	var holder := Control.new()  # both art variants on the same spot; show_target shows one
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for kind in ["ally", "enemy"]:
+		var uf := HudArt.unit_frame(HudArt.ALLY if kind == "ally" else HudArt.ENEMY, 0.44 if kind == "ally" else 0.42)
+		var hp: Bar = uf.bars[0]
+		var cast: Bar = uf.bars[1]
+		cast.fill = Color("#ffd166")
+		var nm := UiKit.label("", 19, UiKit.INK)
+		UiKit.outlined(nm, 5)
+		nm.position = hp.position + Vector2(2, -25)
+		nm.size = Vector2(hp.size.x * 0.75, 24)
+		nm.clip_text = true
+		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var dist := UiKit.label("", 13, UiKit.INK, HORIZONTAL_ALIGNMENT_RIGHT)
+		UiKit.outlined(dist, 4)
+		dist.position = hp.position + Vector2(hp.size.x * 0.75, -22)
+		dist.size = Vector2(hp.size.x * 0.25 - 2, 20)
+		dist.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		uf.root.add_child(nm)
+		uf.root.add_child(dist)
+		holder.add_child(uf.root)
+		holder.custom_minimum_size = holder.custom_minimum_size.max(uf.root.custom_minimum_size)
+		_tf[kind] = {"root": uf.root, "icon": uf.icon, "name": nm, "dist": dist, "hp": hp, "cast": cast}
+	_target_panel.add_child(holder)
 	_tf.auras = AuraRow.new().setup(30)
-	v.add_child(_tf.auras)
-	_tf.status = UiKit.label("", 14, UiKit.MUTED)
-	v.add_child(_tf.status)
-	_target_panel.add_child(v)
+	_tf.auras.alignment = BoxContainer.ALIGNMENT_CENTER
+	_target_panel.add_child(_tf.auras)
+	_tf.status = UiKit.label("", 14, UiKit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	UiKit.outlined(_tf.status, 4)
+	_target_panel.add_child(_tf.status)
 	_target_panel.visible = false
 	_root.add_child(_target_panel)
 	_build_focus_frame()
 
 
-## The focus (macros' [@focus]): a small frame under the target's with name, health and cast.
+## The focus (macros' [@focus]): the skull bar under the target's frame with name, health and cast.
 func _build_focus_frame() -> void:
-	_focus_panel = PanelContainer.new()
+	_focus_panel = VBoxContainer.new()
 	_focus_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_focus_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_focus_panel.position = Vector2(250, 74)
-	_focus_panel.custom_minimum_size = Vector2(220, 0)
+	_focus_panel.position = Vector2(290, 74)
+	_focus_panel.add_theme_constant_override("separation", 0)
 	_focus_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_focus_panel.add_theme_stylebox_override("panel", UiKit.box(UiKit.PANEL, Color("#c77dff"), 10, 2, 8))
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 2)
-	_ff.name = UiKit.label("", 15, UiKit.INK)
-	v.add_child(_ff.name)
-	_ff.hp = Bar.new(14.0, HP_ENEMY)
-	v.add_child(_ff.hp)
+	_ff.name = UiKit.label("", 14, UiKit.INK)
+	UiKit.outlined(_ff.name, 4)
+	_focus_panel.add_child(_ff.name)
+	var uf := HudArt.unit_frame(HudArt.FOCUS, 0.45)
+	_ff.hp = uf.bars[0]
+	_ff.hp.fill = HP_ENEMY
+	_focus_panel.add_child(uf.root)
 	_ff.cast = Bar.new(8.0, Color("#ffd166"))
 	_ff.cast.visible = false
-	v.add_child(_ff.cast)
-	_focus_panel.add_child(v)
+	_focus_panel.add_child(_ff.cast)
 	_focus_panel.visible = false
 	_root.add_child(_focus_panel)
 
@@ -469,6 +476,7 @@ func setup(roster: Array, you: int, cls: String, team: String, spec := "") -> vo
 		_plate_layer.add_child(plate)
 		_plates[r.id] = plate
 	_build_bar()
+	apply_scales()
 	_target_panel.visible = false
 	center_text.text = ""
 	center_sub.text = ""
@@ -478,60 +486,79 @@ func setup(roster: Array, you: int, cls: String, team: String, spec := "") -> vo
 	_tint.color.a = 0.0
 
 
+## A party or enemy frame from the HUD art (allies: round portrait and three bars; enemies: the horned skull frame),
+## name over the health bar, auras under it. Clicking it targets the unit.
 func _make_frame(r: Dictionary, me: bool) -> Dictionary:
-	var root := PanelContainer.new()
-	root.custom_minimum_size = Vector2(250, 0)
-	root.add_theme_stylebox_override("panel", UiKit.box(UiKit.PANEL, TEAM_COL[r.team], 10, 2, 6))
+	var root := VBoxContainer.new()
+	root.add_theme_constant_override("separation", 0)
 	root.mouse_filter = Control.MOUSE_FILTER_STOP
 	root.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	root.gui_input.connect(func(ev):
 		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 			frame_clicked.emit(r.id))
-	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 8)
-	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var portrait := Panel.new()
-	portrait.custom_minimum_size = Vector2(46, 46)
-	portrait.add_theme_stylebox_override("panel", UiKit.box(Color(0, 0, 0, 0.5), TEAM_COL[r.team], 8, 2, 0))
-	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var picon := Icons.rect(GameData.classes[r.cls].icon, 40)
-	picon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 3)
+	var ally: bool = r.team == my_team
+	var uf := HudArt.unit_frame(HudArt.ALLY if ally else HudArt.ENEMY, 0.3 if ally else 0.29)
+	var frame: Control = uf.root
+	var picon: TextureRect = uf.icon
+	picon.texture = Icons.tex(GameData.classes[r.cls].icon)
 	var ptime := UiKit.label("", 16, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	UiKit.outlined(ptime, 5)
-	ptime.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	ptime.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	ptime.position = picon.position
+	ptime.size = picon.size
+	ptime.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	ptime.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	portrait.add_child(picon)
-	portrait.add_child(ptime)
-	var info := VBoxContainer.new()
-	info.add_theme_constant_override("separation", 2)
-	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var top := HBoxContainer.new()
-	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var nm := UiKit.label(("%s (vos)" % r.name) if me else (("%s " % r.name) if r.bot else r.name), 14, UiKit.INK)
-	nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var hp_text := UiKit.label("", 13, UiKit.MUTED, HORIZONTAL_ALIGNMENT_RIGHT)
-	top.add_child(nm)
-	top.add_child(hp_text)
-	var hp := Bar.new(12.0, HP_ALLY if r.team == my_team else HP_ENEMY)
-	var cast := Bar.new(6.0, Color("#ffd166"))
+	frame.add_child(ptime)
+	var hp: Bar = uf.bars[0]
+	hp.fill = HP_ALLY if ally else HP_ENEMY
+	var cast: Bar = uf.bars[1]
+	cast.fill = Color("#ffd166")
 	cast.visible = false
+	var nm := UiKit.label(("%s (vos)" % r.name) if me else (("%s " % r.name) if r.bot else r.name), 13, UiKit.INK)
+	UiKit.outlined(nm, 4)
+	nm.position = hp.position + Vector2(2, -17)
+	nm.size = Vector2(hp.size.x, 16)
+	nm.clip_text = true
+	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hp_text := UiKit.label("", 11, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)  # inside the health bar, at its right end
+	UiKit.outlined(hp_text, 4)
+	hp_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hp_text.position = hp.position + Vector2(hp.size.x * 0.5, -4)
+	hp_text.size = Vector2(hp.size.x * 0.5 - 3, hp.size.y + 8)
+	hp_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(nm)
+	frame.add_child(hp_text)
 	var auras := AuraRow.new().setup(22)
-	info.add_child(top)
-	info.add_child(hp)
-	info.add_child(cast)
-	info.add_child(auras)
-	h.add_child(portrait)
-	h.add_child(info)
-	root.add_child(h)
-	return {"root": root, "portrait": portrait, "picon": picon, "ptime": ptime, "icon": GameData.classes[r.cls].icon, "hp": hp, "hp_text": hp_text,
-		"cast": cast, "auras": auras, "name": nm}
+	root.add_child(frame)
+	root.add_child(auras)
+	return {"root": root, "art": uf.art, "portrait": picon, "picon": picon, "ptime": ptime, "icon": GameData.classes[r.cls].icon, "hp": hp,
+		"hp_text": hp_text, "cast": cast, "auras": auras, "name": nm}
+
+
+## Applies the HUD sizes from the settings (ability bar, enemy and party frames); also live, from the in-match menu.
+func apply_scales() -> void:
+	var st := SettingsStore.shared()
+	bar_scale = float(st.get_value("bar_scale"))
+	_fit_bar()
+	_frames_ally.scale = Vector2.ONE * float(st.get_value("ally_frame_scale"))
+	_frames_enemy.scale = Vector2.ONE * float(st.get_value("enemy_frame_scale"))
+
+
+## A full-screen panel over the HUD (the Esc menu), at the HUD's scale.
+func add_modal(c: Control) -> void:
+	c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root.add_child(c)
+
+
+## Sizes the bar frame to its buttons, at the player's chosen scale.
+func _fit_bar() -> void:
+	_bar_frame.scale = Vector2(bar_scale, bar_scale)
+	_bar_frame.size = _bar_frame.custom_minimum_size
+	_bar_holder.custom_minimum_size = _bar_frame.size * bar_scale
 
 
 func _build_bar() -> void:
-	for c in _bar.get_children():
-		c.queue_free()
+	bar_scale = float(SettingsStore.shared().get_value("bar_scale"))
+	_bar_frame.clear()
 	_slots.clear()
 	var abilities: Array = GameData.abilities(my_cls, my_spec)
 	var dot := Image.create(60, 60, false, Image.FORMAT_RGBA8)
@@ -542,7 +569,7 @@ func _build_bar() -> void:
 		var slot := Panel.new()
 		slot.custom_minimum_size = Vector2(60, 60)
 		var ult: bool = a.get("ult", false)
-		slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.1, 0.05, 0.04, 0.85), Color("#ffb84d") if ult else UiKit.LINE, 8, 2, 0))
+		slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.03, 0.02, 0.015, 0.95), Color("#ffb84d") if ult else Color(0, 0, 0, 0), 2, 2 if ult else 0, 0))
 		slot.mouse_filter = Control.MOUSE_FILTER_PASS
 		slot.mouse_entered.connect(_show_ability_tip.bind(i))
 		slot.mouse_exited.connect(_ability_tip.hush)
@@ -575,11 +602,12 @@ func _build_bar() -> void:
 		slot.add_child(sweep)
 		slot.add_child(key)
 		slot.add_child(cd)
-		_bar.add_child(slot)
+		_bar_frame.add_button(slot)
 		_slots.append({"root": slot, "sweep": sweep, "cd": cd, "charge": charge, "icon": icon, "ult": ult, "auto": a.get("auto", false), "key": key})
 	_build_trinket(dim_tex)
 	_build_macro_bar()
 	refresh_keys()
+	_fit_bar()
 
 
 ## Keybinding mode and the hovered button: every bar button reports its action while the mouse is over it.
@@ -660,10 +688,6 @@ func _build_macro_bar() -> void:
 
 ## The PvP trinket next to the bar: gold frame, "T", a 2 minute sweep.
 func _build_trinket(dim_tex: Texture2D) -> void:
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(10, 60)
-	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bar.add_child(gap)
 	var slot := Panel.new()
 	slot.custom_minimum_size = Vector2(60, 60)
 	slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.1, 0.05, 0.04, 0.85), Color("#ffd166"), 30, 2, 0))
@@ -686,7 +710,7 @@ func _build_trinket(dim_tex: Texture2D) -> void:
 	cd.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for c in [icon, sweep, key, cd]:
 		slot.add_child(c)
-	_bar.add_child(slot)
+	_bar_frame.add_button(slot)
 	_trinket = {"sweep": sweep, "cd": cd, "key": key}
 	_track_hover(slot, "trinket")
 
@@ -704,8 +728,7 @@ func ally_ids() -> Array:
 func set_friend(id: int) -> void:
 	for fid in _frames:
 		var f: Dictionary = _frames[fid]
-		var border: Color = TEAM_COL[my_team] if fid != id else Color("#5cff8a")
-		(f.root as PanelContainer).add_theme_stylebox_override("panel", UiKit.box(UiKit.PANEL, border, 10, 3 if fid == id else 2, 6))
+		(f.art as TextureRect).self_modulate = Color(0.7, 1.0, 0.7) if fid == id else Color.WHITE
 
 
 func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
@@ -725,7 +748,7 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 
 	if s.phase == "prep":
 		center_text.text = str(ceili(s.phaseLeft / 1000.0))
-		center_sub.text = "Ronda %d — preparate" % s.round
+		center_sub.text = "Ronda %d — preparate · Esc: menú y tamaño del HUD" % s.round
 		center_text.remove_theme_color_override("font_color")
 	elif s.phase == "fight" and now_ms - _fight_at < 1200.0:
 		center_text.text = "¡PELEA!"
@@ -762,7 +785,6 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 				break
 		f.picon.texture = Icons.tex(loc.icon if loc != null else f.icon)
 		f.ptime.text = Effects.secs(loc.ms) if loc != null else ""
-		(f.portrait as Panel).add_theme_stylebox_override("panel", UiKit.box(Color(0, 0, 0, 0.5), loc.color if loc != null else TEAM_COL[_team_of(id)], 8, 3 if loc != null else 2, 0))
 		if u == null:
 			f.hp_text.text = "" if dead else "?"
 			f.cast.visible = false
@@ -791,6 +813,9 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 	var alive: bool = not me.is_empty() and me.alive
 	var stunned: bool = (not me.is_empty() and (me.cc.has("stun") or me.cc.has("incap"))) or not alive
 	var silenced: bool = not me.is_empty() and me.cc.has("silence")
+	if not me.is_empty():
+		_bar_frame.set_health(float(me.hp) if alive else 0.0, GameData.entry_max_hp(_entry_of(my_id)))
+	_bar_frame.set_ult(float(s.you.ult))
 	for i in _slots.size():
 		var a: Dictionary = abilities[i]
 		var sl: Dictionary = _slots[i]
@@ -815,7 +840,8 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 			break
 	_loc.visible = loc2 != null
 	if loc2 != null:
-		_loc.add_theme_stylebox_override("panel", UiKit.box(Color(0.04, 0.02, 0.02, 0.8), loc2.color, 14, 3, 12))
+		_loc.add_theme_stylebox_override("panel", HudArt.panel_style(14))
+		_loc.self_modulate = Color.WHITE.lerp(loc2.color, 0.35)
 		_loc_icon.texture = Icons.tex(loc2.icon)
 		_loc_name.text = loc2.name.to_upper()
 		_loc_time.text = Effects.secs(loc2.ms)
@@ -949,21 +975,24 @@ func show_target(info: Dictionary) -> void:
 	_target_panel.visible = not info.is_empty()
 	if info.is_empty():
 		return
-	_tf.icon.texture = Icons.tex(GameData.classes[info.cls].icon)
-	_tf.name.text = info.name
-	_tf.dist.text = info.dist
-	_tf.hp.fill = HP_ALLY if info.get("friend", false) else HP_ENEMY
-	_tf.hp.ratio = info.hp / info.max_hp
-	_tf.hp.text = "%d / %d" % [info.hp, info.max_hp]
-	_tf.cast.visible = info.cast != null
+	var friend: bool = info.get("friend", false)
+	var v: Dictionary = _tf.ally if friend else _tf.enemy
+	(_tf.ally.root as Control).visible = friend
+	(_tf.enemy.root as Control).visible = not friend
+	v.icon.texture = Icons.tex(GameData.classes[info.cls].icon)
+	v.name.text = info.name
+	v.dist.text = info.dist
+	v.hp.fill = HP_ALLY if friend else HP_ENEMY
+	v.hp.ratio = info.hp / info.max_hp
+	v.hp.text = "%d / %d" % [info.hp, info.max_hp]
+	v.cast.visible = info.cast != null
 	if info.cast != null:
-		_tf.cast.ratio = 1.0 - info.cast.left / maxf(info.cast.total, 1.0)
+		v.cast.ratio = 1.0 - info.cast.left / maxf(info.cast.total, 1.0)
 	_tf.auras.set_effects(info.effects)
 	_tf.status.text = info.status
 	var col: Color = {"good": Color("#7dff9a"), "warn": Color("#ffd166"), "bad": Color("#ff6b6b")}.get(info.status_kind, UiKit.MUTED)
 	_tf.status.add_theme_color_override("font_color", col)
 	_target_panel.modulate.a = 0.55 if info.lost else 1.0
-	_target_panel.add_theme_stylebox_override("panel", UiKit.box(UiKit.PANEL, Color("#5cff8a") if info.get("friend", false) else Color("#ff4d4d"), 12, 3, 10))
 
 
 # ---------------------------------------------------------------- world-anchored widgets

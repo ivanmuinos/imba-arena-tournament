@@ -31,7 +31,8 @@ static func tint(item_id: String) -> Dictionary:
 	return t if typeof(t) == TYPE_DICTIONARY else {}
 
 
-## The recolor a class model gets: the skin's tint replaces the class's base recolor (never stacks); {} for none.
-static func effective_recolor(base: Dictionary, skin: String) -> Dictionary:
-	var t := tint(skin) if skin != "" else {}
-	return t if not t.is_empty() else base
+## What CharacterRig merges over the class for the skin equipped on `cls`: the tint replaces the class's recolor (never stacks); {} for none.
+static func rig_skin(cls: String) -> Dictionary:
+	var id := skin_for(cls)
+	var t := tint(id) if id != "" else {}
+	return {} if t.is_empty() else {"id": id, "recolor": t}

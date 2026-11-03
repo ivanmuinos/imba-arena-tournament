@@ -30,13 +30,13 @@ func run() -> void:
 		quit(1)
 		return
 	var hud := view.hud
-	hud._slots[6].root.mouse_entered.emit()
+	hud._slots[int(GameData.C.ULT_SLOT)].root.mouse_entered.emit()
 	await create_timer(0.3).timeout
 	check(hud._ability_tip.visible and hud._ability_tip._usage.text.contains("clic izquierdo"), "hover shows ground-cast instructions")
 	var bounds := Rect2(Vector2.ZERO, hud._root.size)
 	check(bounds.encloses(hud._ability_tip.get_rect()), "tooltip fits scaled HUD")
 	await shot("feedback_tooltip")
-	hud._slots[6].root.mouse_exited.emit()
+	hud._slots[int(GameData.C.ULT_SLOT)].root.mouse_exited.emit()
 	check(not hud._ability_tip.visible, "tooltip closes on exit")
 	# Authoritative death snapshot, then normal frame/input path; no production debug override.
 	var unit: ArenaUnit = main.server.game.units.filter(func(u): return u.id == view.my_id)[0]

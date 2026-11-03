@@ -106,9 +106,9 @@ func test_predicted_blink_is_instant_and_ignores_corrections() -> void:
 	var p := Predictor.new()
 	p.place(0.0, 40.0)
 	var me := _me(0.0, 40.0)
-	check(p.predict_movement("mage", 4, Vector2(0, -1), me, map, 1000.0), "predice la traslación")
+	check(p.predict_movement(GameData.find_ability("mage", "blink"), Vector2(0, -1), me, map, 1000.0), "predice la traslación")
 	near(p.m.z, 32.0, 0.01, "8 m hacia adelante")
 	for i in 5:
 		p.step(1.0 / 60.0, Vector2.ZERO, me, "mage", true, map, 0.01, 1100.0)
 	near(p.m.z, 32.0, 0.05, "no lo corrige el snapshot viejo")
-	check(not p.predict_movement("warrior", 4, Vector2(0, -1), me, map, 1000.0), "otras clases no")
+	check(not p.predict_movement(GameData.ability("warrior", 4), Vector2(0, -1), me, map, 1000.0), "otras habilidades no")

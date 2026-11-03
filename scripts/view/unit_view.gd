@@ -72,7 +72,7 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 	var team: Color = TEAM_COLOR[entry.team]
 	if CharacterRig.available(entry.cls):
 		_rig = CharacterRig.new()
-		_rig.setup(entry.cls, team, Cosmetics.skin_for(str(entry.cls)) if is_me else "")
+		_rig.setup(entry.cls, team, Cosmetics.rig_skin(str(entry.cls)) if is_me else {})
 		_body.add_child(_rig.root)
 		_body.scale = Vector3.ONE * VS
 		for p in _rig.parts:

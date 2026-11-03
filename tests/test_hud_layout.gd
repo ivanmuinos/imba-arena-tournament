@@ -100,3 +100,79 @@ func test_cursor_kinds_sizes_and_art() -> void:
 					opaque += 1
 		check(opaque > 150, "%s: tiene dibujo (%d px)" % [k, opaque])
 		check(CursorKit.HOTSPOT.has(k.replace("_far", "")) or CursorKit.HOTSPOT.has(k), "%s: tiene punto activo" % k)
+
+
+func test_escape_cancels_one_thing_per_press_then_opens_the_menu() -> void:
+	eq(MatchView.esc_step(true, true, true), "ground", "primero la zona pendiente")
+	eq(MatchView.esc_step(false, true, true), "cast", "después el lanzamiento")
+	eq(MatchView.esc_step(false, false, true), "target", "después el objetivo")
+	eq(MatchView.esc_step(false, false, false), "menu", "sin nada que cancelar: menú")
+
+
+func test_hud_sizes_apply_live_from_the_settings() -> void:
+	var path := SettingsStore.path
+	SettingsStore.path = "user://test_hud_scales.cfg"
+	SettingsStore.clear_shared()
+	var st := SettingsStore.shared()
+	var hud := Hud.new()
+	tree.root.add_child(hud)
+	hud.setup([{"id": 1, "team": "red", "cls": "mage", "name": "Yo", "bot": false}, {"id": 2, "team": "blue", "cls": "warrior", "name": "Otro", "bot": true}], 1, "mage", "red", "fire")
+	st.set_value("enemy_frame_scale", 1.4)
+	st.set_value("ally_frame_scale", 0.8)
+	st.set_value("bar_scale", 1.2)
+	hud.apply_scales()
+	near(hud._frames_enemy.scale.x, 1.4, 1e-6, "marcos de oponentes")
+	near(hud._frames_ally.scale.x, 0.8, 1e-6, "marcos aliados")
+	near(hud._bar_frame.scale.x, 1.2, 1e-6, "barra de habilidades")
+	var menu := GameMenu.new()
+	hud.add_modal(menu)
+	menu.open()
+	check(menu.visible, "el menú abre")
+	menu._reset_hud()
+	hud.apply_scales()
+	near(hud._frames_enemy.scale.x, 1.0, 1e-6, "tamaños por defecto")
+	menu.close()
+	check(not menu.visible, "el menú cierra")
+	hud.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_hud_scales.cfg"))
+	SettingsStore.path = path
+	SettingsStore.clear_shared()
+
+
+func test_action_bar_has_one_hole_per_button_and_no_empty_ones() -> void:
+	eq(ActionBarFrame.HOLES_X.size(), int(GameData.C.SLOT_COUNT) + 1, "un hueco por habilidad más el abalorio, ninguno vacío")
+
+
+func test_options_menu_rebinds_your_abilities_in_the_keys_tab() -> void:
+	var kpath := "user://test_menu_keys.json"
+	Keybinds._shared = Keybinds.new(kpath)
+	var menu := GameMenu.new()
+	TestBase.tree.root.add_child(menu)
+	menu.kit_cls = "warrior"
+	menu.open()
+	check(menu._pages.general.visible and not menu._pages.keys.visible, "abre en General")
+	menu.show_tab("keys")
+	check(menu._pages.keys.visible and not menu._pages.general.visible, "solapa Teclas")
+	eq((menu._key_names.slot_1 as Label).text, "2. Golpe mortal", "nombra el poder real de tu campeón")
+	eq((menu._key_names.slot_4 as Label).text, "Definitiva: Filotormenta", "y la definitiva")
+	var changed := [0]
+	menu.keys_changed.connect(func(): changed[0] += 1)
+	(menu._key_buttons.slot_1 as MButton).pressed.emit()
+	eq(menu.capturing, "slot_1", "espera la tecla")
+	var e := InputEventKey.new()
+	e.keycode = KEY_G
+	e.pressed = true
+	check(menu.capture_key(e), "toma la tecla")
+	eq(Keybinds.shared().key_of("slot_1"), "G", "queda asignada")
+	eq((menu._key_buttons.slot_1 as MButton).text, "G", "el botón la muestra")
+	eq(changed[0], 1, "avisa para redibujar la barra")
+	(menu._key_buttons.slot_1 as MButton).pressed.emit()
+	var esc := InputEventKey.new()
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	menu.capture_key(esc)
+	eq(Keybinds.shared().key_of("slot_1"), "", "Esc la deja sin tecla")
+	check(not menu.capture_key(e), "sin esperar tecla no captura")
+	menu.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(kpath))
+	Keybinds._shared = null

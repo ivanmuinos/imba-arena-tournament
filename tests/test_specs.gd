@@ -19,7 +19,7 @@ func test_spec_data_is_complete_and_icons_exist() -> void:
 			check(sp.has(k), "%s: campo %s" % [sid, k])
 		check(ResourceLoader.exists("res://assets/icons/%s.svg" % sp.icon), "%s: ícono de especialización" % sid)
 		var kit := GameData.abilities("mage", sid)
-		eq(kit.size(), int(GameData.C.SLOT_COUNT), "%s: 7 habilidades" % sid)
+		eq(kit.size(), int(GameData.C.SLOT_COUNT), "%s: básico, 3 habilidades y definitiva" % sid)
 		for i in kit.size():
 			var a: Dictionary = kit[i]
 			for k in ["id", "name", "icon", "desc", "cd", "cast", "range"]:
@@ -27,7 +27,7 @@ func test_spec_data_is_complete_and_icons_exist() -> void:
 			check(ResourceLoader.exists("res://assets/icons/%s.svg" % a.icon), "%s/%s: ícono existe" % [sid, a.id])
 			check(SpellSchools.explicit(str(a.id)), "%s/%s: tiene escuela" % [sid, a.id])
 			check(SpellKinds.TABLE.has(str(a.id)), "%s/%s: tiene tipo de objetivo" % [sid, a.id])
-		check(kit[6].get("ult", false), "%s: la definitiva está en la ranura R" % sid)
+		check(kit[int(GameData.C.ULT_SLOT)].get("ult", false), "%s: la definitiva está en la ranura R" % sid)
 		for stat in ["hp", "mobility", "damage", "control", "difficulty"]:
 			var v := int(sp.stats[stat])
 			check(v >= 1 and v <= 5, "%s: estadística %s" % [sid, stat])
@@ -113,9 +113,9 @@ func test_units_use_the_spec_kit_and_roster_and_snapshot_expose_it() -> void:
 	eq(m.units[0].ability(0).id, "frostbolt", "la unidad usa el kit de Escarcha")
 	eq(m.roster()[0].spec, "frost", "el roster trae la especialización")
 	var snap := m.snapshot_for(m.units[0], now)
-	eq(snap.you.cds.size(), 7, "recargas del kit")
+	eq(snap.you.cds.size(), int(GameData.C.SLOT_COUNT), "recargas del kit")
 	var f := _duel("fire")
-	eq(f.units[0].ability(2).id, "dragonbreath", "Q de Fuego: Aliento de dragón")
+	eq(f.units[0].ability(old(f.units[0], 2)).id, "dragonbreath", "Q de Fuego: Aliento de dragón")
 
 
 func test_fireball_burns_the_target_over_time() -> void:
@@ -145,7 +145,7 @@ func test_dragon_breath_disorients_in_a_cone_and_breaks_on_damage() -> void:
 	b.x = a.x
 	b.z = a.z - 4.0
 	_face(m, a, b)
-	check(m.cast_ability(a, 2, b.x, b.z, now, b.id), "usa el aliento")
+	check(m.cast_ability(a, old(a, 2), b.x, b.z, now, b.id), "usa el aliento")
 	check(now < b.incap_until and b.incap_kind == "disorient", "el enemigo del cono queda desorientado")
 	_adv(m, 200)
 	var other := _duel("fire")
@@ -154,7 +154,7 @@ func test_dragon_breath_disorients_in_a_cone_and_breaks_on_damage() -> void:
 	ob.x = oa.x + 6.0   # beside the mage: outside the cone
 	ob.z = oa.z
 	oa.rot = PI
-	other.cast_ability(oa, 2, oa.x, oa.z - 5.0, now, -1)
+	other.cast_ability(oa, old(oa, 2), oa.x, oa.z - 5.0, now, -1)
 	check(not (now < ob.incap_until), "fuera del cono no pasa nada")
 	m.units[0].cds[0] = 0.0
 	m.units[0].gcd_until = 0.0
@@ -175,20 +175,20 @@ func test_frostbolt_slows_and_ice_lance_shatters_rooted_targets() -> void:
 	_adv(m, 1500 + 700)
 	check(now < b.slow_until and absf(b.slow_pct - 0.4) < 0.01, "ralentiza 40%% (%.2f)" % b.slow_pct)
 	# ice lance: normal vs frozen
-	var lance := a.ability(1)
+	var lance := a.ability(old(a, 1))
 	b.slow_until = 0.0
 	var hp0 := b.hp
 	_face(m, a, b)
-	check(m.cast_ability(a, 1, b.x, b.z, now, b.id), "lanza de hielo")
+	check(m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "lanza de hielo")
 	_adv(m, 500)
 	var normal := hp0 - b.hp
 	check(normal > 0.0 and absf(normal - float(lance.dmg)) < 1.5, "daño normal (%.1f)" % normal)
-	a.cds[1] = 0.0
+	a.cds[old(a, 1)] = 0.0
 	a.gcd_until = 0.0
 	b.root_until = now + 3000.0   # rooted by a nova
 	var hp1 := b.hp
 	_face(m, a, b)
-	m.cast_ability(a, 1, b.x, b.z, now, b.id)
+	m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id)
 	_adv(m, 500)
 	var shattered := hp1 - b.hp
 	GameData.C["CRIT_CHANCE"] = crit
@@ -203,9 +203,9 @@ func test_blizzard_ticks_damage_and_heavily_slows_inside_and_expires() -> void:
 	b.x = a.x
 	b.z = a.z - 8.0
 	_face(m, a, b)
-	check(m.cast_ability(a, 6, b.x, b.z, now, -1), "lanza la ventisca")
+	check(m.cast_ability(a, old(a, 6), b.x, b.z, now, -1), "lanza la ventisca")
 	check(m.aoes.size() == 1, "hay un área persistente")
-	var spec := a.ability(6)
+	var spec := a.ability(old(a, 6))
 	_adv(m, 600)
 	var h1 := b.hp
 	check(h1 < b.max_hp, "primeros golpes de la ventisca")
@@ -317,7 +317,7 @@ func test_blizzard_and_cast_kinds_survive_the_snapshot_codec() -> void:
 	var m := _duel("frost")
 	var a: ArenaUnit = m.units[0]
 	a.ult = 100.0
-	m.cast_ability(a, 6, a.x, a.z - 8.0, now, -1)
+	m.cast_ability(a, old(a, 6), a.x, a.z - 8.0, now, -1)
 	_adv(m, 100)
 	var snap := m.snapshot_for(a, now)
 	var packed := SnapshotCodec.pack(snap)

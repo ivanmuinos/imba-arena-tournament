@@ -13,7 +13,7 @@ signal gameplay_event(name: String)
 
 const PICK_MIN_RADIUS := 22.0  # px: far-away units stay clickable
 ## ControlBindings actions that, on the keyboard, belong to Keybinds (only their controller buttons apply).
-const KEYBINDS_OWNED := ["slot_0", "slot_1", "slot_2", "slot_3", "slot_4", "slot_5", "slot_6", "jump", "target", "mute", "ally_0", "ally_1", "ally_2"]
+const KEYBINDS_OWNED := ["slot_0", "slot_1", "slot_2", "slot_3", "slot_4", "jump", "target", "mute", "ally_0", "ally_1", "ally_2"]
 
 var client: GameClient
 var chat: ChatPanel
@@ -51,12 +51,12 @@ var gfx_choice := "auto"
 var gfx_level := "alta"
 ## Practice arena (the yard) / guided tutorial inside it.
 var practice := false
-## Offline and tournament matches: Esc (with nothing else to cancel) offers to give up. `forfeit_tournament` words it as a loss.
+## Offline and tournament matches: the Esc menu's leave button gives up. `forfeit_tournament` words it as a tournament loss.
 var forfeit_enabled := false
 var forfeit_tournament := false
-var forfeit_panel: ForfeitPanel = null
 var tutorial := false
 var practice_panel: PracticePanel = null
+var game_menu: GameMenu = null
 
 var _roster: Array = []
 var _state_ms := 0.0
@@ -142,10 +142,7 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	hud.practice = practice
 	if practice and not tutorial:
 		_build_practice_panel()
-	if forfeit_enabled and not practice:
-		forfeit_panel = ForfeitPanel.new()
-		hud.add_modal(forfeit_panel)
-		forfeit_panel.confirmed.connect(func(): forfeit_requested.emit())
+	_build_game_menu()
 	controller.setup(my_cls, my_team, my_spec)
 	controller.ready_at = hud.ready_at
 	predictor.place(mine_spawn().x, mine_spawn().y)
@@ -177,6 +174,61 @@ func _build_practice_panel() -> void:
 	practice_panel.class_changed.connect(func(c, s): practice_switch.emit(c, s))
 	practice_panel.menu_pressed.connect(func(): leave_requested.emit())
 	hud.add_overlay(practice_panel, 132.0, 12.0, false)
+
+
+## The Esc menu: HUD sizes and volumes apply live; leaving goes back to the main menu.
+func _build_game_menu() -> void:
+	game_menu = GameMenu.new()
+	hud.add_modal(game_menu)
+	if practice:
+		game_menu.set_leave_text("Volver al menú")
+	elif forfeit_enabled:
+		game_menu.set_leave_text(GameMenu.forfeit_text(forfeit_tournament))
+	elif client.is_host and not (client.transport is LoopbackTransport):
+		game_menu.set_leave_text("Abandonar (cierra la partida a todos)")
+	game_menu.setting_changed.connect(_on_menu_setting)
+	game_menu.binds_pressed.connect(func(): set_binding(true))
+	game_menu.keys_changed.connect(hud.refresh_keys)
+	game_menu.leave_pressed.connect(_on_menu_leave)
+	game_menu.quit_pressed.connect(func(): get_tree().quit())
+
+
+## Against bots there is no one to leave: the button gives up and the match ends as a loss.
+func _on_menu_leave() -> void:
+	if forfeit_enabled and not practice:
+		game_menu.close()
+		forfeit_requested.emit()
+	else:
+		leave_requested.emit()
+
+
+func _on_menu_setting(key: String) -> void:
+	match key:
+		"master":
+			UiSound.apply_volumes()
+		"sfx":
+			audio.gain_db = linear_to_db(maxf(0.001, SettingsStore.shared().get_value("sfx")))
+		"sens":
+			pass  # the camera reads it on every mouse move
+		_:
+			hud.apply_scales()
+
+
+func open_menu() -> void:
+	_release_gameplay()
+	game_menu.kit_cls = my_cls
+	game_menu.kit_spec = my_spec
+	game_menu.open()
+
+
+## What Esc does, one thing per press (like WoW): drop a ground spell waiting for its click, stop the cast, drop the
+## target, and with nothing left to cancel, open the menu.
+static func esc_step(ground_pending: bool, casting: bool, has_target: bool) -> String:
+	if ground_pending:
+		return "ground"
+	if casting:
+		return "cast"
+	return "target" if has_target else "menu"
 
 
 func mine_spawn() -> Vector2:
@@ -412,6 +464,10 @@ func _one_fx(f: Dictionary) -> void:
 				cam.kick(0.35 if f.crit else 0.12)
 			else:
 				audio.play("crit" if f.crit else ("hit" if SpellSchools.school_of(str(f.get("ability", ""))) == "physical" else "hitSpell"), Vector2(f.x, f.z))
+		"healspell":
+			if v != null and v.shown:
+				fx.heal_spell(pos.x, pos.z, SpellSchools.school_of(str(f.get("ability", ""))))
+				audio.play("healspell", p2)
 		"heal":
 			if v != null and v.shown:
 				fx.heal(pos.x, pos.z)
@@ -522,6 +578,18 @@ func _on_frame_clicked(id: int) -> void:
 	_select(id)
 
 
+## F1 / F2 / F3: 0 = yourself (the healer's most needed target), 1.. = your allies in the party frames' order.
+func _select_party(i: int) -> void:
+	var ids := party_order(hud.ally_ids(), my_id)
+	if i < ids.size():
+		_select(ids[i])
+
+
+## You first, then your allies (roster order).
+static func party_order(team_ids: Array, me: int) -> Array:
+	return [me] + team_ids.filter(func(id): return id != me)
+
+
 func _select(id: int) -> void:
 	controller.select(id)
 	hud.set_friend(id if _team_of(id) == my_team else -1)
@@ -556,10 +624,19 @@ var _held_actions := {}
 func _input(event: InputEvent) -> void:
 	if not _active:
 		return
-	if forfeit_panel != null and forfeit_panel.visible:  # modal: the world gets nothing, the panel's own buttons still work
-		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+	if game_menu != null and game_menu.visible:
+		# The menu has the input: a key being rebound in Teclas takes it (Esc there = no key); otherwise Esc / Start
+		# close it and everything else goes to its buttons and sliders.
+		if game_menu.capture_key(event):
 			get_viewport().set_input_as_handled()
-			forfeit_panel.close()
+			return
+		if event.is_pressed() and not event.is_echo() and ((event is InputEventKey and event.keycode == KEY_ESCAPE) or (event is InputEventJoypadButton and event.button_index == JOY_BUTTON_START)):
+			get_viewport().set_input_as_handled()
+			game_menu.close()
+		return
+	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
+		get_viewport().set_input_as_handled()
+		open_menu()
 		return
 	if event is InputEventKey and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		_release_gameplay()
@@ -630,16 +707,17 @@ func _input(event: InputEvent) -> void:
 		return
 	match action:
 		"cancel":
-			if controller.pending_ground >= 0:
-				controller.cancel_ground()
-			elif not me.is_empty() and me.get("cast") != null:
-				client.send_stop_cast()  # Esc cancels the cast in progress (movement and jumping do too)
-			elif ForfeitPanel.esc_opens(false, false, controller.target >= 0, forfeit_panel != null):
-				_release_gameplay()
-				forfeit_panel.open(ForfeitPanel.message(forfeit_tournament))
-			else:
-				controller.clear_target()
-				hud.set_friend(-1)
+			match esc_step(controller.pending_ground >= 0, not me.is_empty() and me.get("cast") != null, controller.target >= 0):
+				"ground":
+					controller.cancel_ground()
+				"cast":
+					client.send_stop_cast()  # Esc cancels the cast in progress (movement and jumping do too)
+				"target":
+					controller.clear_target()
+					hud.set_friend(-1)
+				"menu":
+					if event is InputEventKey:  # the controller opens it with Start
+						open_menu()
 		"target":
 			_cycle_target()
 		"jump":
@@ -653,10 +731,7 @@ func _input(event: InputEvent) -> void:
 		"face":
 			_face_toward(controller.target)
 		"ally_0", "ally_1", "ally_2":
-			var ids := hud.ally_ids()
-			var i := int(action.trim_prefix("ally_"))
-			if i < ids.size():
-				_select(ids[i])
+			_select_party(int(action.trim_prefix("ally_")))
 
 
 ## A key binding's action (see Keybinds.ACTIONS).
@@ -666,11 +741,10 @@ func _do_action(action: String) -> void:
 	elif action.begins_with("macro_"):
 		if MacroStore.ENABLED:
 			run_macro(int(action.substr(6)) - 1)
+	elif action == "self":
+		_select_party(0)
 	elif action.begins_with("ally_"):
-		var ids := hud.ally_ids()
-		var i := int(action.substr(5)) - 1
-		if i < ids.size():
-			_select(ids[i])
+		_select_party(int(action.substr(5)))
 	else:
 		match action:
 			"trinket":
@@ -969,7 +1043,7 @@ func _cast(slot: int) -> bool:
 		hud.error("Stick derecho: apuntar · A: colocar · R3: cancelar" if _pad_aim else "Clic izquierdo para colocar · clic derecho o Esc para cancelar")
 	if not res.msg.is_empty():
 		client.send_cast(res.msg)
-		if predictor.predict_movement(my_cls, slot, res.aim_dir, me, world.map, _now_ms()):
+		if predictor.predict_movement(controller.ability(slot), res.aim_dir, me, world.map, _now_ms()):
 			cam.kick(0.6)
 		return true
 	return false

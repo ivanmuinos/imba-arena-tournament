@@ -31,12 +31,15 @@ var queued := {}
 var queued_on := -2
 var last_range_warn := -1e9
 var _cast_warned := false
+## Abilities equipped over the kit on this client (slot -> ability), see equip(); setup() clears them.
+var _equipped := {}
 
 
 func setup(p_cls: String, p_team: String, p_spec := "") -> void:
 	cls = p_cls
 	spec_id = GameData.normalize_spec(p_cls, p_spec)
 	team = p_team
+	_equipped = {}
 	target = -1
 	pending_ground = -1
 	queued = {}
@@ -48,7 +51,16 @@ func setup(p_cls: String, p_team: String, p_spec := "") -> void:
 
 
 func ability(slot: int) -> Dictionary:
-	return GameData.ability(cls, slot, spec_id)
+	return _equipped[slot] if _equipped.has(slot) else GameData.ability(cls, slot, spec_id)
+
+
+## Same as ArenaUnit.equip on the client side: one of the class's abilities (kit or reserve) on `slot`.
+func equip(slot: int, ability_id: String) -> bool:
+	var a := GameData.find_ability(cls, ability_id, spec_id)
+	if a.is_empty() or slot < 0 or slot >= int(GameData.C.SLOT_COUNT):
+		return false
+	_equipped[slot] = a
+	return true
 
 
 func has_auto() -> bool:
@@ -57,7 +69,7 @@ func has_auto() -> bool:
 
 ## Cooldowns reported by the server (ms remaining per slot).
 func sync_cooldowns(cds: Array, now_ms: float) -> void:
-	for i in cds.size():
+	for i in mini(cds.size(), ready_at.size()):
 		if not ability(i).get("ult", false):
 			ready_at[i] = now_ms + float(cds[i])
 

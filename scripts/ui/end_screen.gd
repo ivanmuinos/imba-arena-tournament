@@ -12,6 +12,14 @@ var _again: MButton
 var _mvp := ""
 var _extra: PanelContainer
 var _extra_text: Label
+## Your champion's XP for this match (Progress): level, bar, gain and what it unlocked.
+var _prog: PanelContainer
+## The panel's top with 2 players a team; each extra row of the tables pushes it down by ROW_H.
+const PROG_Y := 470.0
+const ROW_H := 62.0
+var _prog_title: Label
+var _prog_bar: Bar
+var _prog_gain: Label
 
 
 func _ready() -> void:
@@ -74,6 +82,40 @@ func _ready() -> void:
 	menu.custom_minimum_size = Vector2(230, 50)
 	menu.pressed.connect(func(): menu_pressed.emit())
 	stage.add_child(menu)
+	_prog = UiKit.glass(Color(1.0, 0.75, 0.3, 0.55), 12, 10)
+	_prog.position = Vector2(72, PROG_Y)  # left, under the tables and over the buttons (the lobby chat takes the bottom right)
+	_prog.custom_minimum_size = Vector2(540, 0)
+	_prog.visible = false
+	stage.add_child(_prog)
+	var pv := VBoxContainer.new()
+	pv.add_theme_constant_override("separation", 4)
+	_prog.add_child(pv)
+	_prog_title = UiKit.heading("", 18, UiKit.GOLD, 700, 2)
+	pv.add_child(_prog_title)
+	_prog_bar = Bar.new(14.0, Color("#ffb84d"))
+	pv.add_child(_prog_bar)
+	_prog_gain = UiKit.label("", 14, UiKit.INK)
+	pv.add_child(_prog_gain)
+
+
+## Your champion's progress after the match (ProgressStore.award result); {} hides the panel.
+func show_progress(p: Dictionary) -> void:
+	_prog.visible = not p.is_empty()
+	if p.is_empty():
+		return
+	var top := int(p.level_after) >= Progress.LEVEL_MAX
+	var up := int(p.level_after) > int(p.level_before)
+	_prog_title.text = "%s · NIVEL %d%s" % [str(GameData.classes[p.cls].name).to_upper(), int(p.level_after), "  ¡SUBISTE DE NIVEL!" if up else ""]
+	_prog_bar.ratio = 1.0 if top else float(p.xp) / maxf(1.0, float(p.xp_next))
+	_prog_bar.text = "NIVEL MÁXIMO" if top else "%d / %d XP" % [int(p.xp), int(p.xp_next)]
+	var parts := ["+%d XP" % int(p.gain)]
+	if p.get("first_win", false):
+		parts.append("primera victoria del día ×2")
+	if p.get("vs_bots", false):
+		parts.append("contra bots: la mitad")
+	if Progress.talent_rows(int(p.level_after)) > Progress.talent_rows(int(p.level_before)):
+		parts.append("¡nueva fila de talentos!")
+	_prog_gain.text = " · ".join(parts)
 
 
 func _header_row() -> Control:
@@ -182,3 +224,7 @@ func show_result(win: bool, score: Dictionary, rows: Array, again_text: String, 
 		h.add_child(_num_cell(int(r.kills), 44, UiKit.GOLD))
 		h.add_child(_num_cell(int(r.get("deaths", 0)), 54, UiKit.MUTED))
 		(_teams[r.team] as Control).add_child(row)
+	var per_team := 0
+	for t in ["red", "blue"]:
+		per_team = maxi(per_team, rows.filter(func(x): return x.team == t).size())
+	_prog.position.y = PROG_Y + (per_team - 2) * ROW_H
