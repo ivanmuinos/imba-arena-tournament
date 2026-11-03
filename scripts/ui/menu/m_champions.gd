@@ -95,7 +95,7 @@ func _ready() -> void:
 		_bars[s[0]] = b
 		col.add_child(r)
 	col.add_child(UiKit.spacer(2))
-	col.add_child(UiKit.caption("Habilidades (pasá el mouse o enfocá para ver)", UiKit.MUTED, 12))
+	col.add_child(UiKit.caption("Habilidades (arrastrá para ordenar tu barra)", UiKit.MUTED, 12))
 	_abil_row = HBoxContainer.new()
 	_abil_row.add_theme_constant_override("separation", 8)
 	col.add_child(_abil_row)
@@ -103,6 +103,12 @@ func _ready() -> void:
 		var slot := _make_slot(i)
 		_abil_row.add_child(slot)
 		_slots.append(slot)
+	_reset_bar = MButton.new("Restablecer", "ghost")
+	_reset_bar.custom_minimum_size = Vector2(0, 38)
+	_reset_bar.add_theme_font_size_override("font_size", 14)
+	_reset_bar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_reset_bar.pressed.connect(reset_bar)
+	_abil_row.add_child(_reset_bar)
 	var role := UiKit.label("", 14, UiKit.MUTED)
 	role.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	role.name = "RoleLine"
@@ -284,8 +290,12 @@ func _make_slot(i: int) -> Button:
 	b.mouse_exited.connect(_tip_for.bind(i, false))
 	b.focus_entered.connect(_tip_for.bind(i, true))
 	b.focus_exited.connect(_tip_for.bind(i, false))
+	b.pressed.connect(_arrange_press.bind(i))
+	b.set_drag_forwarding(_arrange_drag.bind(i), _arrange_can_drop.bind(i), _arrange_drop.bind(i))
 	b.draw.connect(func():
 		var c := Vector2(23, 23)
+		if _arrange_pick == i:
+			b.draw_arc(c, 27.0, 0.0, TAU, 48, UiKit.LAVA, 3.0, true)
 		var a: Dictionary = b.get_meta("ability", {})
 		b.draw_arc(c, 23.5, 0.0, TAU, 48, UiKit.GOLD if a.get("ult", false) else Color("#8a6a3a"), 2.5 if a.get("ult", false) else 2.0, true)
 		if b.has_focus():
@@ -322,6 +332,8 @@ func _tip_for(i: int, on: bool) -> void:
 
 
 var _tip_slot := -1
+var _arrange_pick := -1  # the button waiting for a second press to swap with (-1: none)
+var _reset_bar: MButton
 
 
 ## Debug/screenshots: open the tooltip of ability `i` as if hovered.
@@ -357,9 +369,23 @@ func select(id: String, from_user := false) -> void:
 	for s in STATS:
 		(_bars[s[0]] as StatBar).animate_to(float(spec.stats[s[0]]), tint)
 		(_bars[s[0]] as StatBar).tooltip_text = HowToContent.stat_tip(spec, s[0])
+	_arrange_pick = -1
+	_paint_bar(spec)
+	(_panel.find_child("RoleLine", true, false) as Label).text = str(GameData.classes[id].specs[sid].role) if sid != "" else str(spec.role)
+	_tip.hush()
+	_show.show_class(id, Color("#ffb84d"), sid)
+	if changed and from_user:
+		UiSound.play(CLASS_SOUND.get(id, "uiSelect"))
+		_show.play_select(Time.get_ticks_msec() / 1000.0)
+
+
+## The buttons in the order the player arranged them: `_slots` here are positions on the bar.
+func _paint_bar(spec: Dictionary) -> void:
+	var key := _bar_key()
+	var layout := BarLayout.shared()
 	for i in int(GameData.C.SLOT_COUNT):
 		var slot: Button = _slots[i]
-		var a: Dictionary = spec.abilities[i]
+		var a: Dictionary = spec.abilities[layout.slot_at(key, i)]
 		slot.set_meta("ability", a)
 		(slot.get_meta("icon") as TextureRect).texture = Icons.tex(str(a.icon))
 		(slot.get_meta("mark") as TalentMark).kind = TalentMark.kind_of(a)
@@ -367,12 +393,67 @@ func select(id: String, from_user := false) -> void:
 		kl.text = Keybinds.shared().slot_label(i)
 		kl.add_theme_color_override("font_color", UiKit.GOLD if a.get("ult", false) else UiKit.MUTED)
 		slot.queue_redraw()
-	(_panel.find_child("RoleLine", true, false) as Label).text = str(GameData.classes[id].specs[sid].role) if sid != "" else str(spec.role)
+	_reset_bar.visible = layout.is_custom(key)
+
+
+func _bar_key() -> String:
+	return Talents.key(_cls, GameData.normalize_spec(_cls, str(menu.st.get_value("spec"))))
+
+
+func _repaint_bar() -> void:
+	var sid := GameData.normalize_spec(_cls, str(menu.st.get_value("spec")))
+	_paint_bar(Talents.kit(_cls, sid, ProgressStore.shared().talents(_cls, sid)))
+
+
+## Swaps two buttons of the bar and saves. Returns whether anything changed.
+func arrange_swap(a: int, b: int) -> bool:
+	_arrange_pick = -1
+	var moved := BarLayout.shared().swap(_bar_key(), a, b)
+	if moved:
+		BarLayout.shared().save()
+		UiSound.play("uiSelect")
 	_tip.hush()
-	_show.show_class(id, Color("#ffb84d"), sid)
-	if changed and from_user:
-		UiSound.play(CLASS_SOUND.get(id, "uiSelect"))
-		_show.play_select(Time.get_ticks_msec() / 1000.0)
+	_repaint_bar()
+	return moved
+
+
+func reset_bar() -> void:
+	_arrange_pick = -1
+	BarLayout.shared().reset(_bar_key())
+	BarLayout.shared().save()
+	_repaint_bar()
+	if _slots.size() > 0:
+		(_slots[0] as Control).grab_focus()  # the button that was just pressed hides itself
+
+
+## Keyboard, gamepad or a plain click: press one button, then the one to swap it with.
+func _arrange_press(pos: int) -> void:
+	if _arrange_pick < 0:
+		_arrange_pick = pos
+		UiSound.play("uiTick")
+		(_slots[pos] as Control).queue_redraw()
+	elif _arrange_pick == pos:
+		_arrange_pick = -1
+		(_slots[pos] as Control).queue_redraw()
+	else:
+		arrange_swap(_arrange_pick, pos)
+
+
+func _arrange_drag(_at: Vector2, pos: int) -> Variant:
+	var a: Dictionary = (_slots[pos] as Control).get_meta("ability", {})
+	if a.is_empty():
+		return null
+	_arrange_pick = -1
+	(_slots[pos] as Control).set_drag_preview(Icons.rect(str(a.icon), 46))
+	return {"bar_pos": pos}
+
+
+func _arrange_can_drop(_at: Vector2, data: Variant, _pos: int) -> bool:
+	return data is Dictionary and data.has("bar_pos")
+
+
+func _arrange_drop(_at: Vector2, data: Variant, pos: int) -> void:
+	arrange_swap(int(data.bar_pos), pos)
 
 
 ## Two big toggle cards under the class (Fuego / Escarcha for the mage); hidden for classes without specializations.
