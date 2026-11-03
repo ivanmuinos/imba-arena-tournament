@@ -616,8 +616,8 @@ Mediciones con scripts descartables sobre duelos del sacerdote (bots normales) c
 | Todo lo que lanza (Castigo, escudo, renovar, sanación) comparte el enfriamiento global de 1,5 s (`GCD_MS`); Castigo tiene 0,8 s de enfriamiento propio, así que el tope real es un Castigo cada 1,5 s | Castigo hace 22 de daño: como mucho unos 14,7 de daño por segundo |
 | El bot curaba antes de pegar: con un solo sacerdote, su único "aliado" es él mismo, y escudo (<60%), renovar (<85%) y sanación (<70%) tomaban el turno antes que Castigo | Contra el guerrero, en 6 peleas de 60 s: 88 Castigos, 41 renovar, 20 escudos, 10 sanaciones, 14 alaridos y 4 himnos (casi la mitad del enfriamiento global fue a curarse) |
 | Castigo además tenía una tirada al azar por pensamiento (`0.35 + skill*0.65`) incluso con el turno libre | Con el enfriamiento global libre, un 24% del tiempo no lanzaba nada |
-| Sólo una parte del daño llega | Contra el guerrero, 8,3 de daño por Castigo en vez de 22 (el guerrero bloquea de frente y los bots normales apuntan con ruido); el rival termina con 62-75% de vida cuando muere el sacerdote |
-| Aun con todas las defensas apagadas (umbrales en 0) el sacerdote no gana al guerrero, al cazador, al brujo ni al asesino | Con ~14,7 de daño por segundo tope y ~38% de aciertos, no le alcanza: es un problema de números de la clase, no del bot |
+| Sólo una parte del daño llega | Contra el guerrero, 8,3 de daño por Castigo en vez de 22 (el guerrero tiene bloqueo frontal y los bots normales apuntan con ruido; no se separó cuánto es cada cosa); el rival termina con 62-75% de vida cuando muere el sacerdote |
+| Aun con todas las defensas apagadas (umbrales en 0; 12 peleas por rival, primera ronda) el sacerdote no gana ni una al guerrero, al cazador, al brujo ni al asesino (5 de 12 al Escarcha) | Con ~14,7 de daño por segundo tope y ~38% de aciertos, no le alcanza: es un problema de números de la clase, no del bot |
 
 Así que el bot se puede mejorar un poco (más Castigos, curarse más tarde), pero no arreglar: con los números actuales el sacerdote no puede ganar a casi nadie en 1v1.
 
@@ -635,7 +635,7 @@ tools/duel_run.sh 10 pct_normal                # normal, N=10, repetición con l
 
 "Antes" son las cifras de la sección de línea base de arriba (mismo comando, código anterior). Los bots usan números al azar sin semilla, así que dos corridas del mismo comando no dan lo mismo: entre la corrida N=20 y la repetición N=10 el espejo pasó de 46% a 61% al límite.
 
-| Sacerdote (fila, win rate) | contra Escarcha | contra Fuego | contra los demás (5 clases) | espejo | global sin espejo |
+| Sacerdote (fila, win rate) | contra Escarcha | contra Fuego | contra cazador, asesino, brujo y guerrero | espejo | global sin espejo |
 |---|---|---|---|---|---|
 | Normal N=20, antes | 5% | 0% | 0% | 51% | 1,1% |
 | Normal N=20, después | 14% | 0% | 0% | 50% | 2,6% |
