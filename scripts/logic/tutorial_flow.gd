@@ -98,7 +98,7 @@ func _build() -> void:
 		var c: Dictionary = abs[cast_slot]
 		var friendly := SpellKinds.kind(c) == "friendly"
 		var where := " sobre el aliado herido" if friendly else " sobre un muñeco"
-		_step("cast", "La barra de lanzamiento", "Algunas habilidades tardan en lanzarse: se ve una barra de progreso. [b]Moverte, saltar o apretar Esc la cancela[/b], y cualquier daño que recibas también interrumpe a los lanzadores.",
+		_step("cast", "La barra de lanzamiento", "Algunas habilidades tardan en lanzarse: se ve una barra de progreso. [b]Moverte, saltar o apretar Esc la cancela[/b]. Cada golpe que recibís la demora un poco (hasta dos veces). Si te aturden, incapacitan, asustan o silencian, se corta y esa habilidad queda bloqueada 4 s.",
 			[_obj("finish", "Lanzá [b]%s[/b] [key]%s[/key]%s y quedate quieto hasta que termine" % [c.name, key_of(cast_slot), where], "cast:%s" % c.id),
 			_obj("cancel", "Ahora lanzala y moveté a mitad: se cancela", "cast_cancel")], {"arrow": "cast", "slot": cast_slot})
 	var ground_slot := -1

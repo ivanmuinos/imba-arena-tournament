@@ -30,7 +30,7 @@ Con clic derecho sostenido, A/D también desplazan y el mouse gira al personaje.
 Clic izquierdo + arrastrar: orbitar cámara. Rueda: zoom. Espacio: saltar.
 Tab: siguiente enemigo. Clic izquierdo en una unidad: elegir objetivo.
 Clic derecho en enemigo: elegirlo e iniciar ataque automático si tu clase lo tiene.
-1–7: habilidades del campeón; 7 es la definitiva.
+1, 2, 3, 4 y R: habilidades del campeón; R es la definitiva. T: abalorio.
 Habilidades de zona: tecla y clic izquierdo para colocar; clic derecho o Esc cancelan.
 Esc: cancelar lanzamiento o soltar objetivo.
 Enter: abrir chat en sala o partida y enviar. Esc: cerrar chat.
@@ -40,7 +40,7 @@ Controles: joystick (nombres de botones Xbox)
 --------------------------------------------
 Stick izquierdo: mover. Stick derecho: mirar/apuntar.
 A: saltar/confirmar zona. X/Y/B: habilidades 1/2/3.
-Cruceta arriba/derecha/abajo/izquierda: habilidades 4/5/6/7.
+Cruceta arriba: habilidad 4. Cruceta derecha: definitiva.
 LB/RB: elegir aliado/enemigo. L3/R3: mirar al objetivo/cancelar.
 Al apuntar una zona, el stick derecho vertical ajusta la distancia.
 

@@ -13,8 +13,8 @@ static func controls() -> String:
 		["Tab", "Cambiar al siguiente enemigo. [b]Esc[/b] suelta el objetivo o cancela un lanzamiento."],
 		["F · Shift + poder", "[b]F[/b] marca a tu objetivo como foco (anillo violeta). [b]Shift[/b] + la tecla de un poder lo lanza al foco sin cambiar de objetivo: controlá a uno (Polimorfia, Ceguera, Miedo) mientras le pegás al otro."],
 		["Clic derecho en un enemigo", "Elegirlo y, si tu clase tiene ataque automático, empezar a pegarle."],
-		["1  2  3  4  5  6  7", "Las siete habilidades de tu campeón (7 es la definitiva)."],
-		["Joystick", "Stick izquierdo: mover · derecho: mirar/apuntar. A: saltar/confirmar zona; X/Y/B: 1/2/3; cruceta arriba/derecha/abajo/izquierda: 4/5/6/7."],
+		["1  2  3  4  R", "Las cinco habilidades de tu campeón (R es la definitiva). [b]T[/b] usa el abalorio."],
+		["Joystick", "Stick izquierdo: mover · derecho: mirar/apuntar. A: saltar/confirmar zona; X/Y/B: 1/2/3; cruceta arriba: 4; cruceta derecha: R."],
 		["LB / RB · L3 / R3", "Elegir aliado/enemigo · mirar al objetivo/cancelar. En zonas, stick derecho vertical ajusta distancia."],
 		["Enter", "Chat para todos en sala y partida; Enter envía, Esc cierra. Al escribir se pausa tu entrada de juego."],
 		["Listo", "Con varios humanos, todos deben confirmar antes de empezar. Cambiar equipo, campeón o sala borra las confirmaciones."],
@@ -31,15 +31,15 @@ static func controls() -> String:
 
 static func rules() -> String:
 	return "[b]Reglas de la partida[/b]\n\n" \
-		+ "[color=#ffc15a][b]Equipos[/b][/color]  2 contra 2 o 3 contra 3. Los lugares vacíos los ocupan bots.\n" \
+		+ "[color=#ffc15a][b]Equipos[/b][/color]  1 contra 1, 2 contra 2 o 3 contra 3. Los lugares vacíos los ocupan bots.\n" \
 		+ "[color=#ffc15a][b]Sala de inicio[/b][/color]  Cada equipo espera con las puertas cerradas (10 s antes de cada ronda). Ahí podés usar escudos y curas.\n" \
 		+ "[color=#ffc15a][b]Ronda[/b]  [/color]Se abren las puertas y se pelea. Gana la ronda el equipo que elimina a todos los rivales.\n" \
 		+ "[color=#ffc15a][b]Partida[/b][/color]  Al mejor de 3: gana quien primero consigue 2 rondas.\n" \
 		+ "[color=#ffc15a][b]Amortiguación[/b][/color]  Pasados 40 s de pelea, toda curación recibida baja un 2% por segundo (hasta casi nada): los duelos de sanadores no se estiran para siempre.\n" \
-		+ "[color=#ffc15a][b]Línea de visión[/b][/color]  Casi todos los hechizos necesitan ver al objetivo: los pilares y paredes tapan. Los arbustos esconden a quien está adentro.\n" \
+		+ "[color=#ffc15a][b]Línea de visión[/b][/color]  Casi todos los hechizos necesitan ver al objetivo: los pilares y paredes tapan.\n" \
 		+ "[color=#ffc15a][b]Control de masas[/b][/color]  Aturdir, enraizar, silenciar, miedo, incapacitar. Repetir el mismo tipo rinde 100%, 50%, 25% y después es inmune por un rato. Algunos efectos se rompen con el daño.\n" \
-		+ "[color=#ffc15a][b]Interrupciones[/b][/color]  Mientras lanzás una barra de lanzamiento no podés moverte; si te movés, saltás o te interrumpen se cancela y esa habilidad queda bloqueada unos segundos.\n" \
-		+ "[color=#ffc15a][b]Mejoras[/b][/color]  Aparecen gemas en el mapa: crítico asegurado, sigilo, escudo y velocidad.\n"
+		+ "[color=#ffc15a][b]Interrupciones[/b][/color]  Mientras lanzás no podés moverte: si te movés, saltás o apretás Esc, el lanzamiento se cancela sin gastar el cooldown. Cada golpe lo demora un poco (hasta dos veces). Si te aturden, incapacitan, asustan o silencian, se corta y esa habilidad queda bloqueada 4 s.\n" \
+		+ "[color=#ffc15a][b]Mejoras[/b][/color]  Aparecen gemas en el mapa: crítico asegurado, sigilo, escudo, velocidad y curación.\n"
 
 
 static func _pct(v: float) -> String:
