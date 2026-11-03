@@ -147,3 +147,24 @@ func test_every_sample_group_resolves_to_a_licensed_audio_file() -> void:
 		check(FileAccess.file_exists("res://assets/third_party/%s/SOURCE.txt" % d), "%s: fuente registrada" % d)
 	check(FileAccess.get_file_as_string("res://assets/third_party/oga_sfx/LICENSE.txt").contains("CC0"), "oga_sfx: licencia CC0")
 	check(FileAccess.get_file_as_string("res://assets/third_party/kenney_ui/LICENSE.txt").contains("Creative Commons Zero") or FileAccess.get_file_as_string("res://assets/third_party/kenney_ui/LICENSE.txt").contains("CC0"), "kenney_ui: licencia CC0")
+
+
+func test_heal_spell_always_has_its_own_effect_even_at_full_health() -> void:
+	var m := ArenaMatch.new(2, [
+		{"name": "P", "cls": "priest", "team": "red", "peer": 1},
+		{"name": "A", "cls": "warrior", "team": "red", "peer": 2},
+		{"name": "E", "cls": "rogue", "team": "blue", "peer": 3}], 0, "hard", "test")
+	m.phase = "fight"
+	var p: ArenaUnit = m.units[0]
+	m.fx.clear()
+	m._execute(p, slot_of(p, "heal"), p.x, p.z, p.id, 1000)  # on yourself, at full health
+	var spell := m.fx.filter(func(f): return f.k == "healspell")
+	eq(spell.size(), 1, "la Sanación se ve aunque no cure nada")
+	eq(int(spell[0].id), p.id, "sobre quien la recibe")
+	eq(str(spell[0].ability), "heal", "con el hechizo, para su color")
+	check(m.fx.filter(func(f): return f.k == "heal").is_empty(), "sin número verde si no curó")
+	p.hp = p.max_hp - 50.0
+	m.fx.clear()
+	m._execute(p, slot_of(p, "heal"), p.x, p.z, p.id, 3000)
+	eq(m.fx.filter(func(f): return f.k == "heal").size(), 1, "herido: también el +número")
+	check(FxFilter.ID_EVENTS.has("healspell"), "respeta el sigilo como el resto de eventos con unidad")

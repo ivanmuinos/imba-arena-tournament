@@ -18,7 +18,7 @@ static func controls() -> String:
 		["Enter", "Chat para todos en sala y partida; Enter envía, Esc cierra. Al escribir se pausa tu entrada de juego."],
 		["Listo", "Con varios humanos, todos deben confirmar antes de empezar. Cambiar equipo, campeón o sala borra las confirmaciones."],
 		["Bloqueo del guerrero", "30% desde el frente (180°), 5% desde atrás. Anula daño físico directo, no efectos adicionales. No bloquea magia, daño periódico, entorno ni bajo aturdimiento, incapacidad o miedo."],
-		["F1  F2  F3", "Elegir a un aliado (o clic en su cuadro) para curas y escudos."],
+		["F1  F2  F3", "F1 te elige a vos; F2 y F3, a tus aliados (o clic en su cuadro). Para curas y escudos."],
 		["Hechizos de zona", "Apretá la tecla, apuntá con el retículo y [b]clic izquierdo[/b] para colocar; clic derecho o Esc cancelan."],
 		["M", "Silenciar el sonido. [b]F3[/b] muestra los cuadros por segundo."],
 	]
