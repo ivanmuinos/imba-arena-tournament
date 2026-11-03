@@ -8,7 +8,7 @@
 		[
 			{"id": "pyro_streak", "name": "Racha caliente", "effects": [{"op": "set", "ability": "pyro", "field": "instantAfterCrits", "value": 2}]},
 			{"id": "pyro_focus", "name": "Concentración ígnea", "effects": [{"op": "set", "ability": "pyro", "field": "noPushback", "value": 1}]},
-			{"id": "pyro_counter", "name": "Rompehechizos", "effects": [{"op": "swap", "ability": "pyro", "to": "counter"}, {"op": "mul", "ability": "counter", "field": "cd", "value": 1.7}]}
+			{"id": "pyro_counter", "name": "Rompehechizos", "effects": [{"op": "swap", "ability": "pyro", "to": "counter"}, {"op": "mul", "ability": "counter", "field": "cd", "value": 2.2}]}
 		]
 	],
 	"mage/frost": [
@@ -32,7 +32,7 @@
 		[
 			{"id": "corr_spread", "name": "Contagio", "effects": [{"op": "set", "ability": "corruption", "field": "spread", "value": 8}]},
 			{"id": "drain_greed", "name": "Sed de vida", "effects": [{"op": "set", "ability": "drainlife", "field": "drainHeal", "value": 1.3}]},
-			{"id": "drain_agony", "name": "Agonía", "effects": [{"op": "swap", "ability": "drainlife", "to": "agony"}]}
+			{"id": "drain_agony", "name": "Agonía", "effects": [{"op": "swap", "ability": "drainlife", "to": "agony"}, {"op": "mul", "ability": "agony", "field": "dotDps", "value": 0.7}]}
 		]
 	],
 	"hunter": [
@@ -49,21 +49,21 @@
 	],
 	"warrior": [
 		[
-			{"id": "strike_maim", "name": "Ensañamiento", "effects": [{"op": "set", "ability": "strike", "field": "vsSlowed", "value": 0.2}]},
-			{"id": "strike_rage", "name": "Furia", "effects": [{"op": "set", "ability": "strike", "field": "ultGain", "value": 1.5}]},
-			{"id": "strike_block", "name": "Guardia firme", "icon": "strike", "effects": [{"op": "add", "field": "block", "value": 0.06}]}
+			{"id": "strike_maim", "name": "Ensañamiento", "effects": [{"op": "set", "ability": "strike", "field": "vsSlowed", "value": 0.12}]},
+			{"id": "strike_rage", "name": "Furia", "effects": [{"op": "set", "ability": "strike", "field": "ultGain", "value": 1.3}]},
+			{"id": "strike_block", "name": "Guardia firme", "icon": "strike", "effects": [{"op": "add", "field": "block", "value": 0.04}]}
 		],
 		[
 			{"id": "mortal_reset", "name": "Ejecución", "effects": [{"op": "set", "ability": "mortal", "field": "killReset", "value": "mortal"}]},
 			{"id": "mortal_deep", "name": "Herida profunda", "effects": [{"op": "set", "ability": "mortal", "field": "healCut", "value": 0.7}]},
-			{"id": "mortal_pummel", "name": "Zurrar", "effects": [{"op": "swap", "ability": "hamstring", "to": "pummel"}, {"op": "mul", "ability": "pummel", "field": "cd", "value": 0.7}, {"op": "mul", "ability": "mortal", "field": "dmg", "value": 1.12}]}
+			{"id": "mortal_pummel", "name": "Zurrar", "effects": [{"op": "swap", "ability": "hamstring", "to": "pummel"}, {"op": "mul", "ability": "pummel", "field": "cd", "value": 0.7}, {"op": "mul", "ability": "mortal", "field": "dmg", "value": 1.25}]}
 		]
 	],
 	"priest": [
 		[
-			{"id": "smite_atone", "name": "Expiación", "effects": [{"op": "set", "ability": "smite", "field": "allyHeal", "value": 0.35}]},
+			{"id": "smite_atone", "name": "Expiación", "effects": [{"op": "set", "ability": "smite", "field": "allyHeal", "value": 0.25}]},
 			{"id": "smite_shield", "name": "Castigo protector", "effects": [{"op": "set", "ability": "smite", "field": "cdOf", "value": ["pwshield", "renew"], "also": {"cdBy": 1000}}]},
-			{"id": "smite_third", "name": "Juicio", "effects": [{"op": "set", "ability": "smite", "field": "nth", "value": 4, "also": {"nthEffect": "crit"}}]}
+			{"id": "smite_third", "name": "Juicio", "effects": [{"op": "set", "ability": "smite", "field": "nth", "value": 5, "also": {"nthEffect": "crit"}}]}
 		],
 		[
 			{"id": "heal_echo", "name": "Eco sanador", "effects": [{"op": "set", "ability": "heal", "field": "hotHps", "value": 5, "also": {"hotMs": 6000}}]},
@@ -73,7 +73,7 @@
 	],
 	"rogue": [
 		[
-			{"id": "stab_poison", "name": "Hoja envenenada", "effects": [{"op": "set", "ability": "stab", "field": "poison", "value": 3, "also": {"poisonMs": 6000}}]},
+			{"id": "stab_poison", "name": "Hoja envenenada", "effects": [{"op": "set", "ability": "stab", "field": "poison", "value": 1.5, "also": {"poisonMs": 6000}}]},
 			{"id": "stab_back", "name": "Puñalada trapera", "effects": [{"op": "set", "ability": "stab", "field": "behind", "value": 0.2}]},
 			{"id": "stab_fourth", "name": "Cuarta herida", "effects": [{"op": "set", "ability": "stab", "field": "nth", "value": 4, "also": {"nthEffect": "crit"}}]}
 		],

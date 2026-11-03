@@ -727,3 +727,12 @@ Duelos de bots contra todos los kits (`--talent-eval --by-rival --only=__none`),
 | **Traslación helada (Nova + Traslación, 2 cargas) + enraizar** | **31,0%** | **17%** | **40%** |
 
 Quedó la última. La Nova estalla donde estabas y enraíza 2 s a los que tenías encima, y después te teletransportás 8 m. Las cargas vuelven de a una, cada 12 s, y la recarga arranca con el primer uso. La Ventisca era la mayor parte del daño del Escarcha: sacarla lo hundía. La Nova y la Traslación de antes quedan en la reserva.
+
+## Talentos, versión 2: mecánicas
+
+Mismo comando (`--talent-eval --n=8`, los 5 mapas, 280 duelos por talento), tres corridas con semillas 1, 2 y 3. Solo se tocó lo que se pasaba de 5 puntos en más de una corrida.
+
+- **1.ª corrida:** se pasaban Brasas (+13), Tercera llama (+10), Ráfaga de lanzas (+10), Sombras ansiosas (+10), Guardia firme (+9), Expiación (+8) y Juicio (+7). Quedaron así: quemadura ×1,5, 1 de cada 4 Bolas de fuego crítica, Lanza de hielo con 2 cargas pero recarga ×1,25, Descarga 25% más rápida, bloqueo +4%, Expiación 25%, 1 de cada 5 Castigos crítico, Escarcha veloz −0,2 s.
+- **2.ª y 3.ª corridas:** Ensañamiento quedó en +12%, Furia en +30% de definitiva y Zurrar en Golpe mortal +25%. El veneno de la Puñalada bajó de 3 a 1,5 por segundo y la Agonía cambiada pega ×0,7. Estos dos últimos valores no se volvieron a medir.
+- **Pendientes:** Rompehechizos sigue en +10 aunque el Contrahechizo recarga ×2,2, y Zurrar en −6. Pasa lo mismo que en la versión 1: los bots se dejan interrumpir la Piroexplosión. Hay que mirarlos en 2v2 y 3v3.
+- **Lo que el duelo no mide:** el rebote, el contagio de la Corrupción, la Expiación sobre aliados y la Flecha perforante rinden en 2v2 y 3v3, no en duelo.

@@ -435,7 +435,7 @@ func test_warrior_strike_hits_slowed_harder() -> void:
 	var b: ArenaUnit = m.units[1]
 	near(m._talent_bonus(a.ability(0), a, b, now), 1.0, 0.001, "sin ralentizar, normal")
 	b.slow_until = now + 1000
-	near(m._talent_bonus(a.ability(0), a, b, now), 1.2, 0.001, "ralentizado, +20%")
+	near(m._talent_bonus(a.ability(0), a, b, now), 1.0 + _val("warrior", "", 0, 0), 0.001, "ralentizado, más daño")
 
 
 func test_mortal_reset_on_kill_and_deeper_wound() -> void:
