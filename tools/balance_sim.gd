@@ -24,6 +24,7 @@ func _init() -> void:
 	var rounds := 0
 	var limit_rounds := 0
 	var draw_rounds := 0
+	var limit_by_mode := {}   # "2"/"3" -> [rounds, limit rounds, limit rounds with a winner, percent-HP winner differs, percent tie]
 	var durations: Array = []   # fight time per match in seconds (prep and between-round pauses excluded)
 	var n := int(args.n)
 	if args.has("duel"):
@@ -61,6 +62,13 @@ func _init() -> void:
 				rounds += m.score.red + m.score.blue + m.draw_rounds
 				limit_rounds += m.limit_rounds
 				draw_rounds += m.draw_rounds
+				var lm: Array = limit_by_mode.get(str(mode), [0, 0, 0, 0, 0])
+				lm[0] += m.score.red + m.score.blue + m.draw_rounds
+				lm[1] += m.limit_rounds
+				lm[2] += m.limit_pct_decided
+				lm[3] += m.limit_pct_differs
+				lm[4] += m.limit_pct_ties
+				limit_by_mode[str(mode)] = lm
 				if m.done:
 					durations.append((now - 1_000_000.0) / 1000.0 - 20.0 - 10.0 * float(m.round_n))
 				var winner := ""
@@ -89,7 +97,7 @@ func _init() -> void:
 						var pair: Array = (side[1] as Array).duplicate()
 						pair.sort()
 						_add(stats, "pair|%s+%s" % [pair[0], pair[1]], won)
-	print("RESULT ", JSON.stringify({"matches": total_matches, "unfinished": draws, "rounds": rounds, "limit_rounds": limit_rounds, "draw_rounds": draw_rounds, "stats": stats, "durations": durations}))
+	print("RESULT ", JSON.stringify({"matches": total_matches, "unfinished": draws, "rounds": rounds, "limit_rounds": limit_rounds, "draw_rounds": draw_rounds, "limit_by_mode": limit_by_mode, "stats": stats, "durations": durations}))
 	quit()
 
 
@@ -134,13 +142,16 @@ func _duels(args: Dictionary, rng: RandomNumberGenerator) -> void:
 						if first < 0.0 and m.units.any(func(u): return not u.alive):
 							first = (now - m.fight_start) / 1000.0
 					var key := "%s%s|%s%s" % [a[0], "-" + a[1] if a[1] != "" else "", b[0], "-" + b[1] if b[1] != "" else ""]
-					var e: Array = meta.get(key, [0, 0, 0, 0, 0, 0.0, 0, 0])
+					var e: Array = meta.get(key, [0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0, 0])
 					e[0] += 1
 					e[2] += m.score.red + m.score.blue + m.draw_rounds
 					e[3] += m.limit_rounds
 					e[4] += m.draw_rounds
 					e[6] += m.limit_decided
 					e[7] += m.limit_hi_hp_wins
+					e[8] += m.limit_pct_decided
+					e[9] += m.limit_pct_differs
+					e[10] += m.limit_pct_ties
 					if not m.done:
 						e[1] += 1
 						meta[key] = e

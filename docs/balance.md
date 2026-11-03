@@ -602,3 +602,74 @@ Con el ajuste las finales de Oro quedan en 50% en las tres modalidades (antes 0%
 - Duración: las partidas simuladas duran 70-257 s de pelea y pausas (sin los 7 s finales), contra los 216 s (3,6 min) que supone el plan para las estimaciones de las 2 horas.
   Un humano que kitea o se frustra puede tardar más; los 1v1 contra Bronce y Plata salieron de 121 a 162 s y los 2v2 de 192 a 257 s.
 - Tampoco se midió el efecto de la baja de `skill` por derrotas seguidas (0,05 hasta el piso), porque el simulador no juega rachas.
+
+## 2026-11-02: el bot sacerdote en duelo (sin aliados vivos) y el desempate por % de vida
+
+Estado del código: `balance/priest-bot`. No cambia ningún número de clase (`data/classes.json` y `data/powers.json` intactos), solo `core/bot_brain.gd`.
+
+### Por qué perdía el sacerdote (medido, no supuesto)
+
+Mediciones con scripts descartables sobre duelos del sacerdote (bots normales) contra cada clase:
+
+| Hecho | Dato |
+|---|---|
+| Todo lo que lanza (Castigo, escudo, renovar, sanación) comparte el enfriamiento global de 1,5 s (`GCD_MS`); Castigo tiene 0,8 s de enfriamiento propio, así que el tope real es un Castigo cada 1,5 s | Castigo hace 22 de daño: como mucho unos 14,7 de daño por segundo |
+| El bot curaba antes de pegar: con un solo sacerdote, su único "aliado" es él mismo, y escudo (<60%), renovar (<85%) y sanación (<70%) tomaban el turno antes que Castigo | Contra el guerrero, en 6 peleas de 60 s: 88 Castigos, 41 renovar, 20 escudos, 10 sanaciones, 14 alaridos y 4 himnos (casi la mitad del enfriamiento global fue a curarse) |
+| Castigo además tenía una tirada al azar por pensamiento (`0.35 + skill*0.65`) incluso con el turno libre | Con el enfriamiento global libre, un 24% del tiempo no lanzaba nada |
+| Sólo una parte del daño llega | Contra el guerrero, 8,3 de daño por Castigo en vez de 22 (el guerrero tiene bloqueo frontal y los bots normales apuntan con ruido; no se separó cuánto es cada cosa); el rival termina con 62-75% de vida cuando muere el sacerdote |
+| Aun con todas las defensas apagadas (umbrales en 0; 12 peleas por rival, primera ronda) el sacerdote no gana ni una al guerrero, al cazador, al brujo ni al asesino (5 de 12 al Escarcha) | Con ~14,7 de daño por segundo tope y ~38% de aciertos, no le alcanza: es un problema de números de la clase, no del bot |
+
+Así que el bot se puede mejorar un poco (más Castigos, curarse más tarde), pero no arreglar: con los números actuales el sacerdote no puede ganar a casi nadie en 1v1.
+
+### Cambio
+
+Con aliados vivos nada cambia (mismos umbrales y mismas tiradas). Si el sacerdote no tiene aliados vivos: lanza Castigo cada vez que el enfriamiento global lo deja (sin tirada al azar) y los umbrales para curarse bajan: escudo 60% a 45%, renovar 85% a 55%, sanación 70% a 50% (45% a 30% con un cuerpo a cuerpo encima). El druida no cambia. Pruebas en `tests/test_priest_bot.gd`; el equipo queda cubierto por `test_team_priest_still_shields_the_hurt_ally_like_before` y el druida solo por `test_lone_druid_keeps_its_healer_thresholds`.
+
+### Comandos y resultados
+
+```
+tools/duel_run.sh 20 priest_after              # normal, N=20 (mismo N que la línea base): 9 min 25 s
+tools/duel_run.sh 10 priest_after_hard hard    # difícil, N=10 (mismo que la línea base): 3 min 3 s
+tools/duel_run.sh 10 pct_normal                # normal, N=10, repetición con los contadores de % de vida: 4 min 15 s
+```
+
+"Antes" son las cifras de la sección de línea base de arriba (mismo comando, código anterior). Los bots usan números al azar sin semilla, así que dos corridas del mismo comando no dan lo mismo: entre la corrida N=20 y la repetición N=10 el espejo pasó de 46% a 61% al límite.
+
+| Sacerdote (fila, win rate) | contra Escarcha | contra Fuego | contra cazador, asesino, brujo y guerrero | espejo | global sin espejo |
+|---|---|---|---|---|---|
+| Normal N=20, antes | 5% | 0% | 0% | 51% | 1,1% |
+| Normal N=20, después | 14% | 0% | 0% | 50% | 2,6% |
+| Normal N=10, repetición | 2% | 0% | 0% | 51% | 1,5% |
+| Difícil N=10, antes | 0% | 0% | 0% | 42% | 0,0% |
+| Difícil N=10, después | 0% | 0% | 0% | 56% | 0,0% |
+
+Espejo del sacerdote (sacerdote vs sacerdote), la pareja que llegaba al límite casi siempre:
+
+| corrida | rondas al límite | largo medio (s) |
+|---|---|---|
+| Normal N=20, antes | 84% (209/250) | 433 |
+| Normal N=20, después | 46% (118/256) | 410 |
+| Normal N=10, repetición | 61% (71/117), 1 duelo sin terminar | 378 |
+| Difícil N=10, antes | 42% (53/127) | 392 |
+| Difícil N=10, después | 12% (15/128) | 331 |
+
+Conclusión: el sacerdote sigue en 0% contra todo salvo el espejo y, con suerte, Escarcha; en normal pasó de 1,1% a 2,6% y de 1,5% en la repetición (dentro del ruido: celdas de 100 duelos, unos +/-10 puntos), y en difícil sigue en 0,0%. Lo que sí se movió fue el espejo, que termina antes (menos rondas al límite en ambas dificultades), aunque sigue largo. Con N=20 los demás win rates globales variaron 2-4 puntos (hunter 69,0% a 71,7%, guerrero 74,1% a 72,9%): ruido de corrida más que efecto. Para que el sacerdote sea competitivo en 1v1 hay que tocar los números de la clase, no el bot.
+
+### Rondas al límite: ¿y un desempate por % de vida?
+
+No se cambió la regla (`core/arena_match.gd`: gana quien tenga más vida absoluta restante). Se agregaron contadores de telemetría (`limit_pct_decided`, `limit_pct_differs`, `limit_pct_ties`): entre las rondas al límite con ganador por vida absoluta, cuántas decidiría distinto una regla de "vida restante de los vivos / vida máxima del equipo". Los simuladores de equipos y de duelos los imprimen.
+
+```
+tools/balance_run.sh 100 pct_team100    # 2v2 y 3v3, 1000 partidas (500 por modo), 4 min 29 s
+```
+
+| modo | rondas | al límite | con ganador por vida absoluta | el % de vida daría otro ganador | empate por % |
+|---|---|---|---|---|---|
+| 2v2 | 1189 | 2,0% (24) | 24 | 0 | 0 |
+| 3v3 | 1173 | 1,6% (19) | 19 | 0 | 0 |
+| 1v1 normal N=10 (2450 duelos) | 5515 | 1,9% | 103 | 3 | 0 |
+| 1v1 difícil N=10 (2450 duelos, corrida después) | 5371 | 0,9% | 47 | 4 | 0 |
+
+En total 193 rondas al límite con ganador, 7 distintas (3,6%): 0 de 43 en equipos y 7 de 150 en 1v1 (4,7%). Las rondas al límite son raras (menos de 2%) salvo el espejo del sacerdote, donde ambos tienen la misma vida máxima y el % de vida y la vida absoluta coinciden.
+
+Recomendación: no cambiar la regla. Casi nunca decide distinto (0 en equipos, 5% en 1v1 sobre un evento que ya es del 1-2% de las rondas), no arregla el espejo del sacerdote (misma vida máxima) y agregaría una regla más. Si se quisiera premiar a las clases de poca vida, lo que cuenta es el sacerdote mismo, y eso sale por la vía de los números de la clase.
