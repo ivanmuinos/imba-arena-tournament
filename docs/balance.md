@@ -673,3 +673,30 @@ tools/balance_run.sh 100 pct_team100    # 2v2 y 3v3, 1000 partidas (500 por modo
 En total 193 rondas al límite con ganador, 7 distintas (3,6%): 0 de 43 en equipos y 7 de 150 en 1v1 (4,7%). Las rondas al límite son raras (menos de 2%) salvo el espejo del sacerdote, donde ambos tienen la misma vida máxima y el % de vida y la vida absoluta coinciden.
 
 Recomendación: no cambiar la regla. Casi nunca decide distinto (0 en equipos, 5% en 1v1 sobre un evento que ya es del 1-2% de las rondas), no arregla el espejo del sacerdote (misma vida máxima) y agregaría una regla más. Si se quisiera premiar a las clases de poca vida, lo que cuenta es el sacerdote mismo, y eso sale por la vía de los números de la clase.
+
+## Medición tras los kits de 4 poderes (2026-11-03)
+
+Las tablas anteriores de este documento son de antes de pasar a kits de 4 poderes y ya no describen el juego. Medido con bots: sirve para detectar extremos, no para decidir números finales sin una prueba con personas.
+
+**Duelos 1v1 (dificultad normal, 4.900 duelos):** 0,9% de rondas al límite y 1 empate.
+
+| Variante | Victorias |
+|---|---|
+| Guerrero | 92,6% |
+| Pícaro | 82,7% |
+| Brujo | 68,6% |
+| Mago de fuego | 43,1% |
+| Sacerdote | 23,0% |
+| Mago de escarcha | 21,4% |
+| Cazador | 18,7% |
+
+**Torneo (`tools/tournament_run.sh 20 0.55 1`, margen de hasta ±22 puntos por celda):** Gladiador queda en 0% en todas las modalidades, y Oro entre 0% y 5% de copa estimada para este jugador simulado.
+
+**Cambio de datos:** dos jefes de Bronce eran casi imposibles porque el guerrero domina con estos kits (final de 1v1 en 20%, final de 3v3 en 30%). Brasa Joven pasa de guerrero a mago, y en la Cofradía Roja de 3v3 el guerrero pasa a cazador.
+
+| Bronce (N=40, semilla 5) | Cuartos | Semifinal | Final |
+|---|---|---|---|
+| 1v1 | 28/40 | 25/40 | 36/40 |
+| 3v3 | 39/40 | 36/40 | 39/40 |
+
+Plata, Oro y Gladiador no se tocaron.
