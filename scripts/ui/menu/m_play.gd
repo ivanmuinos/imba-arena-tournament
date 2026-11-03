@@ -22,7 +22,7 @@ func _ready() -> void:
 	add_child(row)
 	var defs := [
 		["practice", "ui_sword", "Contra bots", "Peleá contra bots en cualquier arena, sin conexión.", UiKit.LAVA],
-		["arena", "ui_target", "Arena de práctica", "Muñecos y medidor de daño para practicar rotaciones.", UiKit.GREEN],
+		["arena", "ui_target", "Arena de práctica", "Muñecos y medidor de daño para practicar.", UiKit.GREEN],
 		["host", "ui_people", "Crear partida", "Sos el anfitrión: tus amigos entran con tu IP y puerto.", UiKit.GOLD],
 		["join", "ui_globe", "Unirse", "Entrá a la partida de un amigo con su dirección.", UiKit.BLUE],
 		["tournament", "ui_star", "Torneo", "Copas de 8 equipos contra bots, desafíos y recompensas.", UiKit.GOLD],
