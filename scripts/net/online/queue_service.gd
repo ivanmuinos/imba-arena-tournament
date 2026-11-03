@@ -19,6 +19,8 @@ signal lobby_published(info: Dictionary)
 const POLL_SEARCHING := 6.0
 const POLL_MATCHED := 3.0
 const POLL_GROUP := 8.0
+## Signed in and doing nothing: a slow look for group invitations (and for a group leader searching with us).
+const POLL_IDLE := 30.0
 
 var api: OnlineApi
 ## idle | searching | matched
@@ -48,12 +50,12 @@ func _init(p_api: OnlineApi) -> void:
 
 # ---------------------------------------------------------------- pure helpers
 
-## Seconds between polls for a state (0: do not poll).
+## Seconds between polls for a state.
 static func poll_interval(p_state: String, in_group: bool) -> float:
 	match p_state:
 		"searching": return POLL_SEARCHING
 		"matched": return POLL_MATCHED
-	return POLL_GROUP if in_group else 0.0
+	return POLL_GROUP if in_group else POLL_IDLE
 
 
 ## {steam_id text: "red"|"blue"} from a match info.
@@ -163,8 +165,8 @@ func poll(cb: Callable = Callable()) -> void:
 		_polling = false
 		if r.ok and typeof(r.data) == TYPE_DICTIONARY:
 			_apply(r.data)
-		if state == "idle" and in_group() and r.ok:
-			refresh_group()
+		if state == "idle" and r.ok:
+			refresh_group()  # invitations to a group, and whether we are in one
 		_done(cb, r))
 
 

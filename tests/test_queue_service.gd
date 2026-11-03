@@ -47,7 +47,7 @@ func test_online_dev_switch() -> void:
 
 
 func test_poll_pacing() -> void:
-	eq(QueueService.poll_interval("idle", false), 0.0, "ocioso y sin grupo: no consulta")
+	eq(QueueService.poll_interval("idle", false), 30.0, "ocioso y sin grupo: mira cada 30 s si lo invitaron")
 	eq(QueueService.poll_interval("idle", true), 8.0, "con grupo mira cada 8 s")
 	eq(QueueService.poll_interval("searching", false), 6.0, "buscando: cada 6 s")
 	eq(QueueService.poll_interval("matched", false), 3.0, "con partida esperando la sala: cada 3 s")
@@ -61,8 +61,10 @@ func test_poll_pacing() -> void:
 	svc.tick(1.0)
 	eq((svc.api as FakeOnline).calls.size(), 1, "y no repite enseguida")
 	var idle := _svc()
-	idle.tick(100.0)
-	eq((idle.api as FakeOnline).calls.size(), 0, "ocioso: ninguna consulta")
+	idle.tick(29.0)
+	eq((idle.api as FakeOnline).calls.size(), 0, "ocioso: casi nada de trafico")
+	idle.tick(2.0)
+	eq(_path(idle, 0), "queue_status", "ocioso: una consulta lenta")
 
 
 func test_join_solo_and_group_request_shapes() -> void:

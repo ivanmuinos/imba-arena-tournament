@@ -115,6 +115,7 @@ expect "anon key cannot call touch_player"  "$(rest "$ANON_KEY" touch_player '{"
 expect "a forged token is refused"          "$(rest "${T1%.*}.AAAA" touch_player '{"p_name":"Ana"}')" "401"
 
 [ -f supabase/team_flow.sh ] && . supabase/team_flow.sh
+[ -f supabase/queue_flow.sh ] && . supabase/queue_flow.sh
 
 echo
 echo "passed: $pass  failed: $failn"

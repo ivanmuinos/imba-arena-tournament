@@ -23,6 +23,10 @@ extends Node
 ##   --steam-host[=public]   create a Steam lobby on start (friends only unless "public")
 ##   --steam-join=LOBBY_ID   join a Steam lobby on start (Steam itself launches us with `+connect_lobby ID` for invites)
 ##   --log / --steam-log     print every Steam callback
+##   --online                (development) turn the online features on for this run (Online.ENABLED ships false): sign-in,
+##                           teams, groups and the normal queue against the server in data/online.json or IMBA_ONLINE_URL;
+##                           IMBA_ONLINE_ANON_KEY gives the anon key. Same as IMBA_ONLINE=1.
+##   --queue=MODE            (development, with --online) search a normal match (1-3) as soon as the session is ready
 ##   --steam-mock[=NAME]     simulated Steam (no Steam client): copies on this PC or LAN see each other as friends
 
 const DEFAULT_PORT := 7777
@@ -71,6 +75,17 @@ var _started_at := 0.0
 var _shot_times: Array = []
 var _shot_n := 0
 var _menu_script: Array = []  # debug: scripted menu actions [[seconds, action, arg], ...]
+## Online (null unless Online.on()): sign-in, teams, groups and the normal queue.
+var online_api: OnlineApi = null
+var online_session: OnlineSession = null
+var team_service: TeamService = null
+var queue: QueueService = null
+## Id of the queue match whose lobby we host or joined (so it is never entered twice) and when it was found.
+var _queue_id := ""
+var _queue_found_at := 0.0
+var _online_tick := 0.0
+## A match found while we were busy (a bot match, a lobby): it waits this long for us to be back at the menu.
+const QUEUE_OFFER_TTL := 120.0
 
 
 func _ready() -> void:
@@ -154,6 +169,7 @@ func _ready() -> void:
 	_browser.join_entry.connect(_on_browser_join)
 	_ui.add_child(_browser)
 	_init_steam()
+	_init_online()
 	if args.has("shot-times"):
 		for t in str(args["shot-times"]).split(","):
 			_shot_times.append(float(t))
@@ -255,7 +271,12 @@ func _init_steam() -> void:
 	steam_lobbies.hosted.connect(_on_steam_hosted)
 	steam_lobbies.list_changed.connect(func(e): _browser.show_entries(e))
 	steam_lobbies.joined.connect(_on_steam_joined)
-	steam_lobbies.failed.connect(func(text): _browser.set_status(text); _menu.set_status(text); _lobby.flash(text))
+	steam_lobbies.failed.connect(func(text):
+		_browser.set_status(text)
+		_menu.set_status(text)
+		_lobby.flash(text)
+		if _queue_id != "" and _state == "menu":
+			_queue_drop())
 	steam_lobbies.backend.join_requested.connect(func(_id): _browser.visible = false)  # invite accepted from the overlay
 	# An invite accepted while the game was closed: Steam starts us with `+connect_lobby <id>`.
 	var invited := SteamLobbies.lobby_from_cmdline(OS.get_cmdline_args())
@@ -265,6 +286,111 @@ func _init_steam() -> void:
 		(func(): _via_steam = true; steam_lobbies.join(invited)).call_deferred()
 	elif args.has("steam-host"):
 		(func(): _start_steam_host(_cfg_from_args(), str(args["steam-host"]) != "public")).call_deferred()
+
+
+# ---------------------------------------------------------------- online (sign-in, teams, groups, queue)
+
+func _init_online() -> void:
+	if not Online.on():
+		return
+	online_api = OnlineApi.new()
+	add_child(online_api)
+	online_session = OnlineSession.new(online_api, steam)
+	team_service = TeamService.new(online_api)
+	queue = QueueService.new(online_api)
+	queue.match_found.connect(_on_queue_match)
+	queue.lobby_published.connect(func(_info): _queue_try_start())
+	_menu.set_online(online_session, team_service, queue)
+	online_session.state_changed.connect(_on_online_state)
+	if args.has("log"):
+		online_session.state_changed.connect(func(): print("[online] sesión: %s %s" % [online_session.state, online_session.note]))
+		queue.match_found.connect(func(i): print("[cola] partida %s, anfitrión=%s, lado=%s" % [i.id, i.is_host, i.side]))
+		queue.lobby_published.connect(func(i): print("[cola] sala publicada %s" % i.lobby_id))
+	online_session.start.call_deferred()
+
+
+func _on_online_state() -> void:
+	if online_session == null or not online_session.is_ready():
+		return
+	team_service.refresh()
+	queue.refresh_group()
+	if args.has("queue") and queue.state == "idle":  # development: search right away
+		queue.join(clampi(int(str(args.queue)), 1, 3), false, func(r: Dictionary):
+			if args.has("log"):
+				print("[cola] buscando: ", "ok" if r.ok else str(r.get("error", ""))))
+
+
+## A match was formed for us by the server: start it when we are at the menu (host opens the lobby, guests wait for its id).
+func _on_queue_match(_info: Dictionary) -> void:
+	_queue_found_at = Time.get_ticks_msec() / 1000.0
+	_queue_try_start()
+
+
+## Never enters a queue match twice, and never while another game is on: a match found during a bot match or a lobby
+## waits (QUEUE_OFFER_TTL) until we are back at the menu.
+func _queue_try_start() -> void:
+	if queue == null or not queue.has_match():
+		return
+	var info: Dictionary = queue.current
+	if str(info.id) == _queue_id:
+		return
+	if _state != "menu":
+		if Time.get_ticks_msec() / 1000.0 - _queue_found_at > QUEUE_OFFER_TTL:
+			_queue_drop("La partida en cola se canceló porque estabas en otra partida.")
+		return
+	if bool(info.is_host):
+		if steam_lobbies == null:
+			_queue_drop("Steam no está disponible: se canceló la partida en cola.")
+			return
+		_start_queue_host(info)
+	elif str(info.lobby_id) != "":
+		if steam_lobbies == null:
+			_queue_drop("Steam no está disponible: se canceló la partida en cola.")
+			return
+		_join_queue_lobby(info)
+
+
+func _queue_drop(text := "No se pudo entrar a la partida en cola.") -> void:
+	_queue_id = ""
+	if queue != null:
+		queue.abandon()
+	if _menu != null and text != "":
+		_menu.set_status(text)
+
+
+## The host of a queue match opens a public Steam lobby (guests may not be friends) and publishes its id.
+func _start_queue_host(info: Dictionary) -> void:
+	_teardown_session()
+	_queue_id = str(info.id)
+	var cfg: Dictionary = _menu._cfg()
+	last_cfg = cfg
+	offline = false
+	_via_steam = true
+	_steam_cfg = cfg
+	var scfg := {"mode": queue.mode, "diff": "normal", "map": "random", "dedicated": false, "autopilot": args.has("autopilot"),
+		"queue_sides": QueueService.side_map(info), "queue_host": online_api.steam_id}
+	server = GameServer.new(scfg)
+	var link := LoopbackTransport.pair()
+	server.attach(link[0], true)
+	client = _new_client(cfg)
+	client.attach(link[1], {"name": _steam_name(cfg), "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": "any"})
+	steam_lobbies.host(false, {"mode": queue.mode, "map": "random", "name": _steam_name(cfg)})
+	_menu.set_status("Partida encontrada: abriendo la sala…")
+
+
+func _join_queue_lobby(info: Dictionary) -> void:
+	_teardown_session()
+	_queue_id = str(info.id)
+	_via_steam = true
+	_menu.set_status("Partida encontrada: entrando a la sala…")
+	steam_lobbies.join(int(str(info.lobby_id)))
+
+
+## Back at the menu without a result (left the lobby, lost the connection): the slot is freed, nothing is reported.
+func _queue_leave() -> void:
+	_queue_id = ""
+	if queue != null and queue.has_match():
+		queue.abandon()
 
 
 func _steam_name(cfg: Dictionary) -> String:
@@ -295,6 +421,8 @@ func _on_steam_hosted(lobby_id: int) -> void:
 	if server == null:
 		return
 	server.attach(SteamTransport.host(steam, lobby_id))
+	if _queue_id != "" and queue != null and queue.has_match():
+		queue.publish_lobby(lobby_id)  # the other players of the match are waiting for this id
 
 
 func _open_steam_browser() -> void:
@@ -657,7 +785,13 @@ func _on_match_finished(end: Dictionary, rows: Array) -> void:
 	var again_text := "JUGAR OTRA" if offline else "VOLVER A LA SALA"
 	var extra := {}
 	_tresult = {}
-	if tsession != null:  # a cup match: the run moves on (a forfeit counts as a loss)
+	var queued := queue != null and _queue_id != "" and queue.has_match() and str(queue.current.id) == _queue_id
+	if queued:  # a normal queue match: both sides report the winner, the server decides whether it counts
+		again_text = "VOLVER AL MENÚ"
+		if profile != null:
+			extra = {"lines": TournamentSession.reward_lines(TournamentSession.record_online(profile, str(last_cfg.get("cls", "mage")), won, my_stats))}
+		queue.report_result(QueueService.winner_to_report(str(end.winner)), func(_r): queue.finish())
+	elif tsession != null:  # a cup match: the run moves on (a forfeit counts as a loss)
 		_tresult = tsession.finish(won, my_stats, _forfeited)
 		again_text = _tresult.button
 		extra = {"lines": _tresult.lines}
@@ -676,7 +810,9 @@ func _on_forfeit() -> void:
 
 
 func _again() -> void:
-	if tsession != null:
+	if _queue_id != "":  # a queue match is over: back to the menu (a new search is a new ticket)
+		_to_menu()
+	elif tsession != null:
 		match str(_tresult.get("kind", "out")):
 			"next", "rematch":
 				_play_tournament(tsession)
@@ -705,6 +841,7 @@ func _closed_deferred(reason: String) -> void:
 
 func _to_menu() -> void:
 	tsession = null  # leaving never loses the cup: the run (and a pending match) stay in tournament.json
+	_queue_leave()
 	_teardown_session()
 	_show("menu")
 	_set_preview(_menu.selected_map())
@@ -807,6 +944,14 @@ func _process(delta: float) -> void:
 	var ms := delta * 1000.0
 	if steam != null:
 		steam.run_callbacks()
+	if queue != null:
+		var real_dt := AutoQuality.real_delta(delta, Engine.time_scale)  # polling is paced by the wall clock, not --time-scale
+		queue.tick(real_dt)
+		_online_tick += real_dt
+		if _online_tick >= 1.0:
+			_online_tick = 0.0
+			online_session.tick()
+			_queue_try_start()
 	if server != null:
 		server.process(ms)
 	if client != null:

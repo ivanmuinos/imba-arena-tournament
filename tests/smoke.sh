@@ -19,6 +19,8 @@ check() { # name, output
 godot --headless --path . --import >/dev/null 2>&1
 out=$(limit 60 godot --headless --path . --quit-after 120 2>&1)
 check "menú principal" "$out"
+out=$(limit 60 godot --headless --path . --quit-after 240 -- --online --log 2>&1)
+check "menú con online activado, sin Steam ni servidor" "$out"
 out=$(limit 90 godot --headless --path . --quit-after 1500 -- --offline --autopilot --log 2>&1)
 check "partida offline (1500 cuadros)" "$out"
 echo "$out" | grep -q "snapshot #1 " || { echo "✗ la partida offline no produjo snapshots"; fail=1; }
