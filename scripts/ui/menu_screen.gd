@@ -24,6 +24,8 @@ signal continue_tournament
 signal backdrop_requested(kind: String)
 ## The online session, the teams or the queue changed (the Equipos tab and the queue card follow it).
 signal online_changed
+## New data from the server (teams, invitations, group, queue state): screens redraw only if what they show changed.
+signal online_data_changed
 
 const DESIGN := Vector2(1280, 720)
 const SLIDE := 64.0
@@ -264,6 +266,8 @@ func set_online(session: OnlineSession, teams: TeamService, q: QueueService) -> 
 	if session != null:
 		session.state_changed.connect(func(): online_changed.emit())
 		q.changed.connect(_refresh_queue_bar)
+		q.changed.connect(func(): online_data_changed.emit())
+		teams.changed.connect(func(): online_data_changed.emit())
 	_refresh_queue_bar()
 	online_changed.emit()
 

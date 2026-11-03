@@ -169,7 +169,8 @@ func _refresh_online() -> void:
 	c.tooltip_text = "" if ready else menu.online_notice()
 	if not ready:
 		_online_panel.visible = false
-		c.selected = false
+	c.selected = ready and _online_panel.visible  # (re)applies the dimmed look: Card only redraws when selected changes
+	if not ready:
 		return
 	var q: QueueService = menu.queue
 	var busy: bool = q != null and q.state != "idle"

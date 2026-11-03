@@ -95,6 +95,7 @@ func test_online_tab_and_card_appear_with_the_services() -> void:
 	m.go("play")
 	check(play._cards.online.visible, "tarjeta En línea")
 	check(not play._cards.online.disabled, "habilitada con sesión")
+	eq(play._cards.online.modulate.a, 1.0, "y sin el aspecto apagado")
 	_drop(m)
 
 
@@ -109,6 +110,7 @@ func test_not_ready_shows_a_notice_and_no_controls() -> void:
 	var play := m._views.play as MPlay
 	m.go("play")
 	check(play._cards.online.disabled, "la tarjeta de Jugar queda deshabilitada")
+	check(play._cards.online.modulate.a < 1.0, "y se ve apagada")
 	_drop(m)
 
 

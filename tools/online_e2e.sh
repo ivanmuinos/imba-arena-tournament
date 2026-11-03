@@ -24,11 +24,14 @@ sleep 2
 
 if [ "$MODE" = 1 ]; then NAMES=(Ana Beto); else NAMES=(Ana Beto Caro Dani); fi
 export IMBA_ONLINE_URL="$API_URL" IMBA_ONLINE_ANON_KEY="$ANON_KEY"
+CLASSES=(warrior rogue warrior rogue)   # melee fights end; four mages in 2v2 draw round after round
+i=0
 for n in "${NAMES[@]}"; do
   mkdir -p "$TMP/$n"
-  godot --headless --path . -- --online --steam-mock="$n" --queue="$MODE" --autopilot --rounds=1 --time-scale=6 --no-capture \
+  godot --headless --path . -- --online --steam-mock="$n" --queue="$MODE" --cls="${CLASSES[$i]}" --autopilot --rounds=1 --time-scale=6 --no-capture \
     --save-dir="$TMP/$n" --log > "$TMP/$n.log" 2>&1 &
   PIDS+=($!)
+  i=$((i+1))
   sleep 1
 done
 
@@ -42,14 +45,38 @@ done
 echo "players in a match: $n"
 MATCH=$(sql "select id from public.online_matches order by created_at desc limit 1")
 
+dev_token() { curl -s -m 20 -X POST "$API_URL/functions/v1/auth-steam" -H "Authorization: Bearer $ANON_KEY" -H "apikey: $ANON_KEY" \
+  -H 'Content-Type: application/json' -d "$(printf '{"ticket":"dev:%s"}' "$1")" | sed -E 's/.*"token":"([^"]+)".*/\1/'; }
+rpc() { curl -s -m 20 -X POST "$API_URL/rest/v1/rpc/$2" -H "apikey: $ANON_KEY" -H "Authorization: Bearer $1" -H 'Content-Type: application/json' -d "$3" -w ' [%{http_code}]'; echo; }
+HOST=$(sql "select host from public.online_matches where id = '$MATCH'")
+GUEST=$(sql "select steam_id from public.online_match_players where match_id = '$MATCH' and steam_id <> $HOST limit 1")
+GNAME=$(sql "select name from public.players where steam_id = $GUEST")
+GPID=""
+for k in "${!NAMES[@]}"; do [ "${NAMES[$k]}" = "$GNAME" ] && GPID=${PIDS[$((k+1))]}; done
+echo "host=$HOST guest=$GUEST ($GNAME, pid $GPID)"
+
 if [ "$SCENARIO" = "quit" ]; then
-  sleep 12   # a few seconds into the match
-  kill -9 "${PIDS[2]}" 2>/dev/null
-  echo "== killed ${NAMES[1]} (SIGKILL) mid-match"
+  sleep 10   # a few seconds into the match
+  kill -9 "$GPID" 2>/dev/null
+  echo "== killed $GNAME (SIGKILL) mid-match"
+fi
+if [ "$SCENARIO" = "falsified" ]; then
+  sleep 8
+  kill -STOP "$GPID"   # the guest's own client can no longer report: we speak for it
+  echo "== froze $GNAME; waiting for the host to report the real winner"
+  for i in $(seq 1 300); do
+    TRUTH=$(sql "select reported from public.online_match_players where match_id = '$MATCH' and steam_id = $HOST")
+    [ -n "$TRUTH" ] && break
+    sleep 1
+  done
+  LIE=$([ "$TRUTH" = "red" ] && echo blue || echo red)
+  echo "host reported: $TRUTH ; the guest (falsified) reports: $LIE"
+  rpc "$(dev_token "$GUEST")" report_result "$(printf '{"p_match":"%s","p_winner":"%s"}' "$MATCH" "$LIE")"
+  kill -CONT "$GPID"
 fi
 
 echo "== waiting for the match to resolve (or time out)"
-for i in $(seq 1 150); do
+for i in $(seq 1 ${E2E_WAIT:-400}); do
   st=$(sql "select status from public.online_matches where id = '$MATCH'")
   [ "$st" != "open" ] && break
   sleep 1
@@ -61,3 +88,11 @@ sql "select steam_id, mode, skill, games from public.player_skill order by steam
 echo "-- history (matches):"
 sql "select status, winner from public.online_matches"
 for n in "${NAMES[@]}"; do echo "-- log $n"; grep -E "^\[(online|cola|cliente|servidor)\]" "$TMP/$n.log" | cut -c1-160 | tail -12; grep -E "SCRIPT ERROR|ERROR" "$TMP/$n.log" | head -3; done
+
+if [ "$SCENARIO" = "quit" ]; then
+  echo "== two minutes of silence from the killed player, then any poll sweeps (the host's copy has already left the queue)"
+  sleep 125
+  rpc "$(dev_token "$GUEST")" queue_status '{}' | cut -c1-120
+  echo "killed player still active in the match: $(sql "select active from public.online_match_players where match_id = '$MATCH' and steam_id = $GUEST")"
+  echo "killed player can search again: $(rpc "$(dev_token "$GUEST")" join_queue '{"p_mode":1,"p_version":"0.7.0"}')"
+fi

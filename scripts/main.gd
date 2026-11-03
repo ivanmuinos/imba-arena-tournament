@@ -27,6 +27,7 @@ extends Node
 ##                           teams, groups and the normal queue against the server in data/online.json or IMBA_ONLINE_URL;
 ##                           IMBA_ONLINE_ANON_KEY gives the anon key. Same as IMBA_ONLINE=1.
 ##   --queue=MODE            (development, with --online) search a normal match (1-3) as soon as the session is ready
+##                           (--cls= / --spec= pick the champion for it, handy with several copies)
 ##   --steam-mock[=NAME]     simulated Steam (no Steam client): copies on this PC or LAN see each other as friends
 
 const DEFAULT_PORT := 7777
@@ -362,7 +363,7 @@ func _queue_drop(text := "No se pudo entrar a la partida en cola.") -> void:
 func _start_queue_host(info: Dictionary) -> void:
 	_teardown_session()
 	_queue_id = str(info.id)
-	var cfg: Dictionary = _menu._cfg()
+	var cfg := _queue_cfg()
 	last_cfg = cfg
 	offline = false
 	_via_steam = true
@@ -376,6 +377,16 @@ func _start_queue_host(info: Dictionary) -> void:
 	client.attach(link[1], {"name": _steam_name(cfg), "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": "any"})
 	steam_lobbies.host(false, {"mode": queue.mode, "map": "random", "name": _steam_name(cfg)})
 	_menu.set_status("Partida encontrada: abriendo la sala…")
+
+
+## The champion for a queue match: the saved choice, or --cls= / --spec= (development runs with several copies).
+func _queue_cfg() -> Dictionary:
+	var cfg: Dictionary = _menu._cfg().duplicate()
+	if args.has("cls"):
+		var n := MatchConfig.normalize({"cls": args.cls, "spec": args.get("spec", "")})
+		cfg["cls"] = n.cls
+		cfg["spec"] = n.spec
+	return cfg
 
 
 func _join_queue_lobby(info: Dictionary) -> void:
@@ -470,7 +481,7 @@ func _update_presence() -> void:
 ## Joined a Steam lobby (from the list or from an overlay invite): talk to its owner over Steam messages.
 func _on_steam_joined(lobby_id: int, owner: int) -> void:
 	_browser.visible = false
-	var cfg: Dictionary = _menu._cfg() if _state == "menu" else last_cfg
+	var cfg: Dictionary = (_queue_cfg() if _queue_id != "" else _menu._cfg()) if _state == "menu" else last_cfg
 	last_cfg = cfg
 	offline = false
 	_via_steam = true

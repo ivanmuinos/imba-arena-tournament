@@ -20,6 +20,7 @@ var _ids: Array[LineEdit] = []
 var _history := {}  # team id -> [{at, mode, won, opponents}]
 var _confirm := ""  # a destructive button asks twice: the key of the one pending
 var _timer: Timer
+var _built_key := ""
 
 
 func section() -> String:
@@ -29,19 +30,19 @@ func section() -> String:
 func _ready() -> void:
 	header("Equipos", "Tu equipo fijo de 2v2 o 3v3 y los grupos para buscar partida juntos.")
 	notice = UiKit.label("", 18, UiKit.MUTED)
-	notice.position = Vector2(72, 200)
+	notice.position = Vector2(72, 210)
 	notice.custom_minimum_size = Vector2(900, 0)
 	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(notice)
 	_retry = MButton.new("Reintentar", "secondary")
-	_retry.position = Vector2(72, 260)
+	_retry.position = Vector2(72, 270)
 	_retry.custom_minimum_size = Vector2(180, 44)
 	_retry.pressed.connect(func(): if menu.online_session != null: menu.online_session.start())
 	add_child(_retry)
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(72, 176)
-	scroll.custom_minimum_size = Vector2(1136, 500)
-	scroll.size = Vector2(1136, 500)
+	scroll.position = Vector2(72, 196)
+	scroll.custom_minimum_size = Vector2(1136, 480)
+	scroll.size = Vector2(1136, 480)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
 	var cols := HBoxContainer.new()
@@ -60,6 +61,8 @@ func _ready() -> void:
 	_timer.timeout.connect(_reload)
 	add_child(_timer)
 	menu.online_changed.connect(_rebuild)
+	# a poll or a reload that changed nothing must not wipe what the player is typing
+	menu.online_data_changed.connect(_rebuild_if_changed)
 	visibility_changed.connect(func():
 		if is_visible_in_tree():
 			_timer.start()
@@ -135,9 +138,22 @@ func _clear(box: Control) -> void:
 		c.queue_free()
 
 
+## What the screen shows (not the queue's wait counter, which changes on every poll).
+func _state_key() -> String:
+	if menu.online_session == null:
+		return "off"
+	return JSON.stringify([menu.online_ready(), menu.team_service.teams, menu.team_service.invites, menu.queue.group, menu.queue.group_invites, _history])
+
+
+func _rebuild_if_changed() -> void:
+	if _state_key() != _built_key:
+		_rebuild()
+
+
 func _rebuild() -> void:
 	if _left == null:
 		return
+	_built_key = _state_key()
 	_clear(_left)
 	_clear(_right)
 	buttons.clear()
@@ -170,7 +186,7 @@ func _team_card(mode: int) -> void:
 	var team := menu.team_service.team_for_mode(mode)
 	var col := _card(_left, "EQUIPO %dv%d" % [mode, mode], UiKit.GOLD)
 	if team.is_empty():
-		col.add_child(UiKit.label("Todavía no tenés equipo de %dv%d. Elegí un nombre y creálo; después invitá a tus compañeros." % [mode, mode], 14, UiKit.MUTED))
+		col.add_child(_para("Todavía no tenés equipo de %dv%d. Elegí un nombre y creálo; después invitá a tus compañeros." % [mode, mode]))
 		var name := _line("Nombre del equipo (3 a 20 letras)")
 		col.add_child(name)
 		var create := MButton.new("Crear equipo", "accent")
@@ -301,7 +317,7 @@ func _group_card() -> void:
 	var col := _card(_right, "GRUPO PARA BUSCAR PARTIDA", UiKit.GREEN)
 	var q: QueueService = menu.queue
 	if not q.in_group():
-		col.add_child(UiKit.label("Un grupo busca partida junto: queda del mismo lado. Cada integrante tiene que confirmar. También podés armarlo desde tu equipo.", 14, UiKit.MUTED))
+		col.add_child(_para("Un grupo busca partida junto: queda del mismo lado. Cada integrante tiene que confirmar. También podés armarlo desde tu equipo."))
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		for mode in [2, 3]:
@@ -391,6 +407,14 @@ func _friend_pick(into: LineEdit) -> OptionButton:
 	return ob
 
 
+## A muted paragraph that wraps inside its card instead of widening it.
+func _para(text: String) -> Label:
+	var l := UiKit.label(text, 14, UiKit.MUTED)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(COL_W - 32.0, 0)
+	return l
+
+
 func _line(placeholder: String) -> LineEdit:
 	var e := LineEdit.new()
 	e.placeholder_text = placeholder
@@ -401,6 +425,6 @@ func _line(placeholder: String) -> LineEdit:
 
 func _small(text: String) -> MButton:
 	var b := MButton.new(text, "secondary")
-	b.custom_minimum_size = Vector2(0, 34)
+	b.custom_minimum_size = Vector2(96, 34)
 	b.add_theme_font_size_override("font_size", 14)
 	return b
