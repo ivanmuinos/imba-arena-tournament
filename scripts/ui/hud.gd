@@ -611,7 +611,7 @@ func _build_bar() -> void:
 		slot.add_child(mark)
 		var charges := UiKit.label("", 15, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)  # charges left (Frost Blink)
 		UiKit.outlined(charges, 5)
-		charges.position = Vector2(36, 0)
+		charges.position = Vector2(36, 40)  # bottom-right: the key label is on top
 		charges.size = Vector2(20, 18)
 		charges.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		charges.visible = int(a.get("charges", 1)) > 1
