@@ -33,9 +33,9 @@ func _slot(id: String) -> int:
 func test_crack_is_complete() -> void:
 	check(GameData.classes.has("crack"), "El Crack registrado")
 	var kit := GameData.kit("crack")
-	eq(kit.abilities.size(), 7, "siete habilidades")
+	eq(kit.abilities.size(), int(GameData.C.SLOT_COUNT), "básico, 3 habilidades y definitiva")
 	check(ResourceLoader.exists("res://assets/icons/%s.svg" % kit.icon), "icono de clase")
-	for a in kit.abilities:
+	for a in kit.abilities + GameData.reserve("crack"):  # the reserve stays playable-ready too
 		check(SpellKinds.TABLE.has(a.id), "objetivo explícito: " + a.id)
 		check(SpellSchools.explicit(a.id), "escuela: " + a.id)
 		check(ResourceLoader.exists("res://assets/icons/%s.svg" % a.icon), "icono: " + a.id)
@@ -50,7 +50,7 @@ func test_nutmeg_slips_behind_and_disorients() -> void:
 	var w: ArenaUnit = m.units[2]
 	w.rot = PI  # facing the crack
 	var hp := w.hp
-	m._execute(k, _slot("nutmeg"), w.x, w.z, w.id, 1000)
+	m._execute(k, slot_of(k, "nutmeg"), w.x, w.z, w.id, 1000)
 	check(hp - w.hp > 0.0 and hp - w.hp <= 10.0, "10 de daño (menos la armadura del guerrero): %s" % (hp - w.hp))
 	eq(w.incap_kind, "disorient", "desorientado")
 	check(w.incap_until > 2500, "2 s")
@@ -63,12 +63,12 @@ func test_dribble_and_one_two_move_fast() -> void:
 	var k: ArenaUnit = m.units[0]
 	var ally: ArenaUnit = m.units[1]
 	k.slow_until = 9000
-	m._execute(k, _slot("dribble"), k.x, k.z + 5, -1, 1000)
+	m._execute(k, slot_of(k, "dribble"), k.x, k.z + 5, -1, 1000)
 	check(k.dash_left > 0.0 and k.dash_vz > 0.0, "arranca hacia adelante")
 	eq(k.slow_until, 0.0, "se saca la ralentización")
 	check(k.haste_until >= 3000, "corre más rápido")
 	k.dash_left = 0.0
-	m._execute(k, _slot("onetwo"), ally.x, ally.z, ally.id, 2000)
+	m._execute(k, slot_of(k, "onetwo"), ally.x, ally.z, ally.id, 2000)
 	check(k.dash_left > 0.0 and k.dash_vz < 0.0, "pique hacia el aliado")
 	check(ally.haste_until >= 5000, "el aliado también corre más")
 
@@ -79,7 +79,7 @@ func test_golazo_knocks_back_and_stuns() -> void:
 	var t: ArenaUnit = m.units[3]
 	m.units[2].x = -20.0  # out of the ball's path
 	k.ult = 100.0
-	check(m.cast_ability(k, _slot("golazo"), t.x, t.z, 1000, t.id), "se acomoda")
+	check(m.cast_ability(k, slot_of(k, "golazo"), t.x, t.z, 1000, t.id), "se acomoda")
 	var hp := t.hp
 	for i in 120:
 		m.tick(1000 + i * (1000.0 / 60.0))

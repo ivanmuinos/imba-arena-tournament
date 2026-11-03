@@ -13,7 +13,7 @@ const DEFAULT_TEXTS := [
 	"#Oveja al foco\n/cast [@focus] Polimorfia",
 	"#Ceguera al foco\n/cast [@focus] Ceguera",
 	"#Miedo al foco\n/cast [@focus] Miedo",
-	"#Interrumpir al foco\n/cast [@focus] Patada\n/cast [@focus] Zurrar\n/cast [@focus] Contrahechizo",
+	"#Aturdir al foco\n/cast [@focus] Golpe bajo\n/cast [@focus] Carga\n/cast [@focus] Trampa congelante",
 	"",
 ]
 

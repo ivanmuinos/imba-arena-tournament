@@ -14,7 +14,7 @@ const COMMANDS := ["cast", "castsequence", "focus", "clearfocus", "target", "sto
 
 ## Shown in the editor.
 const HELP := """/cast [@focus] Polimorfia — al foco sin cambiar de objetivo
-/cast Patada  +  /cast Puñalada — encadena: lo que no usa GCD sale junto, lo demás se encola
+/cast Ceguera  +  /cast Puñalada — encadena: lo que no usa GCD sale junto, lo demás se encola
 /castsequence Golpe mortal, Seccionar — un paso por toque
 /focus — tu objetivo pasa a ser tu foco · /clearfocus · /target focus · /stopcasting
 [@target] (por defecto) · [@focus] · [@player]"""

@@ -40,7 +40,7 @@ static func ensure_loaded() -> void:
 	C = _read("res://data/constants.json")
 
 
-## Spec ids of a class ([] when it has none). Specializations override the whole 7-slot kit (data/classes.json -> specs).
+## Spec ids of a class ([] when it has none). Specializations override the whole kit (data/classes.json -> specs).
 static func spec_ids(cls: String) -> Array:
 	ensure_loaded()
 	var c: Dictionary = classes.get(cls, {})
@@ -60,7 +60,7 @@ static func normalize_spec(cls: String, spec: String) -> String:
 	return spec if ids.has(spec) else default_spec(cls)
 
 
-## The 7 abilities a unit of this class/spec uses.
+## The abilities a unit of this class/spec uses (C.SLOT_COUNT: basic, 3 abilities, ultimate in C.ULT_SLOT).
 static func abilities(cls: String, spec := "") -> Array:
 	ensure_loaded()
 	var c: Dictionary = classes[cls]
@@ -94,6 +94,23 @@ static func kit(cls: String, spec := "") -> Dictionary:
 
 static func ability(cls: String, slot: int, spec := "") -> Dictionary:
 	return abilities(cls, spec)[slot]
+
+
+## Abilities the class/spec has but are not in its kit (data/classes.json -> reserve), kept to be earned later.
+static func reserve(cls: String, spec := "") -> Array:
+	ensure_loaded()
+	var c: Dictionary = classes[cls]
+	if spec != "" and c.has("specs") and c.specs.has(spec):
+		return c.specs[spec].get("reserve", [])
+	return c.get("reserve", [])
+
+
+## An ability of the class/spec by id, from the kit or the reserve ({} when it has none).
+static func find_ability(cls: String, id: String, spec := "") -> Dictionary:
+	for a in abilities(cls, spec) + reserve(cls, spec):
+		if a.id == id:
+			return a
+	return {}
 
 
 static func _read(path: String) -> Dictionary:

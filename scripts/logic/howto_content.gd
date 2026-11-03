@@ -74,7 +74,7 @@ static func stat_tip(kit: Dictionary, key: String) -> String:
 		"damage":
 			var b: Dictionary = abs[0]
 			var biggest := 0.0
-			for i in range(0, 6):
+			for i in range(0, int(GameData.C.ULT_SLOT)):
 				biggest = maxf(biggest, float(abs[i].get("dmg", 0.0)))
 			var line := "Mayor golpe %d" % int(biggest)
 			if b.has("dmg") and float(b.cd) > 0.0:
@@ -83,7 +83,7 @@ static func stat_tip(kit: Dictionary, key: String) -> String:
 			return line + (", crítico +%s" % _pct(crit) if crit > 0.0 else "")
 		"control":
 			var n := 0
-			for i in range(0, 6):
+			for i in range(0, int(GameData.C.ULT_SLOT)):
 				if abs[i].has("ccMs") or abs[i].has("slowPct"):
 					n += 1
 			return "%d habilidades que controlan (aturden, ralentizan, aterrorizan o interrumpen)" % n

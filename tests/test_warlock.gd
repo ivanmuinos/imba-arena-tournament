@@ -18,8 +18,8 @@ func test_warlock_is_complete() -> void:
 	check(GameData.classes.has("warlock"), "Brujo registrado")
 	if not GameData.classes.has("warlock"): return
 	var kit := GameData.kit("warlock")
-	eq(kit.abilities.size(), 7, "siete habilidades")
-	for a in kit.abilities:
+	eq(kit.abilities.size(), int(GameData.C.SLOT_COUNT), "básico, 3 habilidades y definitiva")
+	for a in kit.abilities + GameData.reserve("warlock"):  # the reserve stays playable-ready too
 		check(SpellKinds.TABLE.has(a.id), "objetivo explícito: " + a.id)
 		check(SpellSchools.explicit(a.id), "escuela: " + a.id)
 		check(ResourceLoader.exists("res://assets/icons/%s.svg" % a.icon), "icono: " + a.id)
@@ -31,18 +31,20 @@ func test_curses_refresh_without_delaying_ticks_and_keep_each_owner() -> void:
 	var a: ArenaUnit = m.units[0]
 	var b: ArenaUnit = m.units[1]
 	var t: ArenaUnit = m.units[2]
-	m._execute(a, 1, t.x, t.z, t.id, 100)
-	m._execute(a, 1, t.x, t.z, t.id, 400)
-	m._execute(b, 1, t.x, t.z, t.id, 100)
-	m._execute(a, 2, t.x, t.z, t.id, 100)
+	m._execute(a, old(a, 1), t.x, t.z, t.id, 100)
+	m._execute(a, old(a, 1), t.x, t.z, t.id, 400)
+	m._execute(b, old(b, 1), t.x, t.z, t.id, 100)
+	m._execute(a, old(a, 2), t.x, t.z, t.id, 100)
 	m._step_effects(t, 600)
-	near(a.dmg, 6.0, 0.01, "dos maldiciones propias, sin duplicar al refrescar")
-	near(b.dmg, 3.5, 0.01, "atribución independiente")
+	var corr: float = GameData.find_ability("warlock", "corruption").dotDps * 0.5  # one tick (500 ms)
+	var agony: float = GameData.find_ability("warlock", "agony").dotDps * 0.5
+	near(a.dmg, corr + agony, 0.01, "dos maldiciones propias, sin duplicar al refrescar")
+	near(b.dmg, corr, 0.01, "atribución independiente")
 	var hp := t.hp
 	m._step_effects(t, 20000)
 	eq(t.hp, hp, "no hay daño después de expirar")
-	m._execute(a, 1, t.x, t.z, t.id, 21000)
-	m._execute(t, 5, t.x, t.z, t.id, 21001)
+	m._execute(a, old(a, 1), t.x, t.z, t.id, 21000)
+	m._execute(t, old(t, 5), t.x, t.z, t.id, 21001)
 	m._step_effects(t, 21600)
 	eq(t.hp, hp, "disipar elimina maldiciones")
 	m._reset_round(22000)
@@ -58,20 +60,21 @@ func test_drain_heals_only_lost_health_after_absorbs_and_dampening() -> void:
 	a.hp = 200
 	t.absorb = 100
 	t.absorb_until = 10000
-	m._execute(a, 5, t.x, t.z, t.id, 100)
+	m._execute(a, old(a, 5), t.x, t.z, t.id, 100)
 	eq(a.hp, 200.0, "absorción completa no cura")
 	t.absorb = 10
-	m._execute(a, 5, t.x, t.z, t.id, 200)
-	near(a.hp, 222.0, 0.01, "cura daño real (32 menos 10)")
+	m._execute(a, old(a, 5), t.x, t.z, t.id, 200)
+	var drain: float = GameData.find_ability("warlock", "drainlife").dmg
+	near(a.hp, 200.0 + drain - 10.0, 0.01, "cura daño real (el drenaje menos 10 de escudo)")
 	t.hp = 5
 	# Keep the fight alive so the final siphon can heal after a kill.
 	m.units[1].team = "blue"
-	m._execute(a, 5, t.x, t.z, t.id, 300)
-	near(a.hp, 227.0, 0.01, "sin curación por overkill")
+	m._execute(a, old(a, 5), t.x, t.z, t.id, 300)
+	near(a.hp, 200.0 + drain - 10.0 + 5.0, 0.01, "sin curación por overkill")
 	t.alive = true
 	t.hp = 100
-	m._execute(a, 5, t.x, t.z, t.id, 60000)
-	near(a.hp, 246.2, 0.01, "amortiguación reduce la sanación")
+	m._execute(a, old(a, 5), t.x, t.z, t.id, 60000)
+	near(a.hp, 200.0 + drain - 10.0 + 5.0 + drain * 0.6, 0.01, "amortiguación reduce la sanación")
 
 func test_fear_forces_fleeing_blocks_casts_and_restores_input() -> void:
 	if not GameData.classes.has("warlock"): return
@@ -79,7 +82,7 @@ func test_fear_forces_fleeing_blocks_casts_and_restores_input() -> void:
 	var a: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[2]
 	t.input = Vector2.ZERO
-	m._execute(a, 3, t.x, t.z, t.id, 100)
+	m._execute(a, old(a, 3), t.x, t.z, t.id, 100)
 	var z := t.z
 	m.tick(200)
 	check(t.z > z, "huye realmente, no stun")
@@ -129,7 +132,7 @@ func test_warlock_network_selection_and_snapshot() -> void:
 	var a: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[2]
 	m._execute(a, 0, t.x, t.z, -1, 100, t.id)
-	m._execute(a, 1, t.x, t.z, t.id, 100)
+	m._execute(a, old(a, 1), t.x, t.z, t.id, 100)
 	var back := SnapshotCodec.unpack(SnapshotCodec.pack(m.snapshot_for(a, 200)))
 	eq(back.projs[0].kind, "shadowbolt", "proyectil conserva tipo")
 	check(back.units.any(func(u): return u.id == t.id and u.cc.has("corruption")), "maldición viaja al HUD")
@@ -141,14 +144,14 @@ func test_pact_has_its_own_absorb_and_never_creates_health() -> void:
 	a.hp = 200
 	a.absorb = 42
 	a.absorb_until = 10000
-	m._execute(a, 4, 0, 0, -1, 100)
+	m._execute(a, old(a, 4), 0, 0, -1, 100)
 	eq(a.hp, 170.0, "precio de vida")
 	m._damage(a, 100, t, 200)
 	eq(a.hp, 170.0, "pacto y escudo aliado coexisten")
 	m._damage(a, 30, t, 300)
 	near(a.hp, 162.0, 0.01, "absorción total 122, no más")
 	a.hp = 0.5
-	m._execute(a, 4, 0, 0, -1, 400)
+	m._execute(a, old(a, 4), 0, 0, -1, 400)
 	eq(a.hp, 0.5, "no crea vida bajo 1 HP")
 
 func test_casts_are_interruptible_and_recheck_range_and_sight() -> void:
@@ -156,19 +159,19 @@ func test_casts_are_interruptible_and_recheck_range_and_sight() -> void:
 	var a: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[2]
 	check(not m.start_auto(a, t.id), "caster sin autoataque")
-	check(m.cast_ability(a, 5, t.x, t.z, 100, t.id), "empieza drenaje")
+	check(m.cast_ability(a, old(a, 5), t.x, t.z, 100, t.id), "empieza drenaje")
 	a.input = Vector2(1, 0)
 	m.tick(200)
 	check(a.cast.is_empty(), "mover cancela")
 	eq(t.hp, t.max_hp, "sin daño parcial")
 	a.input = Vector2.ZERO
-	m.cast_ability(a, 5, t.x, t.z, 300, t.id)
+	m.cast_ability(a, old(a, 5), t.x, t.z, 300, t.id)
 	t.z = 35
 	m.tick(1900)
 	eq(t.hp, t.max_hp, "fuera de alcance al finalizar")
 	t.z = 8
-	a.cds[5] = 0
-	m.cast_ability(a, 5, t.x, t.z, 2000, t.id)
+	a.cds[old(a, 5)] = 0
+	m.cast_ability(a, old(a, 5), t.x, t.z, 2000, t.id)
 	m._cc(a, "silence", 2000, 2100)
 	m.tick(2200)
 	check(a.cast.is_empty(), "silencio cancela")
@@ -177,47 +180,51 @@ func test_fear_damage_break_immunity_and_dr() -> void:
 	var m := _match()
 	var a: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[2]
-	m._execute(a, 3, t.x, t.z, t.id, 100)
+	m._execute(a, old(a, 3), t.x, t.z, t.id, 100)
 	m._damage(t, 41, a, 200)
 	check(t.fear_until <= 200, "daño rompe miedo")
-	m._execute(a, 3, t.x, t.z, t.id, 300)
+	m._execute(a, old(a, 3), t.x, t.z, t.id, 300)
 	near(t.fear_until, 1800, 0.01, "segundo miedo dura la mitad")
 	t.fear_until = 0
 	t.shield_until = 5000
-	m._execute(a, 3, t.x, t.z, t.id, 400)
+	m._execute(a, old(a, 3), t.x, t.z, t.id, 400)
 	eq(t.fear_until, 0.0, "inmunidad bloquea miedo")
 
 func test_bot_uses_curses_bolt_and_drain() -> void:
-	seed(714)
-	var m := _match()
-	var a: ArenaUnit = m.units[0]
-	var t: ArenaUnit = m.units[2]
-	a.brain = BotBrain.new("hard")
-	a.hp = 240
-	t.max_hp = 10000
-	t.hp = 10000
-	a.ult = 0
-	var seen := {}
-	for i in 1500:
-		m.tick(100 + i * (1000.0 / 60.0))
-		for f in m.fx:
-			if f.k == "cast" and f.id == a.id: seen[f.ability] = true
-		m.fx.clear()
-	for id in ["corruption", "agony", "shadowbolt", "drainlife", "darkpact"]:
-		check(seen.has(id), "bot usa " + id + " (" + str(seen.keys()) + ")")
+	# the kit, then with Agony and Dark Pact (in reserve) equipped: the bot uses them too once they are on the bar
+	for equipped in [{}, {2: "agony", 3: "darkpact"}]:
+		seed(714)
+		var m := _match()
+		var a: ArenaUnit = m.units[0]
+		var t: ArenaUnit = m.units[2]
+		for slot in equipped:
+			a.equip(slot, equipped[slot])
+		a.brain = BotBrain.new("hard")
+		a.hp = 240
+		t.max_hp = 10000
+		t.hp = 10000
+		a.ult = 0
+		var seen := {}
+		for i in 1500:
+			m.tick(100 + i * (1000.0 / 60.0))
+			for f in m.fx:
+				if f.k == "cast" and f.id == a.id: seen[f.ability] = true
+			m.fx.clear()
+		for id in ["corruption", "agony", "darkpact"] if not equipped.is_empty() else ["corruption", "shadowbolt", "drainlife"]:
+			check(seen.has(id), "bot usa " + id + " (" + str(seen.keys()) + ")")
 
 func test_curses_keep_kill_credit_after_owner_death_and_do_not_replace_burn() -> void:
 	var m := _match()
 	var a: ArenaUnit = m.units[0]
 	var b: ArenaUnit = m.units[1]
 	var t: ArenaUnit = m.units[2]
-	m._execute(a, 1, t.x, t.z, t.id, 100)
+	m._execute(a, old(a, 1), t.x, t.z, t.id, 100)
 	t.burn_by = b
 	t.burn_dps = 6
 	t.burn_until = 3000
 	t.burn_next = 600
 	m._step_effects(t, 600)
-	near(a.dmg, 3.5, 0.01, "maldición atribuida al brujo")
+	near(a.dmg, GameData.find_ability("warlock", "corruption").dotDps * 0.5, 0.01, "maldición atribuida al brujo")
 	near(b.dmg, 3, 0.01, "quemadura independiente")
 	a.alive = false
 	t.hp = 1
@@ -230,11 +237,11 @@ func test_ultimate_consumes_charge_and_does_not_replace_other_curses() -> void:
 	var a: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[2]
 	a.ult = 0
-	check(not m.cast_ability(a, 6, t.x, t.z, 100, t.id), "sin carga no lanza")
-	m.cast_ability(a, 1, t.x, t.z, 100, t.id)
+	check(not m.cast_ability(a, old(a, 6), t.x, t.z, 100, t.id), "sin carga no lanza")
+	m.cast_ability(a, old(a, 1), t.x, t.z, 100, t.id)
 	a.ult = 100
 	a.gcd_until = 0.0
-	check(m.cast_ability(a, 6, t.x, t.z, 200, t.id), "definitiva lista")
+	check(m.cast_ability(a, old(a, 6), t.x, t.z, 200, t.id), "definitiva lista")
 	check(a.ult < 20, "consume carga (puede generar por golpe)")
 	eq(t.curses.size(), 2, "coexiste con Corrupción")
 	near(t.max_hp - t.hp, 25, 0.01, "golpe inicial")
@@ -251,7 +258,7 @@ func test_cast_target_travels_in_the_snapshot_for_the_drain_beam() -> void:
 	t.x = 0.0
 	t.z = 8.0
 	var now := 1000.0
-	check(m.cast_ability(a, 5, t.x, t.z, now, t.id), "empieza a drenar")
+	check(m.cast_ability(a, old(a, 5), t.x, t.z, now, t.id), "empieza a drenar")
 	var snap := m.snapshot_for(a, now + 100.0)
 	var mine: Dictionary = snap.units.filter(func(u): return u.id == a.id)[0]
 	eq(mine.cast.tid, t.id, "el snapshot dice a quién drena")
@@ -289,7 +296,8 @@ func test_priest_bot_dispels_curses_off_an_ally() -> void:
 	m.units[3].x = 150.0
 	var ally: ArenaUnit = m.units[0]
 	var lock: ArenaUnit = m.units[2]
-	for slot in [1, 2]:
+	old(m.units[1], 5)  # Dispel is in reserve: on the priest's bar for this test
+	for slot in [old(lock, 1), old(lock, 2)]:
 		m._execute(lock, slot, ally.x, ally.z, ally.id, now)
 	check(ally.curses.size() == 2, "el aliado está maldito (%d)" % ally.curses.size())
 	var seen := false
@@ -351,12 +359,12 @@ func test_periodic_damage_is_marked_so_clients_do_not_flash_on_ticks() -> void:
 	var m := _match()
 	var a: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[2]
-	m._execute(a, 1, t.x, t.z, t.id, 100)
+	m._execute(a, old(a, 1), t.x, t.z, t.id, 100)
 	m.fx.clear()
 	m._step_effects(t, 700)
 	var ticks: Array = m.fx.filter(func(f): return f.k == "hit")
 	check(ticks.size() >= 1 and ticks.all(func(f): return f.dot), "los ticks de maldición llevan dot=true")
 	m.fx.clear()
-	m._execute(a, 6, t.x, t.z, t.id, 800)
+	m._execute(a, old(a, 6), t.x, t.z, t.id, 800)
 	var opening: Array = m.fx.filter(func(f): return f.k == "hit" and f.ability == "soulrot")
 	check(opening.size() == 1 and not opening[0].dot, "el golpe inicial no es un tick")

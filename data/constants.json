@@ -6,14 +6,14 @@
   "POWER_EVERY_MS": 18000,
   "POWER_FIRST_MS": 12000,
   "POWER_MAX": 4,
-  "SLOT_COUNT": 7,
+  "SLOT_COUNT": 5,
   "STEALTH_DETECT": 2,
   "TRAP_ARM_MS": 700,
   "TRAP_RADIUS": 1.1,
   "ULT_PER_DAMAGE": 0.2,
   "ULT_PER_DAMAGE_TAKEN": 0.1,
   "ULT_PER_SECOND": 1.2,
-  "ULT_SLOT": 6,
+  "ULT_SLOT": 4,
   "ULT_START": 25,
   "ACCEL": 50,
   "DR_RESET_MS": 18000,
@@ -39,8 +39,6 @@
     "2",
     "3",
     "4",
-    "5",
-    "6",
-    "7"
+    "R"
   ]
 }

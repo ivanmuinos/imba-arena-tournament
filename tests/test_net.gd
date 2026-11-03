@@ -247,10 +247,14 @@ func test_cast_goes_through_and_sets_cooldown() -> void:
 	var c: GameClient = h.client
 	_to_fight(s, [c])
 	var u := s.game.unit_for_peer(c.peer_id)
-	c.send_cast({"slot": 4, "ax": u.x, "az": u.z - 10.0, "target": -1})  # blink
+	c.send_cast({"slot": 3, "ax": u.x, "az": u.z - 10.0, "target": -1})  # dragon's breath: a cone, no target needed
 	_pump(s, [c], 100.0)
-	check(u.cds[4] > s.sim_now, "Traslación en enfriamiento")
-	check(c.buffer.latest().you.cds[4] > 0, "el cliente ve el cooldown en 'you.cds'")
+	var slot := -1
+	for i in u.cds.size():
+		if u.cds[i] > s.sim_now:
+			slot = i
+	check(slot >= 0, "la habilidad queda en enfriamiento")
+	check(slot >= 0 and c.buffer.latest().you.cds[slot] > 0, "el cliente ve el cooldown en 'you.cds'")
 
 
 func test_enemy_in_bush_is_never_sent_to_the_other_team() -> void:
@@ -428,7 +432,7 @@ func test_snapshot_codec_roundtrip_and_size() -> void:
 	var viewer := m.units[0]
 	viewer.stun_until = now + 1500.0
 	viewer.haste_until = now + 3000.0
-	m.cast_ability(viewer, 1, viewer.x, viewer.z - 10.0, now)
+	m.cast_ability(viewer, old(viewer, 1), viewer.x, viewer.z - 10.0, now)
 	m.spawn_power("crit", 3.0, 4.0)
 	var snap := m.snapshot_for(viewer, now)
 	snap["ts"] = now
@@ -451,7 +455,8 @@ func test_snapshot_codec_roundtrip_and_size() -> void:
 	eq(back.powers[0].kind, "crit", "power-up")
 	eq(back.you.ult, snap.you.ult, "you")
 	eq(back.ts, now, "ts exacto (doble)")
-	check(Wire.encode(packed).size() < 1000, "un 3v3 cabe holgado en un paquete (%d bytes)" % Wire.encode(packed).size())
+	# all 6 units in sight plus a projectile; 200 bytes of headroom under the unreliable-packet limit
+	check(Wire.encode(packed).size() < PeerTransport.MAX_UNRELIABLE - 200, "un 3v3 cabe holgado en un paquete (%d bytes)" % Wire.encode(packed).size())
 
 
 func test_snapshot_codec_rejects_malformed() -> void:

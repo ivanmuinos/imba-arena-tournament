@@ -32,18 +32,6 @@
         "projR": 0.55
       },
       {
-        "id": "nova",
-        "name": "Nova de escarcha",
-        "icon": "nova",
-        "desc": "Congela los pies de los enemigos cercanos: los enraíza 2 s.",
-        "cd": 14000,
-        "cast": 0,
-        "range": 0,
-        "aoe": 4.5,
-        "dmg": 10,
-        "ccMs": 2000
-      },
-      {
         "id": "poly",
         "name": "Polimorfia",
         "icon": "poly",
@@ -55,26 +43,16 @@
         "targeted": true
       },
       {
-        "id": "blink",
-        "name": "Traslación",
-        "icon": "blink",
-        "desc": "Te teletransportás 8 m. Rompe raíces.",
-        "cd": 12000,
+        "id": "nova",
+        "name": "Nova de escarcha",
+        "icon": "nova",
+        "desc": "Congela los pies de los enemigos cercanos: los enraíza 2 s.",
+        "cd": 14000,
         "cast": 0,
-        "range": 8,
-        "dist": 8
-      },
-      {
-        "id": "counter",
-        "offGcd": true,
-        "name": "Contrahechizo",
-        "icon": "counter",
-        "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
-        "cd": 20000,
-        "cast": 0,
-        "range": 18,
-        "ccMs": 2500,
-        "targeted": true
+        "range": 0,
+        "aoe": 4.5,
+        "dmg": 10,
+        "ccMs": 2000
       },
       {
         "id": "meteor",
@@ -126,7 +104,7 @@
             "cd": 700,
             "cast": 0,
             "range": 18,
-            "dmg": 73,
+            "dmg": 38,
             "projSpeed": 34,
             "projR": 0.35,
             "burnDps": 6,
@@ -140,11 +118,22 @@
             "cd": 7000,
             "cast": 1800,
             "range": 22,
-            "dmg": 110,
+            "dmg": 88,
             "projSpeed": 30,
             "projR": 0.55
           },
           "2": {
+            "id": "poly",
+            "name": "Polimorfia",
+            "icon": "poly",
+            "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 4 s: no puede actuar pero recupera 10% de vida por segundo. Se rompe con daño.",
+            "cd": 16000,
+            "cast": 1300,
+            "range": 18,
+            "ccMs": 4000,
+            "targeted": true
+          },
+          "3": {
             "id": "dragonbreath",
             "name": "Aliento de dragón",
             "icon": "dragonbreath",
@@ -156,40 +145,7 @@
             "dmg": 10,
             "ccMs": 2500
           },
-          "3": {
-            "id": "poly",
-            "name": "Polimorfia",
-            "icon": "poly",
-            "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 4 s: no puede actuar pero recupera 10% de vida por segundo. Se rompe con daño.",
-            "cd": 16000,
-            "cast": 1300,
-            "range": 18,
-            "ccMs": 4000,
-            "targeted": true
-          },
           "4": {
-            "id": "blink",
-            "name": "Traslación",
-            "icon": "blink",
-            "desc": "Te teletransportás 8 m. Rompe raíces.",
-            "cd": 12000,
-            "cast": 0,
-            "range": 8,
-            "dist": 8
-          },
-          "5": {
-            "id": "counter",
-            "offGcd": true,
-            "name": "Contrahechizo",
-            "icon": "counter",
-            "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
-            "cd": 20000,
-            "cast": 0,
-            "range": 18,
-            "ccMs": 2500,
-            "targeted": true
-          },
-          "6": {
             "id": "meteor",
             "name": "Lluvia de meteoros",
             "icon": "meteor",
@@ -204,7 +160,31 @@
           }
         },
         "hp": 440,
-        "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90, "bond": "#ff7a1a"}
+        "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90, "bond": "#ff7a1a"},
+        "reserve": [
+          {
+            "id": "blink",
+            "name": "Traslación",
+            "icon": "blink",
+            "desc": "Te teletransportás 8 m. Rompe raíces.",
+            "cd": 12000,
+            "cast": 0,
+            "range": 8,
+            "dist": 8
+          },
+          {
+            "id": "counter",
+            "offGcd": true,
+            "name": "Contrahechizo",
+            "icon": "counter",
+            "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+            "cd": 20000,
+            "cast": 0,
+            "range": 18,
+            "ccMs": 2500,
+            "targeted": true
+          }
+        ]
       },
       "frost": {
         "name": "Escarcha",
@@ -228,7 +208,7 @@
             "cd": 300,
             "cast": 1300,
             "range": 20,
-            "dmg": 50,
+            "dmg": 56,
             "projSpeed": 30,
             "projR": 0.4,
             "slowPct": 0.4,
@@ -271,28 +251,6 @@
             "targeted": true
           },
           "4": {
-            "id": "blink",
-            "name": "Traslación",
-            "icon": "blink",
-            "desc": "Te teletransportás 8 m. Rompe raíces.",
-            "cd": 12000,
-            "cast": 0,
-            "range": 8,
-            "dist": 8
-          },
-          "5": {
-            "id": "counter",
-            "offGcd": true,
-            "name": "Contrahechizo",
-            "icon": "counter",
-            "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
-            "cd": 20000,
-            "cast": 0,
-            "range": 18,
-            "ccMs": 2500,
-            "targeted": true
-          },
-          "6": {
             "id": "blizzard",
             "name": "Ventisca",
             "icon": "blizzard",
@@ -310,11 +268,59 @@
           }
         },
         "hp": 480,
-        "companion": {"name": "Elemental de escarcha", "kind": "crystal", "fly": 1.25, "glow": "#7fd8ff", "bond": "#8fe4ff"}
+        "companion": {"name": "Elemental de escarcha", "kind": "crystal", "fly": 1.25, "glow": "#7fd8ff", "bond": "#8fe4ff"},
+        "reserve": [
+          {
+            "id": "blink",
+            "name": "Traslación",
+            "icon": "blink",
+            "desc": "Te teletransportás 8 m. Rompe raíces.",
+            "cd": 12000,
+            "cast": 0,
+            "range": 8,
+            "dist": 8
+          },
+          {
+            "id": "counter",
+            "offGcd": true,
+            "name": "Contrahechizo",
+            "icon": "counter",
+            "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+            "cd": 20000,
+            "cast": 0,
+            "range": 18,
+            "ccMs": 2500,
+            "targeted": true
+          }
+        ]
       }
     },
-    "identity": "Daño o control a distancia con poca vida. Se sostiene con Traslación y el control; elegí Fuego o Escarcha.",
-    "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90, "bond": "#ff7a1a"}
+    "identity": "Daño o control a distancia con poca vida. Se sostiene a fuerza de control; elegí Fuego o Escarcha.",
+    "companion": {"name": "Fénix", "model": "eagle", "len": 1.25, "fly": 1.45, "idle": "Flying", "move": "Flying", "tint": {"Wings": "#e2531a", "Head": "#ff9a3a", "Beak": "#ffd23a", "Claws": "#6a2410"}, "glow": "#ff5a08", "yaw": -90, "bond": "#ff7a1a"},
+    "reserve": [
+      {
+        "id": "blink",
+        "name": "Traslación",
+        "icon": "blink",
+        "desc": "Te teletransportás 8 m. Rompe raíces.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 8,
+        "dist": 8
+      },
+      {
+        "id": "counter",
+        "offGcd": true,
+        "name": "Contrahechizo",
+        "icon": "counter",
+        "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 18,
+        "ccMs": 2500,
+        "targeted": true
+      }
+    ]
   },
   "warlock": {
     "id": "warlock",
@@ -340,11 +346,11 @@
         "id": "shadowbolt",
         "name": "Descarga de las sombras",
         "icon": "shadowbolt",
-        "desc": "Lanzamiento de 1,2 s: proyectil de 34 de daño. Moverte cancela; no es auto-ataque.",
+        "desc": "Lanzamiento de 1,2 s: proyectil de 38 de daño. Moverte cancela; no es auto-ataque.",
         "cd": 300,
         "cast": 1200,
         "range": 22,
-        "dmg": 30,
+        "dmg": 38,
         "projSpeed": 30,
         "projR": 0.35
       },
@@ -352,25 +358,13 @@
         "id": "corruption",
         "name": "Corrupción",
         "icon": "corruption",
-        "desc": "Maldice al objetivo: 9 de daño por segundo durante 8 s. Refrescar no acumula daño. Disipable.",
+        "desc": "Maldice al objetivo: 10 de daño por segundo durante 8 s. Refrescar no acumula daño. Disipable.",
         "cd": 2500,
         "cast": 0,
         "range": 20,
         "targeted": true,
-        "dotDps": 7,
+        "dotDps": 10,
         "durationMs": 8000
-      },
-      {
-        "id": "agony",
-        "name": "Agonía",
-        "icon": "agony",
-        "desc": "Otra maldición: 7 de daño por segundo durante 10 s. Coexiste con Corrupción; refrescar no acumula. Disipable.",
-        "cd": 6000,
-        "cast": 0,
-        "range": 20,
-        "targeted": true,
-        "dotDps": 5,
-        "durationMs": 10000
       },
       {
         "id": "fear",
@@ -384,17 +378,6 @@
         "ccMs": 3000
       },
       {
-        "id": "darkpact",
-        "name": "Pacto oscuro",
-        "icon": "darkpact",
-        "desc": "Sacrificás 15% de tu vida actual (no letal) para absorber 80 de daño durante 6 s. No te libera del control.",
-        "cd": 28000,
-        "cast": 0,
-        "range": 0,
-        "absorb": 80,
-        "durationMs": 6000
-      },
-      {
         "id": "drainlife",
         "name": "Drenar vida",
         "icon": "drainlife",
@@ -403,7 +386,7 @@
         "cast": 1500,
         "range": 18,
         "targeted": true,
-        "dmg": 32
+        "dmg": 42
       },
       {
         "id": "soulrot",
@@ -421,14 +404,39 @@
       }
     ],
     "identity": "Desgaste: maldiciones que dañan solas y Drenar vida para sostenerse. Vida medio-alta, lento y con poca explosión.",
-    "companion": {"name": "Diablillo vil", "model": "dragon", "len": 0.85, "fly": 0.95, "idle": "Dragon_Flying", "move": "Dragon_Flying", "hit": "Dragon_Hit", "tint": {"Main": "#3a2048", "Belly": "#5f9e34", "Wings": "#24123a", "Claws": "#cbbf9f", "Eyes": "#7dff4a"}, "glow": "#4fe03a", "bond": "#6dff3a"}
+    "companion": {"name": "Diablillo vil", "model": "dragon", "len": 0.85, "fly": 0.95, "idle": "Dragon_Flying", "move": "Dragon_Flying", "hit": "Dragon_Hit", "tint": {"Main": "#3a2048", "Belly": "#5f9e34", "Wings": "#24123a", "Claws": "#cbbf9f", "Eyes": "#7dff4a"}, "glow": "#4fe03a", "bond": "#6dff3a"},
+    "reserve": [
+      {
+        "id": "agony",
+        "name": "Agonía",
+        "icon": "agony",
+        "desc": "Otra maldición: 7 de daño por segundo durante 10 s. Coexiste con Corrupción; refrescar no acumula. Disipable.",
+        "cd": 6000,
+        "cast": 0,
+        "range": 20,
+        "targeted": true,
+        "dotDps": 5,
+        "durationMs": 10000
+      },
+      {
+        "id": "darkpact",
+        "name": "Pacto oscuro",
+        "icon": "darkpact",
+        "desc": "Sacrificás 15% de tu vida actual (no letal) para absorber 80 de daño durante 6 s. No te libera del control.",
+        "cd": 28000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 80,
+        "durationMs": 6000
+      }
+    ]
   },
   "hunter": {
     "id": "hunter",
     "name": "Cazador",
     "role": "Daño sostenido y trampas",
     "icon": "class_hunter",
-    "hp": 560,
+    "hp": 520,
     "speed": 7.2,
     "abilities": [
       {
@@ -439,7 +447,7 @@
         "cd": 450,
         "cast": 0,
         "range": 22,
-        "dmg": 28,
+        "dmg": 12,
         "projSpeed": 50,
         "projR": 0.22,
         "physical": true,
@@ -453,7 +461,7 @@
         "cd": 7000,
         "cast": 1100,
         "range": 26,
-        "dmg": 64,
+        "dmg": 54,
         "projSpeed": 66,
         "projR": 0.26
       },
@@ -482,29 +490,6 @@
         "ccMs": 4000
       },
       {
-        "id": "disengage",
-        "name": "Retirada",
-        "icon": "disengage",
-        "desc": "Saltás 7 m hacia atrás.",
-        "cd": 12000,
-        "cast": 0,
-        "range": 0,
-        "dist": 7
-      },
-      {
-        "id": "silence",
-        "name": "Disparo silenciador",
-        "icon": "silence",
-        "desc": "Flecha que interrumpe y silencia 2,5 s.",
-        "cd": 20000,
-        "cast": 0,
-        "range": 22,
-        "dmg": 6,
-        "projSpeed": 58,
-        "projR": 0.24,
-        "ccMs": 2500
-      },
-      {
         "id": "volley",
         "name": "Andanada",
         "icon": "volley",
@@ -531,7 +516,32 @@
     },
     "tagline": "Presión sostenida y dominio del terreno.",
     "identity": "Daño sostenido a distancia con vida media y movilidad media. Las trampas y el desenganche marcan el ritmo.",
-    "companion": {"name": "Lobo", "model": "wolf", "len": 1.55, "idle": "Idle", "move": "Walking", "walk": 1.8, "tint": {"Wolf": "#76695c"}, "yaw": -90, "two_tone": {"material": "Wolf", "back": "#4a4440", "belly": "#d6cbb9", "lo": 0.45, "hi": 0.75}, "bond": "#6dff6a"}
+    "companion": {"name": "Lobo", "model": "wolf", "len": 1.55, "idle": "Idle", "move": "Walking", "walk": 1.8, "tint": {"Wolf": "#76695c"}, "yaw": -90, "two_tone": {"material": "Wolf", "back": "#4a4440", "belly": "#d6cbb9", "lo": 0.45, "hi": 0.75}, "bond": "#6dff6a"},
+    "reserve": [
+      {
+        "id": "disengage",
+        "name": "Retirada",
+        "icon": "disengage",
+        "desc": "Saltás 7 m hacia atrás.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 0,
+        "dist": 7
+      },
+      {
+        "id": "silence",
+        "name": "Disparo silenciador",
+        "icon": "silence",
+        "desc": "Flecha que interrumpe y silencia 2,5 s.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 22,
+        "dmg": 6,
+        "projSpeed": 58,
+        "projR": 0.24,
+        "ccMs": 2500
+      }
+    ]
   },
   "warrior": {
     "id": "warrior",
@@ -549,7 +559,7 @@
         "cd": 900,
         "cast": 0,
         "range": 3.2,
-        "dmg": 8,
+        "dmg": 10,
         "melee": true,
         "physical": true,
         "auto": true
@@ -562,7 +572,7 @@
         "cd": 6000,
         "cast": 0,
         "range": 3.2,
-        "dmg": 14,
+        "dmg": 18,
         "melee": true,
         "physical": true
       },
@@ -593,31 +603,6 @@
         "physical": true
       },
       {
-        "id": "shieldwall",
-        "offGcd": true,
-        "name": "Muro de escudo",
-        "icon": "shieldwall",
-        "desc": "Recibís 60% menos de daño durante 6 s.",
-        "cd": 30000,
-        "cast": 0,
-        "range": 0,
-        "ccMs": 6000,
-        "physical": true
-      },
-      {
-        "id": "pummel",
-        "offGcd": true,
-        "name": "Zurrar",
-        "icon": "pummel",
-        "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
-        "cd": 15000,
-        "cast": 0,
-        "range": 3.4,
-        "ccMs": 2500,
-        "melee": true,
-        "physical": true
-      },
-      {
         "id": "bladestorm",
         "name": "Filotormenta",
         "icon": "bladestorm",
@@ -645,7 +630,34 @@
     "tagline": "Aguanta, embiste y rompe formaciones.",
     "armor": 0.18,
     "identity": "Tanque: la mayor vida y 18% de armadura contra daño físico. Aguanta mucho, pega poco y controla con Carga, Tajo y Golpe de escudo. Cuesta matarlo y también matar a los demás.",
-    "companion": {"name": "Toro de guerra", "model": "cow", "len": 1.6, "idle": "Idle", "move": "Walk", "walk": 1.6, "tint": {"White": "#4f3120", "Black": "#3b2416", "Pink": "#2e2019"}, "gear": [{"bone": "Head", "mesh": ["cone", 0.19, 1.3], "at": [0.95, 0.68, 0.25], "rot": [15, 0, -55], "color": "#ece0c4", "rough": 0.6}, {"bone": "Head", "mesh": ["cone", 0.12, 0.36], "at": [1.47, 1.05, 0.3], "rot": [15, 0, -55], "color": "#e0aa3e", "metal": 0.9, "rough": 0.3, "accent": true, "glow": 0.3}, {"bone": "Head", "mesh": ["cone", 0.19, 1.3], "at": [-0.95, 0.68, 0.25], "rot": [15, 0, 55], "color": "#ece0c4", "rough": 0.6}, {"bone": "Head", "mesh": ["cone", 0.12, 0.36], "at": [-1.47, 1.05, 0.3], "rot": [15, 0, 55], "color": "#e0aa3e", "metal": 0.9, "rough": 0.3, "accent": true, "glow": 0.3}, {"bone": "Head", "mesh": ["box", 0.95, 0.14, 0.85], "at": [0.03, 0.43, 0.55], "rot": [25, 0, 0], "color": "#aab3be", "metal": 0.85, "rough": 0.35}, {"bone": "Head", "mesh": ["box", 0.34, 0.05, 0.34], "at": [0.03, 0.52, 0.6], "rot": [25, 45, 0], "color": "#c4161c", "glow": 0.5}, {"bone": "Head", "mesh": ["torus", 0.17, 0.04], "at": [0.03, -1.08, 1.66], "rot": [90, 0, 0], "color": "#e0aa3e", "metal": 0.9, "rough": 0.3}], "bond": "#ffc04a"}
+    "companion": {"name": "Toro de guerra", "model": "cow", "len": 1.6, "idle": "Idle", "move": "Walk", "walk": 1.6, "tint": {"White": "#4f3120", "Black": "#3b2416", "Pink": "#2e2019"}, "gear": [{"bone": "Head", "mesh": ["cone", 0.19, 1.3], "at": [0.95, 0.68, 0.25], "rot": [15, 0, -55], "color": "#ece0c4", "rough": 0.6}, {"bone": "Head", "mesh": ["cone", 0.12, 0.36], "at": [1.47, 1.05, 0.3], "rot": [15, 0, -55], "color": "#e0aa3e", "metal": 0.9, "rough": 0.3, "accent": true, "glow": 0.3}, {"bone": "Head", "mesh": ["cone", 0.19, 1.3], "at": [-0.95, 0.68, 0.25], "rot": [15, 0, 55], "color": "#ece0c4", "rough": 0.6}, {"bone": "Head", "mesh": ["cone", 0.12, 0.36], "at": [-1.47, 1.05, 0.3], "rot": [15, 0, 55], "color": "#e0aa3e", "metal": 0.9, "rough": 0.3, "accent": true, "glow": 0.3}, {"bone": "Head", "mesh": ["box", 0.95, 0.14, 0.85], "at": [0.03, 0.43, 0.55], "rot": [25, 0, 0], "color": "#aab3be", "metal": 0.85, "rough": 0.35}, {"bone": "Head", "mesh": ["box", 0.34, 0.05, 0.34], "at": [0.03, 0.52, 0.6], "rot": [25, 45, 0], "color": "#c4161c", "glow": 0.5}, {"bone": "Head", "mesh": ["torus", 0.17, 0.04], "at": [0.03, -1.08, 1.66], "rot": [90, 0, 0], "color": "#e0aa3e", "metal": 0.9, "rough": 0.3}], "bond": "#ffc04a"},
+    "reserve": [
+      {
+        "id": "shieldwall",
+        "offGcd": true,
+        "name": "Muro de escudo",
+        "icon": "shieldwall",
+        "desc": "Recibís 60% menos de daño durante 6 s.",
+        "cd": 30000,
+        "cast": 0,
+        "range": 0,
+        "ccMs": 6000,
+        "physical": true
+      },
+      {
+        "id": "pummel",
+        "offGcd": true,
+        "name": "Zurrar",
+        "icon": "pummel",
+        "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+        "cd": 15000,
+        "cast": 0,
+        "range": 3.4,
+        "ccMs": 2500,
+        "melee": true,
+        "physical": true
+      }
+    ]
   },
   "priest": {
     "id": "priest",
@@ -663,7 +675,7 @@
         "cd": 800,
         "cast": 0,
         "range": 20,
-        "dmg": 22,
+        "dmg": 28,
         "projSpeed": 40,
         "projR": 0.3
       },
@@ -671,22 +683,11 @@
         "id": "heal",
         "name": "Sanación",
         "icon": "heal",
-        "desc": "Lanzamiento de 1,5 s: cura 72 al aliado elegido (F1-F3) o al más herido.",
+        "desc": "Lanzamiento de 1,5 s: cura 90 al aliado elegido (F1-F3) o al más herido.",
         "cd": 1000,
         "cast": 1500,
         "range": 24,
-        "heal": 40,
-        "friendly": true
-      },
-      {
-        "id": "pwshield",
-        "name": "Escudo divino",
-        "icon": "pwshield",
-        "desc": "Escudo que absorbe 77 de daño durante 10 s.",
-        "cd": 10000,
-        "cast": 0,
-        "range": 24,
-        "heal": 42,
+        "heal": 90,
         "friendly": true
       },
       {
@@ -701,24 +702,14 @@
         "ccMs": 3000
       },
       {
-        "id": "renew",
-        "name": "Renovar",
-        "icon": "renew",
-        "desc": "Cura 11 por segundo durante 6 s.",
-        "cd": 5000,
+        "id": "pwshield",
+        "name": "Escudo divino",
+        "icon": "pwshield",
+        "desc": "Escudo que absorbe 75 de daño durante 10 s.",
+        "cd": 10000,
         "cast": 0,
         "range": 24,
-        "heal": 8,
-        "friendly": true
-      },
-      {
-        "id": "dispel",
-        "name": "Disipar",
-        "icon": "dispel",
-        "desc": "Quita aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
-        "cd": 12000,
-        "cast": 0,
-        "range": 24,
+        "heal": 75,
         "friendly": true
       },
       {
@@ -746,8 +737,31 @@
       "difficulty": 4
     },
     "tagline": "El equipo vive mientras él se mantenga en pie.",
-    "identity": "Poco daño y mucha curación. Vida media y buenas defensivas (escudo, disipar, grito): el equipo vive mientras él se mantenga en pie.",
-    "companion": {"name": "Hada", "kind": "fairy", "fly": 1.3, "glow": "#ffe9a8", "bond": "#fff0b0"}
+    "identity": "Poco daño y mucha curación. Vida media y buenas defensivas (escudo y grito): el equipo vive mientras él se mantenga en pie.",
+    "companion": {"name": "Hada", "kind": "fairy", "fly": 1.3, "glow": "#ffe9a8", "bond": "#fff0b0"},
+    "reserve": [
+      {
+        "id": "renew",
+        "name": "Renovar",
+        "icon": "renew",
+        "desc": "Cura 11 por segundo durante 6 s.",
+        "cd": 5000,
+        "cast": 0,
+        "range": 24,
+        "heal": 8,
+        "friendly": true
+      },
+      {
+        "id": "dispel",
+        "name": "Disipar",
+        "icon": "dispel",
+        "desc": "Quita aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 24,
+        "friendly": true
+      }
+    ]
   },
   "rogue": {
     "id": "rogue",
@@ -766,7 +780,7 @@
         "cd": 600,
         "cast": 0,
         "range": 3,
-        "dmg": 16,
+        "dmg": 18,
         "melee": true,
         "physical": true,
         "auto": true
@@ -779,7 +793,7 @@
         "cd": 7000,
         "cast": 0,
         "range": 3,
-        "dmg": 85,
+        "dmg": 95,
         "melee": true,
         "physical": true
       },
@@ -805,31 +819,6 @@
         "range": 12,
         "ccMs": 4000,
         "targeted": true,
-        "physical": true
-      },
-      {
-        "id": "vanish",
-        "offGcd": true,
-        "name": "Desvanecer",
-        "icon": "vanish",
-        "desc": "Te volvés invisible 8 s, te sacás raíces y ralentizaciones y corrés +50% durante 4 s.",
-        "cd": 25000,
-        "cast": 0,
-        "range": 0,
-        "ccMs": 8000,
-        "physical": true
-      },
-      {
-        "id": "kick",
-        "offGcd": true,
-        "name": "Patada",
-        "icon": "kick",
-        "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
-        "cd": 15000,
-        "cast": 0,
-        "range": 3.4,
-        "ccMs": 2500,
-        "melee": true,
         "physical": true
       },
       {
@@ -860,7 +849,34 @@
     "tagline": "Desaparece, elige a su presa y remata.",
     "crit": 0.1,
     "identity": "Cañón de cristal: el mayor golpe inicial desde el sigilo y mucho crítico, pero la menor vida. Si cae en una trampa, muere en segundos; si engancha a un mago, lo liquida.",
-    "companion": {"name": "Gato negro", "model": "cat", "len": 0.6, "idle": "Idle", "move": "Walking", "walk": 1.1, "tint": {"Grey": "#232129"}, "yaw": -90, "bond": "#b070ff"}
+    "companion": {"name": "Gato negro", "model": "cat", "len": 0.6, "idle": "Idle", "move": "Walking", "walk": 1.1, "tint": {"Grey": "#232129"}, "yaw": -90, "bond": "#b070ff"},
+    "reserve": [
+      {
+        "id": "vanish",
+        "offGcd": true,
+        "name": "Desvanecer",
+        "icon": "vanish",
+        "desc": "Te volvés invisible 8 s, te sacás raíces y ralentizaciones y corrés +50% durante 4 s.",
+        "cd": 25000,
+        "cast": 0,
+        "range": 0,
+        "ccMs": 8000,
+        "physical": true
+      },
+      {
+        "id": "kick",
+        "offGcd": true,
+        "name": "Patada",
+        "icon": "kick",
+        "desc": "Interrumpe el lanzamiento del enemigo y lo silencia 2,5 s.",
+        "cd": 15000,
+        "cast": 0,
+        "range": 3.4,
+        "ccMs": 2500,
+        "melee": true,
+        "physical": true
+      }
+    ]
   },
   "druid": {
     "id": "druid",
@@ -894,17 +910,6 @@
         "friendly": true
       },
       {
-        "id": "ironbark",
-        "name": "Corteza férrea",
-        "icon": "ironbark",
-        "desc": "La piel de un aliado (o la tuya) se vuelve corteza: recibe 60% menos de daño durante 6 s.",
-        "cd": 20000,
-        "cast": 0,
-        "range": 24,
-        "ccMs": 6000,
-        "friendly": true
-      },
-      {
         "id": "cyclone",
         "name": "Ciclón",
         "icon": "cyclone",
@@ -916,25 +921,14 @@
         "ccMs": 4000
       },
       {
-        "id": "rejuv",
-        "name": "Rejuvenecimiento",
-        "icon": "rejuv",
-        "desc": "Cura 7 por segundo durante 9 s. Reemplaza a otra curación en el tiempo (Renovar) si ya la tiene.",
-        "cd": 4000,
+        "id": "ironbark",
+        "name": "Corteza férrea",
+        "icon": "ironbark",
+        "desc": "La piel de un aliado (o la tuya) se vuelve corteza: recibe 60% menos de daño durante 6 s.",
+        "cd": 20000,
         "cast": 0,
         "range": 24,
-        "heal": 7,
-        "durationMs": 9000,
-        "friendly": true
-      },
-      {
-        "id": "naturescure",
-        "name": "Curación natural",
-        "icon": "naturescure",
-        "desc": "Quita maldiciones, quemaduras, aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
-        "cd": 12000,
-        "cast": 0,
-        "range": 24,
+        "ccMs": 6000,
         "friendly": true
       },
       {
@@ -980,7 +974,31 @@
       },
       "yaw": -90,
       "bond": "#7ddc5a"
-    }
+    },
+    "reserve": [
+      {
+        "id": "rejuv",
+        "name": "Rejuvenecimiento",
+        "icon": "rejuv",
+        "desc": "Cura 7 por segundo durante 9 s. Reemplaza a otra curación en el tiempo (Renovar) si ya la tiene.",
+        "cd": 4000,
+        "cast": 0,
+        "range": 24,
+        "heal": 7,
+        "durationMs": 9000,
+        "friendly": true
+      },
+      {
+        "id": "naturescure",
+        "name": "Curación natural",
+        "icon": "naturescure",
+        "desc": "Quita maldiciones, quemaduras, aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 24,
+        "friendly": true
+      }
+    ]
   },
   "ct": {
     "id": "ct",
@@ -1028,27 +1046,6 @@
         "range": 16,
         "aoe": 5,
         "ccMs": 2500
-      },
-      {
-        "id": "kevlar",
-        "name": "Chaleco de kevlar",
-        "icon": "kevlar",
-        "desc": "Te ponés el chaleco: absorbe 80 de daño durante 8 s.",
-        "cd": 25000,
-        "cast": 0,
-        "range": 0,
-        "absorb": 80,
-        "durationMs": 8000
-      },
-      {
-        "id": "knife",
-        "name": "Cuchillo en mano",
-        "icon": "knife",
-        "desc": "Guardás el fusil y corrés más rápido 4 s; te sacás ralentizaciones y raíces.",
-        "cd": 15000,
-        "cast": 0,
-        "range": 0,
-        "ccMs": 4000
       },
       {
         "id": "bash",
@@ -1102,7 +1099,30 @@
       },
       "yaw": -90,
       "bond": "#5fa8ff"
-    }
+    },
+    "reserve": [
+      {
+        "id": "kevlar",
+        "name": "Chaleco de kevlar",
+        "icon": "kevlar",
+        "desc": "Te ponés el chaleco: absorbe 80 de daño durante 8 s.",
+        "cd": 25000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 80,
+        "durationMs": 8000
+      },
+      {
+        "id": "knife",
+        "name": "Cuchillo en mano",
+        "icon": "knife",
+        "desc": "Guardás el fusil y corrés más rápido 4 s; te sacás ralentizaciones y raíces.",
+        "cd": 15000,
+        "cast": 0,
+        "range": 0,
+        "ccMs": 4000
+      }
+    ]
   },
   "ronin": {
     "id": "ronin",
@@ -1139,16 +1159,6 @@
         "physical": true
       },
       {
-        "id": "windwall",
-        "name": "Muro de viento",
-        "icon": "windwall",
-        "desc": "Levantás un muro de viento de 7 m delante tuyo: bloquea los proyectiles enemigos durante 4 s.",
-        "cd": 22000,
-        "cast": 0,
-        "range": 0,
-        "durationMs": 4000
-      },
-      {
         "id": "sweep",
         "name": "Hoja barredora",
         "icon": "sweep",
@@ -1159,17 +1169,6 @@
         "dmg": 20,
         "targeted": true,
         "physical": true
-      },
-      {
-        "id": "flow",
-        "name": "Escudo de viento",
-        "icon": "flow",
-        "desc": "El viento te envuelve: absorbe 70 de daño durante 4 s.",
-        "cd": 18000,
-        "cast": 0,
-        "range": 0,
-        "absorb": 70,
-        "durationMs": 4000
       },
       {
         "id": "upcut",
@@ -1223,7 +1222,30 @@
       },
       "yaw": -90,
       "bond": "#7fd8ff"
-    }
+    },
+    "reserve": [
+      {
+        "id": "windwall",
+        "name": "Muro de viento",
+        "icon": "windwall",
+        "desc": "Levantás un muro de viento de 7 m delante tuyo: bloquea los proyectiles enemigos durante 4 s.",
+        "cd": 22000,
+        "cast": 0,
+        "range": 0,
+        "durationMs": 4000
+      },
+      {
+        "id": "flow",
+        "name": "Escudo de viento",
+        "icon": "flow",
+        "desc": "El viento te envuelve: absorbe 70 de daño durante 4 s.",
+        "cd": 18000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 70,
+        "durationMs": 4000
+      }
+    ]
   },
   "crack": {
     "id": "crack",
@@ -1272,28 +1294,6 @@
         "ccMs": 2000,
         "targeted": true,
         "physical": true
-      },
-      {
-        "id": "dribble",
-        "name": "Gambeta",
-        "icon": "dribble",
-        "desc": "Arrancás 7 m hacia adelante y corrés más rápido 2 s; te sacás las ralentizaciones.",
-        "cd": 10000,
-        "cast": 0,
-        "range": 0,
-        "dist": 7,
-        "ccMs": 2000
-      },
-      {
-        "id": "onetwo",
-        "name": "Pared",
-        "icon": "onetwo",
-        "desc": "Tirás una pared con un aliado a 18 m: llegás a su lado de un pique y los dos corren más rápido 3 s.",
-        "cd": 16000,
-        "cast": 0,
-        "range": 18,
-        "ccMs": 3000,
-        "friendly": true
       },
       {
         "id": "tackle",
@@ -1348,7 +1348,31 @@
       },
       "yaw": -90,
       "bond": "#7fc8ff"
-    }
+    },
+    "reserve": [
+      {
+        "id": "dribble",
+        "name": "Gambeta",
+        "icon": "dribble",
+        "desc": "Arrancás 7 m hacia adelante y corrés más rápido 2 s; te sacás las ralentizaciones.",
+        "cd": 10000,
+        "cast": 0,
+        "range": 0,
+        "dist": 7,
+        "ccMs": 2000
+      },
+      {
+        "id": "onetwo",
+        "name": "Pared",
+        "icon": "onetwo",
+        "desc": "Tirás una pared con un aliado a 18 m: llegás a su lado de un pique y los dos corren más rápido 3 s.",
+        "cd": 16000,
+        "cast": 0,
+        "range": 18,
+        "ccMs": 3000,
+        "friendly": true
+      }
+    ]
   },
   "wizard": {
     "id": "wizard",
@@ -1395,28 +1419,6 @@
         "dmg": 6,
         "projSpeed": 56,
         "projR": 0.25,
-        "ccMs": 2000
-      },
-      {
-        "id": "wardshield",
-        "name": "Escudo encantado",
-        "icon": "wardshield",
-        "desc": "Un escudo mágico te envuelve: absorbe 75 de daño durante 5 s.",
-        "cd": 20000,
-        "cast": 0,
-        "range": 0,
-        "absorb": 75,
-        "durationMs": 5000
-      },
-      {
-        "id": "broom",
-        "name": "Escoba",
-        "icon": "broom",
-        "desc": "Te subís a la escoba: salís volando 9 m hacia adelante y corrés más rápido 2 s.",
-        "cd": 14000,
-        "cast": 0,
-        "range": 0,
-        "dist": 9,
         "ccMs": 2000
       },
       {
@@ -1472,7 +1474,31 @@
       },
       "yaw": -90,
       "bond": "#ffe9a0"
-    }
+    },
+    "reserve": [
+      {
+        "id": "wardshield",
+        "name": "Escudo encantado",
+        "icon": "wardshield",
+        "desc": "Un escudo mágico te envuelve: absorbe 75 de daño durante 5 s.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 75,
+        "durationMs": 5000
+      },
+      {
+        "id": "broom",
+        "name": "Escoba",
+        "icon": "broom",
+        "desc": "Te subís a la escoba: salís volando 9 m hacia adelante y corrés más rápido 2 s.",
+        "cd": 14000,
+        "cast": 0,
+        "range": 0,
+        "dist": 9,
+        "ccMs": 2000
+      }
+    ]
   },
   "ki": {
     "id": "ki",
@@ -1508,37 +1534,6 @@
         "projR": 0.35
       },
       {
-        "id": "flashstep",
-        "name": "Paso instantáneo",
-        "icon": "flashstep",
-        "desc": "Desaparecés y aparecés detrás de un enemigo a 16 m.",
-        "cd": 14000,
-        "cast": 0,
-        "range": 16,
-        "targeted": true
-      },
-      {
-        "id": "kiguard",
-        "name": "Guardia de ki",
-        "icon": "kiguard",
-        "desc": "Concentrás el ki: absorbe 65 de daño durante 4 s.",
-        "cd": 16000,
-        "cast": 0,
-        "range": 0,
-        "absorb": 65,
-        "durationMs": 4000
-      },
-      {
-        "id": "awaken",
-        "name": "Despertar",
-        "icon": "awaken",
-        "desc": "Liberás tu poder con un aura dorada: durante 8 s corrés más rápido y todos tus golpes son críticos.",
-        "cd": 45000,
-        "cast": 0,
-        "range": 0,
-        "ccMs": 8000
-      },
-      {
         "id": "palm",
         "name": "Palma de ki",
         "icon": "palm",
@@ -1549,6 +1544,16 @@
         "dmg": 12,
         "melee": true,
         "ccMs": 1500
+      },
+      {
+        "id": "flashstep",
+        "name": "Paso instantáneo",
+        "icon": "flashstep",
+        "desc": "Desaparecés y aparecés detrás de un enemigo a 16 m.",
+        "cd": 14000,
+        "cast": 0,
+        "range": 16,
+        "targeted": true
       },
       {
         "id": "kiwave",
@@ -1582,6 +1587,29 @@
       "fly": 1.0,
       "glow": "#ffd860",
       "bond": "#ffb030"
-    }
+    },
+    "reserve": [
+      {
+        "id": "kiguard",
+        "name": "Guardia de ki",
+        "icon": "kiguard",
+        "desc": "Concentrás el ki: absorbe 65 de daño durante 4 s.",
+        "cd": 16000,
+        "cast": 0,
+        "range": 0,
+        "absorb": 65,
+        "durationMs": 4000
+      },
+      {
+        "id": "awaken",
+        "name": "Despertar",
+        "icon": "awaken",
+        "desc": "Liberás tu poder con un aura dorada: durante 8 s corrés más rápido y todos tus golpes son críticos.",
+        "cd": 45000,
+        "cast": 0,
+        "range": 0,
+        "ccMs": 8000
+      }
+    ]
   }
 }

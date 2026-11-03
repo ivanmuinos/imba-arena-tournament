@@ -32,9 +32,9 @@ func _fly(m: ArenaMatch, from: float, ms: float) -> void:
 func test_ct_is_complete() -> void:
 	check(GameData.classes.has("ct"), "Antiterrorista registrado")
 	var kit := GameData.kit("ct")
-	eq(kit.abilities.size(), 7, "siete habilidades")
+	eq(kit.abilities.size(), int(GameData.C.SLOT_COUNT), "básico, 3 habilidades y definitiva")
 	check(ResourceLoader.exists("res://assets/icons/%s.svg" % kit.icon), "icono de clase")
-	for a in kit.abilities:
+	for a in kit.abilities + GameData.reserve("ct"):  # the reserve stays playable-ready too
 		check(SpellKinds.TABLE.has(a.id), "objetivo explícito: " + a.id)
 		check(SpellSchools.explicit(a.id), "escuela: " + a.id)
 		check(ResourceLoader.exists("res://assets/icons/%s.svg" % a.icon), "icono: " + a.id)
@@ -49,11 +49,11 @@ func test_rifle_and_headshot_hit_their_target() -> void:
 	var c: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[1]
 	var hp := t.hp
-	check(m.cast_ability(c, _slot("rifle"), t.x, t.z, 1000, t.id), "dispara")
+	check(m.cast_ability(c, slot_of(c, "rifle"), t.x, t.z, 1000, t.id), "dispara")
 	_fly(m, 1000, 400)
 	near(hp - t.hp, 30.0, 0.01, "una bala: 30")
 	hp = t.hp
-	check(m.cast_ability(c, _slot("headshot"), t.x, t.z, 3000, t.id), "empieza a apuntar")
+	check(m.cast_ability(c, slot_of(c, "headshot"), t.x, t.z, 3000, t.id), "empieza a apuntar")
 	for i in 120:
 		m.tick(3000 + i * (1000.0 / 60.0))
 	near(hp - t.hp, 72.0, 0.01, "tiro a la cabeza: 72")
@@ -65,7 +65,7 @@ func test_flashbang_blinds_everyone_around_where_it_lands() -> void:
 	var c: ArenaUnit = m.units[0]
 	var a: ArenaUnit = m.units[1]
 	var b: ArenaUnit = m.units[2]
-	check(m.cast_ability(c, _slot("flashbang"), a.x, a.z, 1000), "tira la granada")
+	check(m.cast_ability(c, slot_of(c, "flashbang"), a.x, a.z, 1000), "tira la granada")
 	eq(a.incap_kind, "blind", "ciega al primero")
 	check(a.incap_until > 3000 and b.incap_until > 3000, "y al que estaba al lado")
 	check(c.incap_until <= 0.0, "no al que la tira")
@@ -76,17 +76,17 @@ func test_kevlar_knife_and_butt_stroke() -> void:
 	var m := _match()
 	var c: ArenaUnit = m.units[0]
 	var t: ArenaUnit = m.units[1]
-	m._execute(c, _slot("kevlar"), c.x, c.z, -1, 1000)
+	m._execute(c, slot_of(c, "kevlar"), c.x, c.z, -1, 1000)
 	eq(c.absorb, 80.0, "el chaleco absorbe 80")
 	c.slow_until = 9000
 	c.root_until = 9000
-	m._execute(c, _slot("knife"), c.x, c.z, -1, 1000)
+	m._execute(c, slot_of(c, "knife"), c.x, c.z, -1, 1000)
 	check(c.haste_until >= 5000, "corre más rápido 4 s")
 	eq(c.root_until, 0.0, "se saca las raíces")
 	eq(c.slow_until, 0.0, "y la ralentización")
 	t.z = 2.0
 	t.cast = {"slot": 1, "start_at": 1000, "ends_at": 3000, "ax": 0, "az": 0, "target_id": -1, "lock": -1, "pushes": 0}
-	m._execute(c, _slot("bash"), t.x, t.z, t.id, 1500)
+	m._execute(c, slot_of(c, "bash"), t.x, t.z, t.id, 1500)
 	check(t.cast.is_empty(), "el culatazo interrumpe")
 	check(t.silence_until > 3000, "y silencia 2 s")
 
@@ -97,9 +97,9 @@ func test_sniper_ultimate_needs_charge_and_hits_hard() -> void:
 	var t: ArenaUnit = m.units[1]
 	t.x = 0.0
 	t.z = 30.0
-	check(not m.cast_ability(c, _slot("awp"), t.x, t.z, 1000, t.id), "sin carga no se puede")
+	check(not m.cast_ability(c, slot_of(c, "awp"), t.x, t.z, 1000, t.id), "sin carga no se puede")
 	c.ult = 100.0
-	check(m.cast_ability(c, _slot("awp"), t.x, t.z, 1000, t.id), "con carga apunta")
+	check(m.cast_ability(c, slot_of(c, "awp"), t.x, t.z, 1000, t.id), "con carga apunta")
 	var hp := t.hp
 	for i in 150:
 		m.tick(1000 + i * (1000.0 / 60.0))

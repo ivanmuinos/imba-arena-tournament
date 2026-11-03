@@ -114,6 +114,17 @@ func ability(slot: int) -> Dictionary:
 	return spec().abilities[slot]
 
 
+## Puts one of this class's abilities (kit or reserve) on `slot` for this unit only; false if it has no such ability.
+func equip(slot: int, ability_id: String) -> bool:
+	var a := GameData.find_ability(cls, ability_id, spec_id)
+	if a.is_empty() or slot < 0 or slot >= spec().abilities.size():
+		return false
+	_kit = spec().duplicate()
+	_kit.abilities = (_kit.abilities as Array).duplicate()
+	_kit.abilities[slot] = a
+	return true
+
+
 ## Combat effects cleared at the start of every round.
 func reset_effects() -> void:
 	curses.clear()

@@ -11,7 +11,7 @@ signal gameplay_event(name: String)
 
 const PICK_MIN_RADIUS := 22.0  # px: far-away units stay clickable
 ## ControlBindings actions that, on the keyboard, belong to Keybinds (only their controller buttons apply).
-const KEYBINDS_OWNED := ["slot_0", "slot_1", "slot_2", "slot_3", "slot_4", "slot_5", "slot_6", "jump", "target", "mute", "ally_0", "ally_1", "ally_2"]
+const KEYBINDS_OWNED := ["slot_0", "slot_1", "slot_2", "slot_3", "slot_4", "jump", "target", "mute", "ally_0", "ally_1", "ally_2"]
 
 var client: GameClient
 var chat: ChatPanel
@@ -51,6 +51,7 @@ var gfx_level := "alta"
 var practice := false
 var tutorial := false
 var practice_panel: PracticePanel = null
+var game_menu: GameMenu = null
 
 var _roster: Array = []
 var _state_ms := 0.0
@@ -136,6 +137,7 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	hud.practice = practice
 	if practice and not tutorial:
 		_build_practice_panel()
+	_build_game_menu()
 	controller.setup(my_cls, my_team, my_spec)
 	controller.ready_at = hud.ready_at
 	predictor.place(mine_spawn().x, mine_spawn().y)
@@ -167,6 +169,50 @@ func _build_practice_panel() -> void:
 	practice_panel.class_changed.connect(func(c, s): practice_switch.emit(c, s))
 	practice_panel.menu_pressed.connect(func(): leave_requested.emit())
 	hud.add_overlay(practice_panel, 132.0, 12.0, false)
+
+
+## The Esc menu: HUD sizes and volumes apply live; leaving goes back to the main menu.
+func _build_game_menu() -> void:
+	game_menu = GameMenu.new()
+	hud.add_modal(game_menu)
+	if practice:
+		game_menu.set_leave_text("Volver al menú")
+	elif client.is_host and not (client.transport is LoopbackTransport):
+		game_menu.set_leave_text("Abandonar (cierra la partida a todos)")
+	game_menu.setting_changed.connect(_on_menu_setting)
+	game_menu.binds_pressed.connect(func(): set_binding(true))
+	game_menu.keys_changed.connect(hud.refresh_keys)
+	game_menu.leave_pressed.connect(func(): leave_requested.emit())
+	game_menu.quit_pressed.connect(func(): get_tree().quit())
+
+
+func _on_menu_setting(key: String) -> void:
+	match key:
+		"master":
+			UiSound.apply_volumes()
+		"sfx":
+			audio.gain_db = linear_to_db(maxf(0.001, SettingsStore.shared().get_value("sfx")))
+		"sens":
+			pass  # the camera reads it on every mouse move
+		_:
+			hud.apply_scales()
+
+
+func open_menu() -> void:
+	_release_gameplay()
+	game_menu.kit_cls = my_cls
+	game_menu.kit_spec = my_spec
+	game_menu.open()
+
+
+## What Esc does, one thing per press (like WoW): drop a ground spell waiting for its click, stop the cast, drop the
+## target, and with nothing left to cancel, open the menu.
+static func esc_step(ground_pending: bool, casting: bool, has_target: bool) -> String:
+	if ground_pending:
+		return "ground"
+	if casting:
+		return "cast"
+	return "target" if has_target else "menu"
 
 
 func mine_spawn() -> Vector2:
@@ -546,6 +592,20 @@ var _held_actions := {}
 func _input(event: InputEvent) -> void:
 	if not _active:
 		return
+	if game_menu != null and game_menu.visible:
+		# The menu has the input: a key being rebound in Teclas takes it (Esc there = no key); otherwise Esc / Start
+		# close it and everything else goes to its buttons and sliders.
+		if game_menu.capture_key(event):
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_pressed() and not event.is_echo() and ((event is InputEventKey and event.keycode == KEY_ESCAPE) or (event is InputEventJoypadButton and event.button_index == JOY_BUTTON_START)):
+			get_viewport().set_input_as_handled()
+			game_menu.close()
+		return
+	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
+		get_viewport().set_input_as_handled()
+		open_menu()
+		return
 	if event is InputEventKey and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		_release_gameplay()
 		return
@@ -615,13 +675,17 @@ func _input(event: InputEvent) -> void:
 		return
 	match action:
 		"cancel":
-			if controller.pending_ground >= 0:
-				controller.cancel_ground()
-			elif not me.is_empty() and me.get("cast") != null:
-				client.send_stop_cast()  # Esc cancels the cast in progress (movement and jumping do too)
-			else:
-				controller.clear_target()
-				hud.set_friend(-1)
+			match esc_step(controller.pending_ground >= 0, not me.is_empty() and me.get("cast") != null, controller.target >= 0):
+				"ground":
+					controller.cancel_ground()
+				"cast":
+					client.send_stop_cast()  # Esc cancels the cast in progress (movement and jumping do too)
+				"target":
+					controller.clear_target()
+					hud.set_friend(-1)
+				"menu":
+					if event is InputEventKey:  # the controller opens it with Start
+						open_menu()
 		"target":
 			_cycle_target()
 		"jump":
@@ -951,7 +1015,7 @@ func _cast(slot: int) -> bool:
 		hud.error("Stick derecho: apuntar · A: colocar · R3: cancelar" if _pad_aim else "Clic izquierdo para colocar · clic derecho o Esc para cancelar")
 	if not res.msg.is_empty():
 		client.send_cast(res.msg)
-		if predictor.predict_movement(my_cls, slot, res.aim_dir, me, world.map, _now_ms()):
+		if predictor.predict_movement(controller.ability(slot), res.aim_dir, me, world.map, _now_ms()):
 			cam.kick(0.6)
 		return true
 	return false

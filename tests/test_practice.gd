@@ -264,7 +264,7 @@ func test_meter_records_the_players_damage_casts_crits_and_heals() -> void:
 	var pm := _yard("priest")
 	var pme := _me(pm)
 	var ally := _dummy(pm, "ally")
-	pm._execute(pme, 1, ally.x, ally.z, ally.id, 2000.0)
+	pm._execute(pme, old(pme, 1), ally.x, ally.z, ally.id, 2000.0)
 	check(pm.meter_for(pme).snapshot(2000.0).heal > 0, "cuenta la curación hecha")
 
 
@@ -285,7 +285,7 @@ func test_command_reset_clears_meter_dummies_and_cooldowns() -> void:
 	var me := _me(m)
 	var d := _dummy(m, "mid")
 	m._damage(d, 500.0, me, 2000.0, "fireball")
-	me.cds[1] = 99999.0
+	me.cds[old(me, 1)] = 99999.0
 	d.hp = 123.0
 	m.cast_ability(me, 0, d.x, d.z, 2500.0, d.id)
 	check(not m.projs.is_empty(), "hay un proyectil en vuelo")
@@ -293,7 +293,7 @@ func test_command_reset_clears_meter_dummies_and_cooldowns() -> void:
 	check(m.projs.is_empty(), "reiniciar borra los proyectiles en vuelo")
 	eq(m.meter_for(me).snapshot(3000.0).total, 0, "medidor en cero")
 	eq(d.hp, d.max_hp, "muñecos curados")
-	eq(me.cds[1], 0.0, "cooldowns listos")
+	eq(me.cds[old(me, 1)], 0.0, "cooldowns listos")
 	check(_dummy(m, "ally").hp < _dummy(m, "ally").max_hp * 0.5, "el aliado vuelve a estar herido")
 
 
@@ -303,17 +303,17 @@ func test_command_no_cooldowns_mode_and_ultimate_ready() -> void:
 	var d := _dummy(m, "melee")
 	m.practice_command(me, "nocd", true, 2000.0)
 	var now := 2000.0
-	check(m.cast_ability(me, 1, d.x, d.z, now, d.id), "primer pyro")
+	check(m.cast_ability(me, old(me, 1), d.x, d.z, now, d.id), "primer pyro")
 	for i in 60 * 3:
 		now += 1000.0 / 60.0
 		m.tick(now)
-	check(m.cast_ability(me, 1, d.x, d.z, now, d.id), "sin cooldown: pyro otra vez enseguida")
+	check(m.cast_ability(me, old(me, 1), d.x, d.z, now, d.id), "sin cooldown: pyro otra vez enseguida")
 	m.practice_command(me, "nocd", false, now)
 	for i in 60 * 3:
 		now += 1000.0 / 60.0
 		m.tick(now)
-	me.cds[1] = now + 5000.0
-	check(not m.cast_ability(me, 1, d.x, d.z, now, d.id), "con el modo apagado vuelve el cooldown")
+	me.cds[old(me, 1)] = now + 5000.0
+	check(not m.cast_ability(me, old(me, 1), d.x, d.z, now, d.id), "con el modo apagado vuelve el cooldown")
 	me.ult = 0.0
 	m.practice_command(me, "ult", true, now)
 	eq(me.ult, 100.0, "definitiva lista")
