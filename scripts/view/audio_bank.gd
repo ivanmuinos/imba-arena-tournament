@@ -61,7 +61,7 @@ const LAYERS := {
 	"hitMe": [["punch", 1.2, -8.0, 0.0], ["cloth", 1.0, -9.0, 0.0]],            # melee / arrow hit on you: short organic thud
 	"hitMeSpell": [["punch", 1.45, -11.0, 0.0], ["arc_soft", 1.6, -16.0, 0.0]],  # spell hit on you: softer, with a faint magical tail
 	"death": [["death", 1.0, -3.0, 0.0]], "land": [["wood", 0.9, -9.0, 0.0]],
-	"heal": [["heal", 1.0, -8.0, 0.0]], "power": [["arc_bright", 1.0, -8.0, 0.0]], "absorb": [["holy_chime", 1.1, -9.0, 0.0]],
+	"heal": [["heal", 1.0, -8.0, 0.0]], "healspell": [["holy_chime", 1.2, -6.0, 0.0], ["heal", 1.0, -7.0, 0.05]], "power": [["arc_bright", 1.0, -8.0, 0.0]], "absorb": [["holy_chime", 1.1, -9.0, 0.0]],
 	"interrupt": [["metal", 1.3, -7.0, 0.0]], "ccMe": [["shadow_low", 1.1, -8.0, 0.0]],
 	# fire
 	"fireball": [["fire_cast", 1.0, -3.0, 0.0], ["fire_whoosh", 0.9, -8.0, 0.05]],

@@ -448,6 +448,10 @@ func _one_fx(f: Dictionary) -> void:
 				cam.kick(0.35 if f.crit else 0.12)
 			else:
 				audio.play("crit" if f.crit else ("hit" if SpellSchools.school_of(str(f.get("ability", ""))) == "physical" else "hitSpell"), Vector2(f.x, f.z))
+		"healspell":
+			if v != null and v.shown:
+				fx.heal_spell(pos.x, pos.z, SpellSchools.school_of(str(f.get("ability", ""))))
+				audio.play("healspell", p2)
 		"heal":
 			if v != null and v.shown:
 				fx.heal(pos.x, pos.z)
