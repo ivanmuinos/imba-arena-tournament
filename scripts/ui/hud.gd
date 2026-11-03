@@ -609,10 +609,18 @@ func _build_bar() -> void:
 		mark.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 3)
 		mark.kind = TalentMark.kind_of(a)
 		slot.add_child(mark)
+		var charges := UiKit.label("", 15, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)  # charges left (Frost Blink)
+		UiKit.outlined(charges, 5)
+		charges.position = Vector2(36, 0)
+		charges.size = Vector2(20, 18)
+		charges.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		charges.visible = int(a.get("charges", 1)) > 1
+		charges.text = str(int(a.get("charges", 1)))
+		slot.add_child(charges)
 		slot.add_child(key)
 		slot.add_child(cd)
 		_bar_frame.add_button(slot)
-		_slots.append({"root": slot, "sweep": sweep, "cd": cd, "charge": charge, "icon": icon, "ult": ult, "auto": a.get("auto", false), "key": key})
+		_slots.append({"root": slot, "sweep": sweep, "cd": cd, "charge": charge, "icon": icon, "ult": ult, "auto": a.get("auto", false), "key": key, "charges": charges})
 	_build_trinket(dim_tex)
 	_build_macro_bar()
 	refresh_keys()
@@ -824,10 +832,16 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 	var silenced: bool = not me.is_empty() and me.cc.has("silence")
 	if not me.is_empty():
 		_bar_frame.set_health(float(me.hp) if alive else 0.0, GameData.entry_max_hp(_entry_of(my_id)))
-	_bar_frame.set_ult(float(s.you.ult))
+	if abilities.any(func(x): return x.get("ult", false)):
+		_bar_frame.set_ult(float(s.you.ult))
+	else:
+		_bar_frame.set_no_ult()
+	var ch: Array = s.you.get("ch", [])
 	for i in _slots.size():
 		var a: Dictionary = abilities[i]
 		var sl: Dictionary = _slots[i]
+		if i < ch.size() and int(ch[i]) >= 0:
+			(sl.charges as Label).text = str(int(ch[i]))
 		var locked: bool = stunned or (silenced and not a.get("physical", false))
 		(sl.icon as TextureRect).modulate = Color(1, 1, 1, 0.35) if locked else Color.WHITE
 		if sl.auto:  # auto-attack toggle indicator: lit border while it is on

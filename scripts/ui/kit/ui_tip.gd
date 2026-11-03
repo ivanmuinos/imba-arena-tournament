@@ -89,6 +89,8 @@ static func meta_line(a: Dictionary) -> String:
 		parts.append("Recarga %s s" % _num(float(a.cd) / 1000.0))
 	else:
 		parts.append("Sin recarga")
+	if int(a.get("charges", 1)) > 1:
+		parts.append("%d cargas" % int(a.charges))
 	if float(a.get("cast", 0)) > 0.0:
 		parts.append("Lanzamiento %s s" % _num(float(a.cast) / 1000.0))
 	if float(a.get("range", 0)) > 0.0:

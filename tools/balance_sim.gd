@@ -139,6 +139,8 @@ func _talent_eval(args: Dictionary, rng: RandomNumberGenerator) -> void:
 							continue
 						var won: bool = (m.score.red > m.score.blue) == (not swap)
 						_add(out, "%s|%s" % [kit, pk[0]], won)
+						if args.has("by-rival"):  # --by-rival: also "kit|pick|vs:<rival kit>"
+							_add(out, "%s|%s|vs:%s" % [kit, pk[0], Talents.key(b[0], b[1])], won)
 	print("RESULT ", JSON.stringify({"talent": out}))
 	quit()
 

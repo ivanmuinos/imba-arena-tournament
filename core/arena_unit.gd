@@ -42,6 +42,9 @@ var hp := 0.0
 var max_hp := 0.0
 var alive := true
 var cds: Array[float] = []
+## Abilities with charges (ability.charges > 1, e.g. Frost Blink): slot -> {left, next}. `next` is when the next
+## charge comes back (0 = all charges in). cds[slot] still says when the slot is usable (now while a charge is left).
+var charges := {}
 ## Global cooldown (WoW): after an ability, every other on-GCD ability waits until this.
 var gcd_until := 0.0
 ## PvP trinket: breaks every loss-of-control effect, ready again at this time.
@@ -141,6 +144,7 @@ func equip(slot: int, ability_id: String) -> bool:
 ## Combat effects cleared at the start of every round.
 func reset_effects() -> void:
 	curses.clear()
+	charges.clear()
 	tempest_stacks = 0
 	cast = {}
 	auto_on = false

@@ -326,3 +326,61 @@ func test_blizzard_and_cast_kinds_survive_the_snapshot_codec() -> void:
 	eq(back.aoes.size(), 1, "una zona")
 	eq(back.aoes[0].kind, "blizzard", "conserva el tipo (ventisca)")
 	check(back.aoes[0].left > 3000.0, "con su tiempo restante")
+
+
+# ---------------------------------------------------------------- Frost: Blink with 2 charges, Frostbolt root chance
+
+func test_frost_blink_roots_where_you_stood_and_moves_you() -> void:
+	var m := _duel("frost")
+	var a: ArenaUnit = m.units[0]
+	var b: ArenaUnit = m.units[1]
+	var slot := slot_of(a, "frostblink")
+	eq(slot, 2, "la Traslación helada reemplaza a la Nova")
+	b.x = a.x
+	b.z = a.z - 2.0  # the warrior on top of you
+	var from := Vector2(a.x, a.z)
+	check(m.cast_ability(a, slot, a.x, a.z + 8.0, now, -1), "se lanza hacia atrás")
+	check(b.root_until > now, "el que estaba encima queda enraizado")
+	check(Vector2(a.x, a.z).distance_to(from) > 4.0, "el mago se movió (%.1f m)" % Vector2(a.x, a.z).distance_to(from))
+	check(b.hp < b.max_hp, "la nova pega")
+
+
+func test_frost_blink_has_two_charges_that_recharge_one_at_a_time() -> void:
+	var m := _duel("frost")
+	var a: ArenaUnit = m.units[0]
+	var r := slot_of(a, "frostblink")
+	var cd := float(a.ability(r).cd)
+	check(m.cast_ability(a, r, a.x, a.z - 5.0, now, -1), "primera carga")
+	eq(m.charges_left(a)[r], 1, "queda 1 carga")
+	_adv(m, 1600)  # past the global cooldown
+	check(m.cast_ability(a, r, a.x, a.z - 5.0, now, -1), "segunda carga enseguida")
+	eq(m.charges_left(a)[r], 0, "sin cargas")
+	_adv(m, 1600)
+	check(not m.cast_ability(a, r, a.x, a.z - 5.0, now, -1), "sin cargas no se puede")
+	_adv(m, cd - 3200 + 100)  # the recharge started with the first use
+	eq(m.charges_left(a)[r], 1, "vuelve una carga a los %d s del primer uso" % int(cd / 1000))
+	check(m.cast_ability(a, r, a.x, a.z - 5.0, now, -1), "y se puede usar")
+	_adv(m, cd + 100)
+	eq(m.charges_left(a)[r], 1, "la otra vuelve un ciclo después")
+	_adv(m, cd + 100)
+	eq(m.charges_left(a)[r], 2, "y se llena")
+	eq(m.snapshot_for(a, now).you.ch[r], 2, "el snapshot lleva las cargas")
+	eq(m.snapshot_for(a, now).you.ch[0], -1, "lo que no tiene cargas va en -1")
+
+
+func test_frostbolt_sometimes_roots() -> void:
+	var fb := GameData.find_ability("mage", "frostbolt", "frost")
+	check(float(fb.rootChance) > 0.0 and float(fb.rootChance) <= 0.25, "probabilidad baja (%s)" % fb.rootChance)
+	check(float(fb.rootMs) > 0.0 and float(fb.rootMs) <= 2000.0, "pocos segundos (%s ms)" % fb.rootMs)
+	var roots := 0
+	var m := _duel("frost")
+	m.proc_rng.seed = 7
+	var b: ArenaUnit = m.units[1]
+	for i in 200:
+		b.root_until = 0.0
+		b.dr = {}  # every hit counted on its own (no diminishing returns between tries)
+		b.hp = b.max_hp  # the bolt deals damage too: keep the target alive
+		m._on_proj_hit({"spec": fb, "owner": m.units[0]}, b, now)
+		if b.root_until > now:
+			roots += 1
+	check(roots > 10 and roots < 60, "enraíza a veces: %d de 200" % roots)

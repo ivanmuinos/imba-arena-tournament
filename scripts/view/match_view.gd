@@ -374,7 +374,7 @@ const CAST_SOUND := {
 	"charge": "charge", "shieldwall": "wall", "bladestorm": "storm", "smite": "smite", "pwshield": "shieldUp", "renew": "renew", "dispel": "dispel",
 	"blind": "blind", "vanish": "vanish", "deathmark": "deathmark",
 	"shadowbolt": "shadowbolt", "corruption": "corruption", "agony": "agony", "fear": "scream", "darkpact": "darkpact", "drainlife": "drainlife", "soulrot": "soulrot",
-	"frostbolt": "frostbolt", "icelance": "icelance", "blizzard": "blizzard",
+	"frostbolt": "frostbolt", "icelance": "icelance", "blizzard": "blizzard", "frostblink": "blink",
 	"punch": "punch", "kiblast": "kiblast", "flashstep": "flashstep", "kiguard": "kiguard", "awaken": "awaken", "palm": "interrupt", "kiwave": "kiwave",
 	"spark": "spark", "stunbolt": "stunbolt", "disarm": "disarm", "wardshield": "wardshield", "broom": "broom", "confuse": "confuse", "guardian": "guardian",
 	"pass": "kick", "chip": "chip", "nutmeg": "dribble", "dribble": "dribble", "onetwo": "onetwo", "tackle": "interrupt", "golazo": "golazo",

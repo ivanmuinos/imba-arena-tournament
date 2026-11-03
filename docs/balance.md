@@ -425,3 +425,17 @@ Hicieron falta cuatro corridas (224 a 336 duelos por talento). El ruido es de un
 - **Pendientes:** Rompehechizos queda en +7 y Zurrar en −8, en duelos de bots. El Contrahechizo rinde porque saca la Piroexplosión, que con 1,8 s de lanzamiento los bots se dejan interrumpir. A Zurrar le falta el ralentizar de Seccionar. Los dos son talentos de situación, y hay que mirarlos en 2v2 y 3v3 antes de tocarlos más.
 
 Todas las demás opciones quedan dentro de ±5 puntos de su kit base.
+
+## Mago Escarcha: Traslación helada y enraizar en la Descarga
+
+Duelos de bots contra todos los kits (`--talent-eval --by-rival --only=__none`), con 336 duelos y las mismas semillas para cada versión:
+
+| Versión | Total | vs Guerrero | vs Asesino |
+|---|---|---|---|
+| Kit anterior (Nova, Polimorfia, Ventisca) | 26,5% | 4% | 12% |
+| + Descarga con 15% de enraizar 1,5 s | 29,5% | 6% | 12% |
+| Traslación de 2 cargas en la R, sin Ventisca | 6,8% | 0% | 2% |
+| Traslación de 2 cargas en lugar de la Polimorfia | 28,3% | 12% | 19% |
+| **Traslación helada (Nova + Traslación, 2 cargas) + enraizar** | **31,0%** | **17%** | **40%** |
+
+Quedó la última. La Nova estalla donde estabas y enraíza 2 s a los que tenías encima, y después te teletransportás 8 m. Las cargas vuelven de a una, cada 12 s, y la recarga arranca con el primer uso. La Ventisca era la mayor parte del daño del Escarcha: sacarla lo hundía. La Nova y la Traslación de antes quedan en la reserva.

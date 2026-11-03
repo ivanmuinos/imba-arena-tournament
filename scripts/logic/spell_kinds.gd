@@ -10,7 +10,7 @@ extends RefCounted
 
 const TABLE := {
 	"shadowbolt": "hostile", "corruption": "hostile", "agony": "hostile", "fear": "hostile", "darkpact": "self", "drainlife": "hostile", "soulrot": "hostile",
-	"fireball": "hostile", "dragonbreath": "direction", "frostbolt": "hostile", "icelance": "hostile", "blizzard": "ground", "pyro": "hostile", "nova": "self", "poly": "hostile", "blink": "direction", "counter": "hostile", "meteor": "ground",
+	"fireball": "hostile", "dragonbreath": "direction", "frostbolt": "hostile", "icelance": "hostile", "blizzard": "ground", "pyro": "hostile", "nova": "self", "poly": "hostile", "blink": "direction", "frostblink": "direction", "counter": "hostile", "meteor": "ground",
 	"shot": "auto", "aimed": "hostile", "trap": "ground", "conc": "hostile", "disengage": "direction", "silence": "hostile", "volley": "direction",
 	"strike": "auto", "mortal": "hostile", "charge": "hostile", "hamstring": "hostile", "shieldwall": "self", "pummel": "hostile", "bladestorm": "self",
 	"smite": "hostile", "heal": "friendly", "pwshield": "friendly", "scream": "self", "renew": "friendly", "dispel": "friendly", "hymn": "self",

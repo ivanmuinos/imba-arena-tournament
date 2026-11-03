@@ -11,7 +11,7 @@ const HEALERS := ["priest", "druid"]
 const LEGACY_KITS := {
 	"mage": ["fireball", "pyro", "nova", "poly", "blink", "counter", "meteor"],
 	"mage/fire": ["fireball", "pyro", "dragonbreath", "poly", "blink", "counter", "meteor"],
-	"mage/frost": ["frostbolt", "icelance", "nova", "poly", "blink", "counter", "blizzard"],
+	"mage/frost": ["frostbolt", "icelance", "frostblink", "poly", "blink", "counter", "blizzard"],
 	"warlock": ["shadowbolt", "corruption", "agony", "fear", "darkpact", "drainlife", "soulrot"],
 	"hunter": ["shot", "aimed", "trap", "conc", "disengage", "silence", "volley"],
 	"warrior": ["strike", "mortal", "charge", "hamstring", "shieldwall", "pummel", "bladestorm"],
@@ -376,7 +376,8 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 					var frost := u.spec_id == "frost"
 					var rooted := now < target.root_until or (now < target.incap_until and target.incap_kind == "freeze")
 					if frost and rooted and los and ready.call(o.call(1)) and d <= ab[o.call(1)].range: stop = try_cast.call(o.call(1), target, target)  # shatter combo
-					elif dn < (4.5 if frost else 5.5) and ready.call(o.call(2)): stop = try_cast.call(o.call(2), nearest)  # nova (root) / dragon's breath
+					elif frost and dn < 4.5 and ready.call(o.call(2)): stop = try_cast.call(o.call(2), Vector2(u.x - (nearest.x - u.x), u.z - (nearest.z - u.z)))  # Frost Blink: nova on the melee, blink away
+					elif not frost and dn < 5.5 and ready.call(o.call(2)): stop = try_cast.call(o.call(2), nearest)  # dragon's breath
 					elif low_hp and dn < 6 and ready.call(o.call(4)): stop = try_cast.call(o.call(4), Vector2(u.x - (nearest.x - u.x), u.z - (nearest.z - u.z)))
 					elif off != null and dist.call(off) < 17 and ready.call(o.call(3)) and chance.call(0.3): stop = try_cast.call(o.call(3), off, off)
 				elif not stop:
