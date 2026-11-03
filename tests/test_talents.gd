@@ -376,7 +376,7 @@ func test_corruption_spreads_to_a_nearby_enemy() -> void:
 
 
 func test_hunter_shots_stack_a_slow() -> void:
-	var m := _fight("hunter", "", [0, -1])
+	var m := _fight("hunter", "", [0, -1], ["priest"])
 	var a: ArenaUnit = m.units[0]
 	var b: ArenaUnit = m.units[1]
 	for i in 5:
@@ -387,7 +387,7 @@ func test_hunter_shots_stack_a_slow() -> void:
 
 
 func test_piercing_shot_goes_through() -> void:
-	var m := _fight("hunter", "", [1, -1], ["warrior", "priest"])
+	var m := _fight("hunter", "", [1, -1], ["priest", "priest"])  # priests never block
 	var a: ArenaUnit = m.units[0]
 	m.units[2].x = 0.0
 	m.units[2].z = 2.0  # right behind the first one
@@ -417,7 +417,7 @@ func test_aimed_shot_can_be_cast_moving() -> void:
 
 
 func test_aimed_shot_crits_slowed_targets() -> void:
-	var m := _fight("hunter", "", [-1, 1])
+	var m := _fight("hunter", "", [-1, 1], ["priest"])
 	var a: ArenaUnit = m.units[0]
 	var b: ArenaUnit = m.units[1]
 	b.slow_until = now + 3000
@@ -439,7 +439,7 @@ func test_warrior_strike_hits_slowed_harder() -> void:
 
 
 func test_mortal_reset_on_kill_and_deeper_wound() -> void:
-	var m := _fight("warrior", "", [-1, 0], ["warrior", "priest"])
+	var m := _fight("warrior", "", [-1, 0], ["priest", "warrior"])
 	var a: ArenaUnit = m.units[0]
 	var b: ArenaUnit = m.units[1]
 	var slot := slot_of(a, "mortal")
@@ -481,7 +481,7 @@ func test_heal_leaves_a_heal_over_time() -> void:
 
 
 func test_rogue_poison_and_backstab() -> void:
-	var m := _fight("rogue", "", [0, -1])
+	var m := _fight("rogue", "", [0, -1], ["priest"])  # a priest never blocks
 	var a: ArenaUnit = m.units[0]
 	var b: ArenaUnit = m.units[1]
 	b.x = 0.0
@@ -502,7 +502,7 @@ func test_rogue_poison_and_backstab() -> void:
 
 
 func test_eviscerate_kill_resets_cheap_shot() -> void:
-	var m := _fight("rogue", "", [-1, 0], ["warrior", "priest"])
+	var m := _fight("rogue", "", [-1, 0], ["priest", "warrior"])
 	var a: ArenaUnit = m.units[0]
 	var b: ArenaUnit = m.units[1]
 	var cs := slot_of(a, "cheapshot")

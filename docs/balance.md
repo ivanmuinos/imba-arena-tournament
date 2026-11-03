@@ -736,3 +736,7 @@ Mismo comando (`--talent-eval --n=8`, los 5 mapas, 280 duelos por talento), tres
 - **2.ª y 3.ª corridas:** Ensañamiento quedó en +12%, Furia en +30% de definitiva y Zurrar en Golpe mortal +25%. El veneno de la Puñalada bajó de 3 a 1,5 por segundo y la Agonía cambiada pega ×0,7. Estos dos últimos valores no se volvieron a medir.
 - **Pendientes:** Rompehechizos sigue en +10 aunque el Contrahechizo recarga ×2,2, y Zurrar en −6. Pasa lo mismo que en la versión 1: los bots se dejan interrumpir la Piroexplosión. Hay que mirarlos en 2v2 y 3v3.
 - **Lo que el duelo no mide:** el rebote, el contagio de la Corrupción, la Expiación sobre aliados y la Flecha perforante rinden en 2v2 y 3v3, no en duelo.
+
+### Mago Escarcha: Descarga sin recarga, Lanza ×3
+
+La Descarga de escarcha queda sin recarga y fuera del tiempo global, con daño 56 → 49 para conservar el daño por segundo. El astillado de la Lanza de hielo pasa de ×2,5 a ×3. En duelos de bots (560, semillas 1 y 2), el Escarcha pasa de 30–32% a 35,4%: contra el guerrero gana 59%, contra el asesino 50% y contra el brujo 2,5%.
