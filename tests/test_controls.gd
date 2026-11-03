@@ -525,3 +525,21 @@ func test_foot_sync_scales_with_ground_speed() -> void:
 	check(LocoBlend.foot_sync(3.5, 7.0) < LocoBlend.foot_sync(7.0, 7.0), "más lento, el ciclo va más lento")
 	eq(LocoBlend.foot_sync(0.0, 7.0), 1.0, "quieto")
 	eq(LocoBlend.foot_sync(30.0, 7.0), 1.7, "tope")
+
+
+func test_f1_selects_yourself_and_f2_f3_your_allies() -> void:
+	eq(Keybinds.defaults().self, "F1", "F1: vos")
+	eq(Keybinds.defaults().ally_1, "F2", "F2: primer aliado")
+	eq(Keybinds.defaults().ally_2, "F3", "F3: segundo aliado")
+	check(not Keybinds.defaults().has("ally_3"), "no hay tercer aliado (en 3v3 son vos y dos más)")
+	eq(MatchView.party_order([4, 2, 6], 2), [2, 4, 6], "vos primero aunque no seas el primero del roster")
+	eq(MatchView.party_order([2], 2), [2], "solo: F1 sigue siendo vos")
+	# a friendly spell with yourself selected goes to you
+	var pc := _pc("priest")
+	var ally := _unit(3, "red", 0, 6)
+	var ctx := _ctx(1000.0, [ally])  # you are unit 1
+	pc.select(1, ctx)
+	eq(pc.try_cast(1, ctx).msg.target, 1, "Sanación con F1: a vos")
+	pc.cast_lock[1] = 0.0
+	pc.select(3, ctx)
+	eq(pc.try_cast(1, _ctx(3000.0, [ally])).msg.target, 3, "con F2: al aliado")
