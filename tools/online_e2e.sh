@@ -14,7 +14,7 @@ TMP=$(mktemp -d)
 PIDS=()
 cleanup() { for p in "${PIDS[@]:-}"; do [ -n "$p" ] && kill "$p" 2>/dev/null; done; wait 2>/dev/null; rm -rf "$TMP"; }
 trap cleanup EXIT
-sql() { docker exec -i "supabase_db_imba-arena" psql -U postgres -d postgres -tA -c "$1" 2>&1; }
+sql() { docker exec "supabase_db_imba-arena" psql -U postgres -d postgres -tA -c "$1" 2>&1 </dev/null; }
 sql "delete from public.online_matches; delete from public.queue_tickets; delete from public.play_groups; delete from public.player_skill; delete from public.rate_limits; delete from public.players;" >/dev/null
 
 printf '%s\n' "STEAM_AUTH_JWT_SECRET=$JWT_SECRET" "STEAM_AUTH_ALLOW_DEV=true" > "$TMP/env"
