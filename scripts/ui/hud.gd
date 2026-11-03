@@ -271,7 +271,7 @@ func _build() -> void:
 	status_line.offset_bottom = -176
 	status_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(status_line)
-	lock_hint = UiKit.label("Clic derecho + arrastrar: mirar · Clic izquierdo + arrastrar: cámara · Tab: objetivo · Esc: soltar objetivo", 14, UiKit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
+	lock_hint = UiKit.label("Clic derecho + arrastrar: mirar · Clic izquierdo + arrastrar: cámara · Tab: objetivo · F: foco (Shift + poder: al foco) · Esc: soltar objetivo", 14, UiKit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
 	UiKit.outlined(lock_hint, 5)
 	lock_hint.anchor_left = 0.0
 	lock_hint.anchor_right = 1.0

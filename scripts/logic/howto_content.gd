@@ -11,6 +11,7 @@ static func controls() -> String:
 		["Rueda del mouse", "Acercar / alejar la cámara."],
 		["Clic izquierdo en una unidad", "Elegir objetivo. Los enemigos tienen la barra roja."],
 		["Tab", "Cambiar al siguiente enemigo. [b]Esc[/b] suelta el objetivo o cancela un lanzamiento."],
+		["F · Shift + poder", "[b]F[/b] marca a tu objetivo como foco (anillo violeta). [b]Shift[/b] + la tecla de un poder lo lanza al foco sin cambiar de objetivo: controlá a uno (Polimorfia, Ceguera, Miedo) mientras le pegás al otro."],
 		["Clic derecho en un enemigo", "Elegirlo y, si tu clase tiene ataque automático, empezar a pegarle."],
 		["1  2  3  4  5  6  7", "Las siete habilidades de tu campeón (7 es la definitiva)."],
 		["Joystick", "Stick izquierdo: mover · derecho: mirar/apuntar. A: saltar/confirmar zona; X/Y/B: 1/2/3; cruceta arriba/derecha/abajo/izquierda: 4/5/6/7."],

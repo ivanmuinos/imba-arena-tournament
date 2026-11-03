@@ -360,9 +360,9 @@ func set_targeted(mode: String) -> void:
 	if mode == _target_mode:
 		return
 	_target_mode = mode
-	var c := Color("#5cff8a") if mode == "friend" else (Color("#ffffff") if mode == "hover" else Color("#ff2a2a"))
+	var c := Color("#5cff8a") if mode == "friend" else (Color("#ffffff") if mode == "hover" else (Color("#c77dff") if mode == "focus" else Color("#ff2a2a")))
 	_ring_mat.set_shader_parameter("ring_color", c)
-	_ring_mat.set_shader_parameter("intensity", 0.9 if mode == "hover" else 2.2)
+	_ring_mat.set_shader_parameter("intensity", 0.9 if mode == "hover" else (1.6 if mode == "focus" else 2.2))
 	_rim_mat.set_shader_parameter("rim_color", c)
 	_rim_mat.set_shader_parameter("strength", 0.9 if mode == "hover" else 2.4)
 	_target_ring.scale = Vector3.ONE * (1.0 if mode != "hover" else 0.8)
