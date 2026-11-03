@@ -161,7 +161,10 @@ func _ready() -> void:
 			{"name": "Ana", "team": "red", "cls": "mage", "dmg": 1480, "kills": 2, "deaths": 1, "heal": 0},
 			{"name": "Ignis", "team": "blue", "cls": "rogue", "dmg": 1120, "kills": 1, "deaths": 2, "heal": 0},
 			{"name": "Brasa", "team": "red", "cls": "priest", "dmg": 210, "kills": 0, "deaths": 1, "heal": 1650},
-			{"name": "Ceniza", "team": "blue", "cls": "warrior", "dmg": 900, "kills": 1, "deaths": 2, "heal": 0}], "JUGAR OTRA")
+			{"name": "Ceniza", "team": "blue", "cls": "warrior", "dmg": 900, "kills": 1, "deaths": 2, "heal": 0},
+			{"name": "Ascua", "team": "red", "cls": "hunter", "dmg": 1210, "kills": 1, "deaths": 0, "heal": 0},
+			{"name": "Vulcano", "team": "blue", "cls": "warlock", "dmg": 980, "kills": 0, "deaths": 2, "heal": 140}], "JUGAR OTRA")
+		_end.show_progress({"cls": "mage", "gain": 296, "level_before": 4, "level_after": 5, "xp": 120, "xp_next": 450, "first_win": true, "vs_bots": false})
 	elif args.has("lobby-demo"):  # visual check of the lobby
 		_show("lobby")
 		_lobby.show_lobby({"mode": 3, "map": "tomb", "diff": "normal", "you": 1, "host": 1, "members": [{"peer": 1, "pref": "red"}, {"peer": 2, "pref": "any"}],
@@ -555,13 +558,28 @@ func _on_match_finished(end: Dictionary, rows: Array) -> void:
 		_match = null
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var mine := ""
+	var my_cls := ""
 	if client != null:
 		for r in client.roster:
 			if r.id == client.unit_id:
 				mine = r.team
+				my_cls = str(r.cls)
 	_show("end")
 	_set_preview(last_cfg.get("map", "random"))
 	_end.show_result(end.winner == mine, end.score, rows, "JUGAR OTRA" if offline else "VOLVER A LA SALA")
+	_end.show_progress(_award_progress(end, mine, my_cls))
+
+
+## XP for your champion (Progress). Offline matches are against bots only: half XP.
+func _award_progress(end: Dictionary, team: String, cls: String) -> Dictionary:
+	if cls == "" or client == null:
+		return {}
+	var mine := {}
+	for s in end.get("stats", []):
+		if int(s.id) == client.unit_id:
+			mine = s
+	return ProgressStore.shared().award(cls, end.winner == team, float(mine.get("dmg", 0)), float(mine.get("heal", 0)), offline,
+		Time.get_date_string_from_system())
 
 
 func _again() -> void:
