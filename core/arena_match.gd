@@ -31,6 +31,12 @@ var fight_start := 0.0
 var round_n := 1
 var score := {"red": 0, "blue": 0}
 var done := false
+## Telemetry only (balance tools): rounds ended by the time limit, rounds ended without a winner, and, among limit
+## rounds that had a winner and teams of different total max HP, how many the higher-max-HP team won.
+var limit_rounds := 0
+var draw_rounds := 0
+var limit_decided := 0
+var limit_hi_hp_wins := 0
 ## Practice arena ("Arena de práctica", offline): one endless fight against training dummies, no rounds, no dampening, instant respawn.
 var practice := false
 ## Debug (`--god`, used by the real-input playtests): human players take no damage and cannot be crowd controlled,
@@ -167,6 +173,8 @@ func _end_round(winner: String, now: float) -> void:
 		return
 	if winner != "":
 		score[winner] += 1
+	else:
+		draw_rounds += 1
 	var over: bool = winner != "" and score[winner] >= C.ROUNDS_TO_WIN
 	phase = "over" if over else "between"
 	phase_ends_at = now + (OVER_MS if over else BETWEEN_MS)
@@ -1140,7 +1148,17 @@ func tick(now: float) -> void:
 		var hp := {"red": 0.0, "blue": 0.0}
 		for u in alive_units:
 			hp[u.team] += u.hp
-		_end_round("red" if hp.red > hp.blue + 1.0 else ("blue" if hp.blue > hp.red + 1.0 else ""), now)
+		var limit_winner: String = "red" if hp.red > hp.blue + 1.0 else ("blue" if hp.blue > hp.red + 1.0 else "")
+		limit_rounds += 1
+		if limit_winner != "":
+			var mx := {"red": 0.0, "blue": 0.0}
+			for u in units:
+				mx[u.team] += u.max_hp
+			if absf(mx.red - mx.blue) > 1.0:
+				limit_decided += 1
+				if (mx[limit_winner] > mx.red + mx.blue - mx[limit_winner]):
+					limit_hi_hp_wins += 1
+		_end_round(limit_winner, now)
 		return
 	if fighting:
 		for u in alive_units:

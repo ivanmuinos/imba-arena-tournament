@@ -34,6 +34,21 @@ func test_directional_blocks_use_defender_facing_and_skip_magic_dots_cc() -> voi
 	eq(m.block_chance(a, d, now, "strike"), 0.0, "non-warriors cannot shield block")
 
 
+func test_round_counters_track_time_limit_and_draws() -> void:
+	var m := _duel("warrior", "warrior")
+	eq(m.limit_rounds, 0, "no limit rounds at start")
+	eq(m.draw_rounds, 0, "no draws at start")
+	_advance(m, float(m.C.ROUND_LIMIT_MS) + 200.0)
+	eq(m.limit_rounds, 1, "stalled round counted at the limit")
+	eq(m.draw_rounds, 1, "equal health is a draw")
+	var h := _duel("warrior", "rogue")
+	_advance(h, float(h.C.ROUND_LIMIT_MS) + 200.0)
+	eq(h.limit_rounds, 1, "limit round counted")
+	eq(h.draw_rounds, 0, "unequal health is not a draw")
+	eq(h.limit_decided, 1, "limit round with a winner")
+	eq(h.limit_hi_hp_wins, 1, "higher max HP team wins the stalled round")
+
+
 func _match(entries: Array, map_id := "test", diff := "normal") -> ArenaMatch:
 	now = 1_000_000.0
 	return ArenaMatch.new(entries.size() / 2, entries, now, diff, map_id)

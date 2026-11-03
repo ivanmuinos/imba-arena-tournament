@@ -412,3 +412,108 @@ Tiempo medio hasta la primera baja (s), fila contra columna:
 
 
 Lectura (con la salvedad de que los bots no usan el desenganche ni huyen): el asesino domina los duelos 1v1 (75% al Mago Fuego, 92% a Escarcha, 100% al Brujo y al Guerrero) y sólo pierde contra el Cazador (33%) porque éste lo ve venir y lo ralentiza; en equipo, donde no puede elegir presa, queda en 54%. El Guerrero tarda mucho en caer (columna con los tiempos más largos, 27-48 s hasta la primera baja) pero tampoco mata rápido, y le gana a Escarcha y al Brujo (67%) pero pierde contra el asesino (17%). El Brujo les gana a los magos y al Cazador pero no al asesino (0%). El Cazador le gana a Escarcha y al Guerrero y pierde contra el Brujo. El Sacerdote pierde todos los duelos 1v1 (no tiene daño: está hecho para el 2v2 y el 3v3). En la tabla de tiempos, la columna del asesino es la más corta: es el que cae primero (14-23 s contra 28-47 s de los demás). El tiempo incluye el cruce desde las salas de inicio (unos 5 s), por eso no refleja el "4 a 6 s" de una trabada ya encima del objetivo: con la rotación completa sin crítico (Impacto desde sigilo, Evisceración y Puñaladas) el asesino mata a un Mago de Fuego en unos 9 s en la prueba de `tests/test_classes.gd`; con críticos y el aturdimiento, menos.
+
+## 2026-11-02: línea base 1v1 con métricas de límite de tiempo, empates y duelos sin terminar
+
+Estado del código: `balance/duel-metrics`. Ahora el simulador cuenta los duelos sin terminar (antes se descartaban en silencio), no suma 0 s al
+tiempo hasta la primera baja cuando no hubo ninguna, usa sólo clases jugables (`GameData.playable_ids()`, sin las deshabilitadas) e incluye
+el mapa `spire`. `ArenaMatch` suma contadores de telemetría (`limit_rounds`, `draw_rounds`, `limit_decided`, `limit_hi_hp_wins`) sin cambiar
+ninguna regla. Las tablas de arriba están desactualizadas respecto de esto: se midieron con otro conjunto de clases, sin `spire`, y la
+sección de números lista al guerrero con vida 440 cuando `data/classes.json` tiene 620 (vidas actuales: guerrero 620, brujo 570, cazador 560,
+sacerdote 480, mago Fuego 440 / Escarcha 480, asesino 380).
+
+Comandos (5 procesos en paralelo, uno por mapa: bridge, pillars, tomb, living, spire):
+
+```
+tools/duel_run.sh 20 baseline              # normal: N=20 por par ordenado y mapa = 100 duelos por par ordenado, 4900 en total
+tools/duel_run.sh 10 baseline_hard hard    # difícil: N=10 (reducido por tiempo) = 2450 duelos
+```
+
+N=20 tardó unos 10,5 min de reloj (633 s), corrido a la vez que la corrida difícil; ésa tardó 283 s con N=10. Los bots usan las mismas
+reglas que un humano, así que valen las salvedades de arriba. Largo medio = segundos de pelea sin prep ni pausas, sólo duelos terminados.
+La columna "gana más HP máx" cuenta, entre las rondas cortadas por el límite de 180 s con ganador y vida máxima total distinta, cuántas ganó
+el equipo de mayor vida máxima.
+
+### Normal, N=20
+
+| fila vs columna | hunter | mage-fire | mage-frost | priest | rogue | warlock | warrior |
+|---|---|---|---|---|---|---|---|
+| hunter | 55% | 54% | 98% | 100% | 78% | 27% | 64% |
+| mage-fire | 52% | 45% | 97% | 100% | 20% | 39% | 48% |
+| mage-frost | 1% | 2% | 44% | 92% | 4% | 1% | 4% |
+| priest | 0% | 0% | 5% | 51% | 0% | 0% | 0% |
+| rogue | 22% | 80% | 92% | 100% | 47% | 99% | 23% |
+| warlock | 84% | 66% | 96% | 100% | 2% | 51% | 10% |
+| warrior | 34% | 42% | 96% | 100% | 73% | 93% | 48% |
+
+Total: 4900 duelos, 0 sin terminar, 11132 rondas, 2.6% al límite, 0 empates, largo medio 107 s; límite decidido a favor de más HP máx: 53/63
+
+Win rate global por variante (sin espejo):
+
+| variante | win rate | duelos |
+|---|---|---|
+| hunter | 69.0% | 1200 |
+| mage-fire | 59.3% | 1200 |
+| mage-frost | 18.3% | 1200 |
+| priest | 1.1% | 1200 |
+| rogue | 69.9% | 1200 |
+| warlock | 58.2% | 1200 |
+| warrior | 74.1% | 1200 |
+
+Parejas con más rondas al límite (el resto tuvo 0 o 1 ronda al límite; la tabla completa sale del comando):
+
+| pareja | duelos | sin terminar | rondas | rondas al límite | empates | largo medio (s) | límite: gana más HP máx |
+|---|---|---|---|---|---|---|---|
+| hunter vs rogue | 200 | 0 | 472 | 2% (9) | 0 | 49 | 100% (9/9) |
+| mage-fire vs rogue | 200 | 0 | 488 | 2% (8) | 0 | 56 | 88% (7/8) |
+| mage-fire vs warrior | 200 | 0 | 513 | 4% (22) | 0 | 118 | 95% (21/22) |
+| mage-frost vs priest | 200 | 0 | 436 | 3% (13) | 0 | 243 | - |
+| mage-frost vs warrior | 200 | 0 | 438 | 3% (14) | 0 | 113 | 57% (8/14) |
+| priest vs priest | 100 | 0 | 250 | 84% (209) | 0 | 433 | - |
+
+### Difícil, N=10
+
+| fila vs columna | hunter | mage-fire | mage-frost | priest | rogue | warlock | warrior |
+|---|---|---|---|---|---|---|---|
+| hunter | 60% | 96% | 100% | 100% | 100% | 100% | 100% |
+| mage-fire | 0% | 40% | 100% | 100% | 48% | 98% | 98% |
+| mage-frost | 0% | 0% | 58% | 100% | 8% | 42% | 30% |
+| priest | 0% | 0% | 0% | 42% | 0% | 0% | 0% |
+| rogue | 0% | 50% | 82% | 100% | 42% | 100% | 14% |
+| warlock | 0% | 0% | 52% | 100% | 0% | 58% | 10% |
+| warrior | 0% | 2% | 70% | 100% | 90% | 90% | 60% |
+
+Total: 2450 duelos, 0 sin terminar, 5342 rondas, 1.5% al límite, 0 empates, largo medio 65 s; límite decidido a favor de más HP máx: 16/25
+
+| variante | win rate | duelos |
+|---|---|---|
+| hunter | 99.7% | 600 |
+| mage-fire | 74.7% | 600 |
+| mage-frost | 31.3% | 600 |
+| priest | 0.0% | 600 |
+| rogue | 58.3% | 600 |
+| warlock | 27.7% | 600 |
+| warrior | 58.3% | 600 |
+
+| pareja | duelos | sin terminar | rondas | rondas al límite | empates | largo medio (s) | límite: gana más HP máx |
+|---|---|---|---|---|---|---|---|
+| hunter vs rogue | 100 | 0 | 200 | 0% (1) | 0 | 14 | 100% (1/1) |
+| mage-fire vs rogue | 100 | 0 | 242 | 1% (3) | 0 | 41 | 67% (2/3) |
+| mage-fire vs warrior | 100 | 0 | 211 | 4% (9) | 0 | 66 | 78% (7/9) |
+| mage-frost vs priest | 100 | 0 | 200 | 0% (0) | 0 | 72 | - |
+| mage-frost vs warrior | 100 | 0 | 249 | 4% (10) | 0 | 114 | 40% (4/10) |
+| priest vs priest | 50 | 0 | 127 | 42% (53) | 0 | 392 | - |
+
+### Disparadores revisados (sin tocar balance)
+
+| Disparador | Resultado | ¿Dispara? |
+|---|---|---|
+| Pareja con >15% de rondas al límite o partida media >6 min | Normal: sacerdote vs sacerdote 84% al límite (209/250 rondas), 433 s de media. Difícil: 42% (53/127), 392 s. Ninguna otra pareja pasa de 4% ni de 243 s (Escarcha vs sacerdote). | Sí, sólo el espejo del sacerdote |
+| El de mayor vida máxima gana >60% de las decisiones al límite | Normal 53/63 (84%); difícil 16/25 (64%). Salen sobre todo de Fuego vs guerrero (21/22, 7/9) y Fuego vs asesino. Escarcha vs guerrero está en 57% (8/14) y 40% (4/10). | Sí (ojo: el que gana el límite es por definición el de más vida *restante*; mide correlación con la vida máxima, no causa) |
+| Bucle de rondas empatadas | 0 empates y 0 duelos sin terminar en ambas corridas (7350 duelos) | No |
+| Clase fuera de 35-65% global | Normal: guerrero 74,1%, asesino 69,9%, cazador 69,0% por arriba; Escarcha 18,3% y sacerdote 1,1% por abajo. Difícil: cazador 99,7%, Fuego 74,7%, Escarcha 31,3%, brujo 27,7%, sacerdote 0,0%. | Sí (ver tablas; el sacerdote pierde casi todos los duelos 1v1 en ambas dificultades) |
+
+Límites de la medición: el win rate global por variante promedia sobre las otras 6 variantes con peso igual, no sobre un mix de partidas real;
+la columna de límite tiene muestras chicas en la mayoría de las parejas (ver los conteos entre paréntesis); cada celda de la matriz tiene 100 duelos en normal
+(unos +/-10 puntos al 95%) y 50 en difícil (unos +/-14). Estos datos son de bots: no se debería decidir balance del
+modo 1v1 sólo con ellos.
