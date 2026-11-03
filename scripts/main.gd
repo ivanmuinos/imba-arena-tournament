@@ -464,7 +464,7 @@ func _start_practice(cfg: Dictionary, tutorial := false) -> void:
 ## (--tournament=). The champion, name and spec come from `cfg`.
 func _start_tournament(mode: int, tier_id: String, cfg: Dictionary, force := false) -> void:
 	var ts := TournamentSession.new(tstore, profile)
-	var resume := tstore.has_active_run() and int(tstore.run.mode) == mode and str(tstore.run.tier) == tier_id and str(tstore.run.player.cls) == str(cfg.cls)
+	var resume := not bool(cfg.get("fresh", false)) and tstore.has_active_run() and int(tstore.run.mode) == mode and str(tstore.run.tier) == tier_id and str(tstore.run.player.cls) == str(cfg.cls)
 	if not resume:
 		var player := {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", "")}
 		if force:  # --tournament=: ignore the lock

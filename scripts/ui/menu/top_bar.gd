@@ -13,7 +13,7 @@ signal quit_pressed
 const HEIGHT := 64.0
 ## Width of the profile card, which is also the width of the friends column under it.
 const SIDE := 280.0
-const TABS := [["hub", "Inicio"], ["champions", "Campeones"], ["howto", "Cómo jugar"]]
+const TABS := [["hub", "Inicio"], ["champions", "Campeones"], ["howto", "Cómo jugar"], ["tournament", "Torneo"]]
 
 var play: MButton
 var back: MButton

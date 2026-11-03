@@ -3,7 +3,7 @@ extends RefCounted
 ## Navigation state machine of the front end: a history stack of screens plus the "play flow"
 ## (which setup steps a game mode needs). Pure logic; MenuRoot turns it into animated screens.
 
-const SCREENS := ["splash", "hub", "play", "setup", "join", "champions", "settings", "howto"]
+const SCREENS := ["splash", "hub", "play", "setup", "join", "champions", "settings", "howto", "tournament"]
 const FLOWS := {
 	"practice": ["setup", "champions"],
 	"arena": ["champions"],

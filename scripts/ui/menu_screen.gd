@@ -79,7 +79,7 @@ func _ready() -> void:
 	_stage = Control.new()
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_stage)
-	for pair in [["splash", MSplash], ["hub", MHub], ["play", MPlay], ["setup", MSetup], ["join", MJoin], ["champions", MChampions], ["settings", MSettings], ["howto", MHowTo]]:
+	for pair in [["splash", MSplash], ["hub", MHub], ["play", MPlay], ["setup", MSetup], ["join", MJoin], ["champions", MChampions], ["settings", MSettings], ["howto", MHowTo], ["tournament", MTournament]]:
 		var v: MenuView = pair[1].new()
 		v.menu = self
 		_views[pair[0]] = v
@@ -189,6 +189,10 @@ func debug_goto(spec: String) -> void:
 			nav.go("play")
 		"howto":
 			nav.go("howto")
+		"tournament":
+			nav.go("tournament")
+			if parts.size() > 1:
+				(_views.tournament as MTournament).select_page(parts[1])
 		"setup", "champions", "join":
 			nav.go("play")
 			nav.start_flow("join" if id == "join" else "practice")
@@ -206,8 +210,26 @@ func debug_goto(spec: String) -> void:
 
 ## The tournament screen (after a cup ends on the end screen).
 func open_tournament() -> void:
-	if _views.has("tournament"):
-		go_tab("tournament")
+	go_tab("tournament")
+
+
+## A new cup with the saved champion. `fresh` replaces a run in progress of the same mode and tier.
+func start_tournament(mode: int, tier_id: String, fresh := false) -> void:
+	if _launching:
+		return
+	_launching = true
+	var cfg := _cfg().duplicate()
+	cfg["fresh"] = fresh
+	play_tournament.emit(mode, tier_id, cfg)
+	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
+
+
+func resume_tournament() -> void:
+	if _launching:
+		return
+	_launching = true
+	continue_tournament.emit()
+	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
 
 
 func set_steam_backend(b: SteamBackend) -> void:
@@ -367,7 +389,7 @@ func go_tab(screen: String) -> void:
 func active_tab(id: String) -> String:
 	if nav.mode != "" or id in ["play", "setup", "join"]:
 		return "play"
-	return id if id in ["hub", "champions", "howto"] else ""
+	return id if id in ["hub", "champions", "howto", "tournament"] else ""
 
 
 func _refresh_profile() -> void:

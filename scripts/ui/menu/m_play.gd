@@ -1,6 +1,6 @@
 class_name MPlay
 extends MenuView
-## "Jugar": big mode cards (practice / host / join / Steam).
+## "Jugar": big mode cards (vs bots / practice yard / host / join / tournament / Steam).
 
 var _cards := {}
 var _steam_panel: PanelContainer
@@ -16,16 +16,17 @@ func _ready() -> void:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(row)
 	var defs := [
-		["practice", "ui_sword", "Contra bots", "Peleá contra bots en cualquier arena. Sin conexión ni cuentas.", UiKit.LAVA],
+		["practice", "ui_sword", "Contra bots", "Peleá contra bots en cualquier arena, sin conexión.", UiKit.LAVA],
 		["arena", "ui_target", "Arena de práctica", "Muñecos y medidor de daño para practicar rotaciones.", UiKit.GREEN],
 		["host", "ui_people", "Crear partida", "Sos el anfitrión: tus amigos entran con tu IP y puerto.", UiKit.GOLD],
 		["join", "ui_globe", "Unirse", "Entrá a la partida de un amigo con su dirección.", UiKit.BLUE],
+		["tournament", "ui_star", "Torneo", "Copas de 8 equipos contra bots, desafíos y recompensas.", UiKit.GOLD],
 		["steam", "ui_steam", "Steam", "Salas por Steam: invitá o buscá partidas sin abrir puertos.", Color("#66c0f4")],
 	]
 	for d in defs:
 		var c := Card.new(d[1], d[2], d[3], d[4])
-		c.custom_minimum_size = Vector2(210, 330)
-		c.set_title_size(28)
+		c.custom_minimum_size = Vector2(176, 330)
+		c.set_title_size(24)
 		c.set_art_height(140)
 		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(c)
@@ -34,6 +35,7 @@ func _ready() -> void:
 	_cards.arena.pressed.connect(func(): menu.start_flow("arena"))
 	_cards.host.pressed.connect(func(): menu.start_flow("host"))
 	_cards.join.pressed.connect(func(): menu.start_flow("join"))
+	_cards.tournament.pressed.connect(func(): menu.go("tournament"))
 	_cards.steam.pressed.connect(_toggle_steam)
 	# Steam sub-options
 	_steam_panel = UiKit.glass(Color("#66c0f4"), 12, 14, 3.0, 0.7)
