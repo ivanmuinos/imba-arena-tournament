@@ -16,6 +16,18 @@ var targeted := false
 var _border := Color.TRANSPARENT
 
 
+## Small gold line under the plate (the local player's equipped title).
+func set_title(text: String) -> void:
+	if text == "":
+		return
+	var l := UiKit.label(text, 11, UiKit.GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	UiKit.outlined(l, 4)
+	l.position = Vector2(-20, 54)
+	l.size = Vector2(W + 40, 14)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(l)
+
+
 func setup(p_name: String, ally: bool, is_me: bool, team_color: Color) -> Nameplate:
 	_ally = ally
 	custom_minimum_size = Vector2(W, 44)

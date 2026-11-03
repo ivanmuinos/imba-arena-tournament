@@ -40,7 +40,12 @@
    "name": "Mago: Escarcha",
    "cls": "mage",
    "palette": "Escarcha",
-   "source": "challenge"
+   "source": "challenge",
+   "tint": {
+    "hue": -0.08,
+    "sat": -0.1,
+    "val": 0.3
+   }
   },
   {
    "id": "title_warrior",
@@ -61,7 +66,12 @@
    "name": "Guerrero: Acero negro",
    "cls": "warrior",
    "palette": "Acero negro",
-   "source": "challenge"
+   "source": "challenge",
+   "tint": {
+    "hue": 0.0,
+    "sat": -0.85,
+    "val": -0.5
+   }
   },
   {
    "id": "title_rogue",
@@ -82,7 +92,12 @@
    "name": "Asesino: Sombra violeta",
    "cls": "rogue",
    "palette": "Sombra violeta",
-   "source": "challenge"
+   "source": "challenge",
+   "tint": {
+    "hue": 0.2,
+    "sat": 0.15,
+    "val": -0.3
+   }
   },
   {
    "id": "title_hunter",
@@ -103,7 +118,12 @@
    "name": "Cazador: Bosque",
    "cls": "hunter",
    "palette": "Bosque",
-   "source": "challenge"
+   "source": "challenge",
+   "tint": {
+    "hue": -0.12,
+    "sat": 0.1,
+    "val": -0.2
+   }
   },
   {
    "id": "title_warlock",
@@ -124,7 +144,12 @@
    "name": "Brujo: Ascua verde",
    "cls": "warlock",
    "palette": "Ascua verde",
-   "source": "challenge"
+   "source": "challenge",
+   "tint": {
+    "hue": 0.2,
+    "sat": 0.5,
+    "val": 0.1
+   }
   },
   {
    "id": "title_priest",
@@ -145,7 +170,12 @@
    "name": "Sacerdote: Oro sagrado",
    "cls": "priest",
    "palette": "Oro sagrado",
-   "source": "challenge"
+   "source": "challenge",
+   "tint": {
+    "hue": 0.12,
+    "sat": 0.9,
+    "val": 0.05
+   }
   },
   {
    "id": "title_lv2",
@@ -166,7 +196,12 @@
    "name": "Mago: Medianoche",
    "cls": "mage",
    "palette": "Medianoche",
-   "source": "level"
+   "source": "level",
+   "tint": {
+    "hue": 0.06,
+    "sat": 0.0,
+    "val": -0.45
+   }
   },
   {
    "id": "title_lv5",
@@ -187,7 +222,12 @@
    "name": "Guerrero: Bronce",
    "cls": "warrior",
    "palette": "Bronce",
-   "source": "level"
+   "source": "level",
+   "tint": {
+    "hue": 0.07,
+    "sat": 0.35,
+    "val": -0.1
+   }
   },
   {
    "id": "title_lv8",
@@ -208,7 +248,12 @@
    "name": "Asesino: Carmesí",
    "cls": "rogue",
    "palette": "Carmesí",
-   "source": "level"
+   "source": "level",
+   "tint": {
+    "hue": 0.55,
+    "sat": 0.35,
+    "val": -0.1
+   }
   },
   {
    "id": "title_lv11",
@@ -229,7 +274,12 @@
    "name": "Cazador: Otoño",
    "cls": "hunter",
    "palette": "Otoño",
-   "source": "level"
+   "source": "level",
+   "tint": {
+    "hue": 0.1,
+    "sat": 0.3,
+    "val": 0.0
+   }
   },
   {
    "id": "title_lv14",
@@ -250,7 +300,12 @@
    "name": "Brujo: Abismo",
    "cls": "warlock",
    "palette": "Abismo",
-   "source": "level"
+   "source": "level",
+   "tint": {
+    "hue": -0.15,
+    "sat": 0.2,
+    "val": -0.5
+   }
   },
   {
    "id": "title_lv17",
@@ -271,7 +326,12 @@
    "name": "Sacerdote: Plata lunar",
    "cls": "priest",
    "palette": "Plata lunar",
-   "source": "level"
+   "source": "level",
+   "tint": {
+    "hue": 0.45,
+    "sat": -0.5,
+    "val": 0.2
+   }
   },
   {
    "id": "title_lv20",

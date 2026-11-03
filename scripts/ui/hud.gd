@@ -463,6 +463,8 @@ func setup(roster: Array, you: int, cls: String, team: String, spec := "") -> vo
 		(_frames_ally if r.team == team else _frames_enemy).add_child(f.root)
 		_frames[r.id] = f
 		var plate := Nameplate.new().setup(r.name, r.team == team, r.id == you, HP_ALLY if r.team == team else HP_ENEMY)
+		if r.id == you:
+			plate.set_title(Cosmetics.title())
 		plate.visible = false
 		_plate_layer.add_child(plate)
 		_plates[r.id] = plate

@@ -222,14 +222,15 @@ func set_active(id: String) -> void:
 
 
 ## Steam: its name (not editable) and "En línea"; without Steam the editable name and "Sin Steam".
-func set_profile(steam_name: String, saved_name: String, online: bool) -> void:
+func set_profile(steam_name: String, saved_name: String, online: bool, title := "") -> void:
 	persona.visible = steam_name != ""
 	name_edit.visible = steam_name == ""
 	persona.text = steam_name
 	if not name_edit.has_focus():
 		name_edit.text = saved_name
-	status.text = "En línea" if online else "Sin Steam"
-	status.add_theme_color_override("font_color", UiKit.GREEN if online else UiKit.DIM)
+	status.text = title if title != "" else ("En línea" if online else "Sin Steam")  # the dot already says online
+	status.clip_text = true
+	status.add_theme_color_override("font_color", UiKit.GOLD if title != "" else (UiKit.GREEN if online else UiKit.DIM))
 	_dot.add_theme_stylebox_override("panel", UiKit.box(UiKit.GREEN if online else UiKit.DIM, Color(0.035, 0.022, 0.018), 6, 2, 0))
 
 

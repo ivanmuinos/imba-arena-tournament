@@ -323,7 +323,7 @@ func _finish() -> void:
 		for s in end.stats:
 			if int(s.id) == r.id:
 				st = s
-		rows.append({"name": r.name, "team": r.team, "cls": r.cls, "dmg": int(st.get("dmg", 0)), "kills": int(st.get("kills", 0)), "deaths": int(st.get("deaths", 0)), "heal": int(st.get("heal", 0))})
+		rows.append({"name": r.name, "team": r.team, "cls": r.cls, "dmg": int(st.get("dmg", 0)), "kills": int(st.get("kills", 0)), "deaths": int(st.get("deaths", 0)), "heal": int(st.get("heal", 0)), "me": r.id == my_id})
 	audio.play("win" if end.winner == my_team else "lose")
 	finished.emit(end, rows)
 

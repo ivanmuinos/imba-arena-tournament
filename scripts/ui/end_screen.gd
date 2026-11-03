@@ -172,7 +172,10 @@ func show_result(win: bool, score: Dictionary, rows: Array, again_text: String, 
 			nr.add_child(star)
 			nr.add_child(UiKit.heading("MVP", 12, UiKit.GOLD, 700, 2))
 		tc.add_child(nr)
-		tc.add_child(UiKit.label(str(GameData.classes[r.cls].name), 12, UiKit.MUTED))
+		var sub_text := str(GameData.classes[r.cls].name)
+		if r.get("me", false) and Cosmetics.title() != "":
+			sub_text += " · " + Cosmetics.title()
+		tc.add_child(UiKit.label(sub_text, 12, UiKit.GOLD if r.get("me", false) and Cosmetics.title() != "" else UiKit.MUTED))
 		h.add_child(tc)
 		h.add_child(_bar_cell(int(r.dmg), top_dmg, UiKit.LAVA, 100))
 		h.add_child(_bar_cell(int(r.heal), top_heal, UiKit.GREEN, 90))

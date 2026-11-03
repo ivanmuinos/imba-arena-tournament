@@ -394,7 +394,7 @@ func active_tab(id: String) -> String:
 
 func _refresh_profile() -> void:
 	var online := steam_backend != null and steam_backend.available()
-	top_bar.set_profile(steam_backend.persona_name() if online else "", str(st.get_value("name")), online)
+	top_bar.set_profile(steam_backend.persona_name() if online else "", str(st.get_value("name")), online, Cosmetics.title())
 
 
 func _update_chrome(id: String) -> void:

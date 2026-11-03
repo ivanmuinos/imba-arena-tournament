@@ -114,7 +114,12 @@ static func _recolored(tex: Texture2D, key: String, rc: Dictionary) -> Texture2D
 	return t
 
 
-func _setup_kaykit(cls: String, team: Color) -> void:
+## Cache key of a recolored atlas: class, model file and the skin item ("" for the class's own colours).
+static func recolor_key(cls: String, file: String, skin: String) -> String:
+	return "%s_%s_%s" % [cls, file, skin]
+
+
+func _setup_kaykit(cls: String, team: Color, skin := "") -> void:
 	var def: Dictionary = KAYKIT[cls]
 	cls_id = cls
 	var scene := load("res://assets/third_party/kaykit/%s.glb" % def.file) as PackedScene
@@ -139,8 +144,9 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 			sm.roughness = 0.8
 			sm.metallic = 0.0
 			sm.albedo_color = Color(0.84, 0.84, 0.86)  # the atlas is bright; keeps white armour from clipping under strong ambient light
-			if def.has("recolor") and sm.albedo_texture != null:
-				sm.albedo_texture = _recolored(sm.albedo_texture, "%s_%s" % [cls, def.file], def.recolor)
+			var rc := Cosmetics.effective_recolor(def.get("recolor", {}), skin)
+			if not rc.is_empty() and sm.albedo_texture != null:  # a skin replaces the class recolor; the cape below keeps the team colour
+				sm.albedo_texture = _recolored(sm.albedo_texture, recolor_key(cls, str(def.file), skin), rc)
 			if nm.ends_with("Cape"):  # the cape carries the team colour
 				sm.albedo_texture = null
 				sm.albedo_color = team.darkened(0.15)
@@ -180,9 +186,10 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 	_build_tree()
 
 
-func setup(cls: String, team: Color) -> void:
+## `skin`: recolor item id equipped for this unit (local player only; "" for everyone else).
+func setup(cls: String, team: Color, skin := "") -> void:
 	if _kk_ok(cls):
-		_setup_kaykit(cls, team)
+		_setup_kaykit(cls, team, skin)
 		return
 	var scene := load("res://assets/models/%s.glb" % _glb(cls)) as PackedScene
 	root = scene.instantiate()

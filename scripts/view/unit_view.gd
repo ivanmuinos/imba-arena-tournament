@@ -72,7 +72,7 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 	var team: Color = TEAM_COLOR[entry.team]
 	if CharacterRig.available(entry.cls):
 		_rig = CharacterRig.new()
-		_rig.setup(entry.cls, team)
+		_rig.setup(entry.cls, team, Cosmetics.skin_for(str(entry.cls)) if is_me else "")
 		_body.add_child(_rig.root)
 		_body.scale = Vector3.ONE * VS
 		for p in _rig.parts:
@@ -137,7 +137,7 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 	_spikes.visible = false
 	add_child(_spikes)
 
-	_ring = _flat_ring(0.62, 0.8 if is_me else 0.72, Color("#ffd27a") if is_me else team, 0.85)
+	_ring = _flat_ring(0.62, 0.8 if is_me else 0.72, Cosmetics.ring_color(Color("#ffd27a")) if is_me else team, 0.85)
 	_ring.position.y = 0.1
 	add_child(_ring)
 	_target_ring = MeshInstance3D.new()

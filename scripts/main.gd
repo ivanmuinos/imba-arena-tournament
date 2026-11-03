@@ -96,6 +96,7 @@ func _ready() -> void:
 		return
 	profile = ProfileStore.new(_save_path("profile.json"))
 	tstore = TournamentStore.new(_save_path("tournament.json"))
+	Cosmetics.profile = profile
 	_ui.layer = 20
 	add_child(_ui)
 	CursorKit.refit(Vector2(get_window().size))
