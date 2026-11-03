@@ -222,7 +222,7 @@
      "members": [
       {
        "name": "Rey Ceniza",
-       "cls": "hunter"
+       "cls": "warrior"
       }
      ],
      "boss": "gold"
@@ -390,7 +390,7 @@
      "members": [
       {
        "name": "Tano",
-       "cls": "mage"
+       "cls": "rogue"
       },
       {
        "name": "Mica",

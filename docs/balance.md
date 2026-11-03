@@ -517,3 +517,88 @@ Límites de la medición: el win rate global por variante promedia sobre las otr
 la columna de límite tiene muestras chicas en la mayoría de las parejas (ver los conteos entre paréntesis); cada celda de la matriz tiene 100 duelos en normal
 (unos +/-10 puntos al 95%) y 50 en difícil (unos +/-14). Estos datos son de bots: no se debería decidir balance del
 modo 1v1 sólo con ellos.
+
+
+## 2026-11-02: calibración del torneo con un bot como jugador
+
+`tools/tournament_run.sh [partidas_por_celda] [skill_del_jugador] [semilla]` juega las partidas guionadas reales de `Tournament.next_match`
+(rival con el `skill`, vida y daño del nivel; aliados y rivales de `data/tournament.json`) con un bot en tu lugar y cuenta sus victorias por
+modalidad, nivel y ronda (cuartos, semifinal, final). Un proceso por nivel, 4 en paralelo. La clase del jugador rota entre las 6 jugables.
+"Copa estimada" es el producto de las tres rondas, contando la revancha gratis de Bronce y Plata sobre la ronda más floja.
+"Partida media" va desde que empieza hasta que termina la última ronda (sin los 7 s de la pantalla final) y "pelea media" cuenta solo el tiempo en `fight`.
+
+**Salvedad:** un bot no es una persona (no kitea, no coordina, no usa el terreno). Con `skill` 0,55 es un jugador flojo y con 0,85 uno fuerte, pero ninguno
+dice cuánto va a ganar alguien real: los porcentajes sirven para comparar niveles, rondas y modalidades entre sí. Con `N=12` el margen de error es de hasta +/-28 puntos por
+celda y con `N=20`, +/-22. Los 1v1 salen más bajos de lo esperable porque la rotación incluye al sacerdote, que contra bots pierde casi todos los duelos 1v1 (ver arriba).
+Las medidas no cambian nada de lo que `docs/balance.md` dice del balance de clases, y no se tocó `data/classes.json`.
+
+### Antes de ajustar: jugador con skill 0,55, N=20 por celda (720 partidas, semilla 1, 4:46 min)
+
+| modalidad | nivel | cuartos | semifinal | final | copa estimada | partida media (s) | pelea media (s) | sin terminar |
+|---|---|---|---|---|---|---|---|---|
+| 1v1 | bronze | 80% | 65% | 55% | 41% | 162 | 134 | 0 |
+| 1v1 | silver | 60% | 60% | 55% | 29% | 138 | 109 | 0 |
+| 1v1 | gold | 45% | 10% | 0% | 0% | 95 | 69 | 0 |
+| 1v1 | gladiator | 5% | 30% | 10% | 0% | 91 | 64 | 0 |
+| 2v2 | bronze | 65% | 80% | 100% | 70% | 221 | 195 | 0 |
+| 2v2 | silver | 70% | 35% | 70% | 28% | 257 | 228 | 0 |
+| 2v2 | gold | 5% | 30% | 0% | 0% | 141 | 115 | 0 |
+| 2v2 | gladiator | 5% | 5% | 0% | 0% | 119 | 92 | 0 |
+| 3v3 | bronze | 90% | 85% | 80% | 73% | 207 | 179 | 0 |
+| 3v3 | silver | 90% | 85% | 55% | 61% | 160 | 132 | 0 |
+| 3v3 | gold | 25% | 25% | 30% | 2% | 134 | 106 | 0 |
+| 3v3 | gladiator | 0% | 15% | 0% | 0% | 99 | 74 | 0 |
+
+### Antes de ajustar: jugador con skill 0,85, N=12 por celda (432 partidas, semilla 2, 2:34 min)
+
+| modalidad | nivel | cuartos | semifinal | final | copa estimada | partida media (s) | pelea media (s) | sin terminar |
+|---|---|---|---|---|---|---|---|---|
+| 1v1 | bronze | 75% | 67% | 50% | 38% | 122 | 95 | 0 |
+| 1v1 | silver | 75% | 83% | 58% | 52% | 129 | 103 | 0 |
+| 1v1 | gold | 42% | 25% | 0% | 0% | 87 | 59 | 0 |
+| 1v1 | gladiator | 33% | 8% | 17% | 0% | 70 | 45 | 0 |
+| 2v2 | bronze | 92% | 75% | 100% | 86% | 199 | 172 | 0 |
+| 2v2 | silver | 75% | 75% | 92% | 64% | 210 | 181 | 0 |
+| 2v2 | gold | 8% | 58% | 0% | 0% | 118 | 93 | 0 |
+| 2v2 | gladiator | 17% | 17% | 17% | 0% | 119 | 94 | 0 |
+| 3v3 | bronze | 100% | 100% | 92% | 99% | 168 | 143 | 0 |
+| 3v3 | silver | 83% | 75% | 75% | 59% | 155 | 127 | 0 |
+| 3v3 | gold | 42% | 42% | 50% | 9% | 117 | 90 | 0 |
+| 3v3 | gladiator | 8% | 17% | 8% | 0% | 107 | 80 | 0 |
+
+### Lo que se vio y lo que se cambió
+
+| Observación | Dato | Cambio |
+|---|---|---|
+| Final de Oro 1v1 imposible | 0/20 y 0/12 (skill 0,85 y 0,55) contra el jefe, y 0/20 en una repetición dedicada (skill 0,85, semilla 3). El jefe era un cazador (en la tabla de duelos en difícil gana 96-100% a las demás clases salvo el espejo). | Jefe de Oro 1v1 (Rey Ceniza): cazador a guerrero. Repetición dedicada, mismas semillas y N=20: final 0/20 a 8/20; cuartos 7/20 a 9/20 y semifinal 10/20 a 11/20 (sin cambios fuera del ruido). |
+| Final de Oro 2v2 casi imposible | 0/20 y 0/12 en las dos corridas generales, y 1/15 en la repetición dedicada (skill 0,85, semilla 3) con Los Imbatibles (mago + guerrero). | Probado con sacerdote + guerrero: final 11/15 (demasiado fácil, más que las rondas previas con 4/15). Probado con asesino + guerrero: final 6/15 (cuartos 4/15, semifinal 5/15). Se deja asesino + guerrero. |
+
+El resto de `data/tournament.json` no se tocó: Oro y Gladiador son claramente más duros que Bronce y Plata en las tres modalidades; Bronce y Plata quedan parecidos entre sí con estos N (la copa estimada de Plata 1v1 incluso sale más alta que la de Bronce en una de las corridas, dentro del margen), y no hay partidas sin terminar en ninguna celda.
+Gladiador queda muy por encima de lo que un bot logra (0-33% por ronda, copa estimada 0%); es opcional y con un bot de skill 0,85 no se lo puede juzgar, así que no se ajustó.
+
+### Después de ajustar: jugador con skill 0,85, N=12 por celda (432 partidas, semilla 4, 2:30 min)
+
+| modalidad | nivel | cuartos | semifinal | final | copa estimada | partida media (s) | pelea media (s) | sin terminar |
+|---|---|---|---|---|---|---|---|---|
+| 1v1 | bronze | 67% | 83% | 50% | 42% | 126 | 100 | 0 |
+| 1v1 | silver | 75% | 67% | 83% | 56% | 121 | 95 | 0 |
+| 1v1 | gold | 33% | 50% | 50% | 8% | 104 | 78 | 0 |
+| 1v1 | gladiator | 17% | 8% | 17% | 0% | 77 | 52 | 0 |
+| 2v2 | bronze | 100% | 83% | 100% | 97% | 192 | 165 | 0 |
+| 2v2 | silver | 100% | 83% | 67% | 74% | 217 | 189 | 0 |
+| 2v2 | gold | 33% | 25% | 50% | 4% | 128 | 102 | 0 |
+| 2v2 | gladiator | 8% | 0% | 17% | 0% | 104 | 79 | 0 |
+| 3v3 | bronze | 92% | 100% | 92% | 91% | 182 | 156 | 0 |
+| 3v3 | silver | 83% | 100% | 67% | 74% | 147 | 122 | 0 |
+| 3v3 | gold | 42% | 33% | 50% | 7% | 125 | 97 | 0 |
+| 3v3 | gladiator | 0% | 17% | 0% | 0% | 103 | 76 | 0 |
+
+Con el ajuste las finales de Oro quedan en 50% en las tres modalidades (antes 0%, 0% y 50%/30%), parejas con las rondas previas (25-50%).
+
+### Lo que no sale de estas medidas
+
+- Las victorias por partida que supone el plan (90/70/60/40%) son de personas: aquí un bot fuerte (skill 0,85) saca entre 38% y 99% de copa estimada en Bronce y entre 0% y 9% en Oro, y no hay forma de saber cuánto
+  se parece a un jugador real hasta la prueba con personas del plan.
+- Duración: las partidas simuladas duran 70-257 s de pelea y pausas (sin los 7 s finales), contra los 216 s (3,6 min) que supone el plan para las estimaciones de las 2 horas.
+  Un humano que kitea o se frustra puede tardar más; los 1v1 contra Bronce y Plata salieron de 121 a 162 s y los 2v2 de 192 a 257 s.
+- Tampoco se midió el efecto de la baja de `skill` por derrotas seguidas (0,05 hasta el piso), porque el simulador no juega rachas.
