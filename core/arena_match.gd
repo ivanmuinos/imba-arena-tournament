@@ -37,6 +37,11 @@ var limit_rounds := 0
 var draw_rounds := 0
 var limit_decided := 0
 var limit_hi_hp_wins := 0
+## Telemetry only: among limit rounds that had a winner by absolute health, how many a percent-of-max-health rule would have
+## decided for the other team (differs) or left tied (ties). Percent = current health of the living / max health of the whole team.
+var limit_pct_decided := 0
+var limit_pct_differs := 0
+var limit_pct_ties := 0
 ## Practice arena ("Arena de práctica", offline): one endless fight against training dummies, no rounds, no dampening, instant respawn.
 var practice := false
 ## Debug (`--god`, used by the real-input playtests): human players take no damage and cannot be crowd controlled,
@@ -1166,6 +1171,16 @@ func tick(now: float) -> void:
 		var limit_winner: String = "red" if hp.red > hp.blue + 1.0 else ("blue" if hp.blue > hp.red + 1.0 else "")
 		limit_rounds += 1
 		if limit_winner != "":
+			var team_max := {"red": 0.0, "blue": 0.0}
+			for u in units:
+				team_max[u.team] += u.max_hp
+			var pr: float = hp.red / maxf(team_max.red, 1.0)
+			var pb: float = hp.blue / maxf(team_max.blue, 1.0)
+			limit_pct_decided += 1
+			if absf(pr - pb) < 0.001:
+				limit_pct_ties += 1
+			elif ("red" if pr > pb else "blue") != limit_winner:
+				limit_pct_differs += 1
 			var mx := {"red": 0.0, "blue": 0.0}
 			for u in units:
 				mx[u.team] += u.max_hp

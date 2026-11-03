@@ -49,6 +49,21 @@ func test_round_counters_track_time_limit_and_draws() -> void:
 	eq(h.limit_hi_hp_wins, 1, "higher max HP team wins the stalled round")
 
 
+func test_limit_round_counters_compare_percent_and_absolute_health() -> void:
+	var m := _duel("warrior", "rogue")
+	m.units[0].hp = 372.0   # warrior 60% of 620: more absolute health than the rogue...
+	m.units[1].hp = 300.0   # ...but the rogue has 79% of 380
+	_advance(m, float(m.C.ROUND_LIMIT_MS) + 200.0)
+	eq(m.limit_pct_decided, 1, "the limit round had an absolute-health winner")
+	eq(m.limit_pct_differs, 1, "the percent-health winner is the other team")
+	eq(m.limit_pct_ties, 0, "no percent tie")
+	var t := _duel("warrior", "rogue")
+	_advance(t, float(t.C.ROUND_LIMIT_MS) + 200.0)
+	eq(t.limit_pct_decided, 1, "full health: the higher absolute total wins")
+	eq(t.limit_pct_ties, 1, "both at 100%: a percent tie")
+	eq(t.limit_pct_differs, 0, "a tie is not a difference")
+
+
 func _match(entries: Array, map_id := "test", diff := "normal") -> ArenaMatch:
 	now = 1_000_000.0
 	return ArenaMatch.new(entries.size() / 2, entries, now, diff, map_id)

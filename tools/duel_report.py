@@ -13,7 +13,7 @@ for f in glob.glob(d + "/*.json"):
     for k, (t, g) in j["ttk"].items():
         a = ttk.setdefault(k, [0.0, 0]); a[0] += t; a[1] += g
     for k, v in j.get("meta", {}).items():
-        a = meta.setdefault(k, [0] * 5 + [0.0] + [0] * 2)
+        a = meta.setdefault(k, [0] * 5 + [0.0] + [0] * 5)
         for i, x in enumerate(v): a[i] += x
 names = sorted({k.split("|")[0] for k in duel})
 print("| fila vs columna | " + " | ".join(names) + " |")
@@ -42,9 +42,9 @@ print("|---|---|---|---|---|---|---|---|")
 pairs = {}
 for k, v in meta.items():
     a, b = k.split("|")
-    t = pairs.setdefault(tuple(sorted((a, b))), [0] * 5 + [0.0] + [0] * 2)
+    t = pairs.setdefault(tuple(sorted((a, b))), [0] * 5 + [0.0] + [0] * 5)
     for i, x in enumerate(v): t[i] += x
-tot = [0] * 5 + [0.0] + [0] * 2
+tot = [0] * 5 + [0.0] + [0] * 5
 for (a, b), v in sorted(pairs.items()):
     for i, x in enumerate(v): tot[i] += x
     fin = v[0] - v[1]
@@ -55,6 +55,7 @@ for (a, b), v in sorted(pairs.items()):
 fin = tot[0] - tot[1]
 if tot[0]:
     print(f"\nTotal: {tot[0]} duelos, {tot[1]} sin terminar, {tot[2]} rondas, {100.0*tot[3]/max(tot[2],1):.1f}% al límite, {tot[4]} empates, largo medio {tot[5]/max(fin,1):.0f} s; límite decidido a favor de más HP máx: {tot[7]}/{tot[6]}")
+    print(f"Rondas al límite con ganador por HP absoluto: {tot[8]}; el ganador por % de HP sería el otro equipo en {tot[9]} y habría empate en {tot[10]}")
 print("\nWin rate global por variante (contra todas las demás, sin espejo):\n")
 print("| variante | win rate | duelos |")
 print("|---|---|---|")
