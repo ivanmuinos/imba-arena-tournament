@@ -558,6 +558,18 @@ func _on_frame_clicked(id: int) -> void:
 	_select(id)
 
 
+## F1 / F2 / F3: 0 = yourself (the healer's most needed target), 1.. = your allies in the party frames' order.
+func _select_party(i: int) -> void:
+	var ids := party_order(hud.ally_ids(), my_id)
+	if i < ids.size():
+		_select(ids[i])
+
+
+## You first, then your allies (roster order).
+static func party_order(team_ids: Array, me: int) -> Array:
+	return [me] + team_ids.filter(func(id): return id != me)
+
+
 func _select(id: int) -> void:
 	controller.select(id)
 	hud.set_friend(id if _team_of(id) == my_team else -1)
@@ -699,10 +711,7 @@ func _input(event: InputEvent) -> void:
 		"face":
 			_face_toward(controller.target)
 		"ally_0", "ally_1", "ally_2":
-			var ids := hud.ally_ids()
-			var i := int(action.trim_prefix("ally_"))
-			if i < ids.size():
-				_select(ids[i])
+			_select_party(int(action.trim_prefix("ally_")))
 
 
 ## A key binding's action (see Keybinds.ACTIONS).
@@ -712,11 +721,10 @@ func _do_action(action: String) -> void:
 	elif action.begins_with("macro_"):
 		if MacroStore.ENABLED:
 			run_macro(int(action.substr(6)) - 1)
+	elif action == "self":
+		_select_party(0)
 	elif action.begins_with("ally_"):
-		var ids := hud.ally_ids()
-		var i := int(action.substr(5)) - 1
-		if i < ids.size():
-			_select(ids[i])
+		_select_party(int(action.substr(5)))
 	else:
 		match action:
 			"trinket":
