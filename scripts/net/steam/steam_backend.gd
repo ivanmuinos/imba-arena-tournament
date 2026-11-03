@@ -18,6 +18,8 @@ signal leaderboard_uploaded(board: String, ok: bool)
 ## A friend changed name, state, game or rich presence: ask friends() again.
 signal friends_changed
 signal avatar_ready(steam_id: int, texture: Texture2D)
+## Result of request_web_auth_ticket: the ticket as lowercase hex ("" when ok is false).
+signal web_auth_ticket(ok: bool, ticket: String)
 ## A friend's private chat message (in-client chat; only friends get through).
 signal dm_received(from: int, text: String)
 
@@ -126,6 +128,12 @@ func request_top(_board: String, _start: int, _end: int) -> void:
 ## Just our own entry.
 func request_mine(_board: String) -> void:
 	pass
+
+
+## Asks Steam for a ticket the online backend can verify with the Steam Web API (ISteamUserAuth/AuthenticateUserTicket),
+## bound to `identity`; web_auth_ticket says when it is there. Without Steam it fails right away.
+func request_web_auth_ticket(_identity: String) -> void:
+	web_auth_ticket.emit(false, "")
 
 
 ## App id the client runs as (0 without Steam).

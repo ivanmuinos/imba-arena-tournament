@@ -365,6 +365,12 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+# auth-steam: the gateway still demands a valid apikey JWT (the anon key), the function then verifies the Steam ticket.
+[functions.auth-steam]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/auth-steam/index.ts"
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

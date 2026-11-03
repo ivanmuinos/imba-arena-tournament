@@ -134,6 +134,8 @@ func test_classify_covers_outages_and_paused_projects() -> void:
 	check(not jwt.get("unavailable", false), "no es caida")
 	var denied := OnlineApi.classify(HTTPRequest.RESULT_SUCCESS, 403, '{"code":"42501","message":"permission denied for table teams"}')
 	eq(denied.error, "forbidden", "403")
+	var coded := OnlineApi.classify(HTTPRequest.RESULT_SUCCESS, 403, '{"error":"ticket_rejected"}')
+	eq(coded.error, "ticket_rejected", "un 403 con codigo del servidor lo conserva")
 	var weird := OnlineApi.classify(HTTPRequest.RESULT_SUCCESS, 400, '{"message":"x y z <b>"}')
 	eq(weird.error, "error", "un mensaje que no es un codigo no se muestra tal cual")
 

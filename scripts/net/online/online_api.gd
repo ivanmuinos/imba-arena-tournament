@@ -12,6 +12,10 @@ signal availability_changed(available: bool)
 
 const TIMEOUT := 8.0
 const COOLDOWN := 30.0
+## What the Steam ticket is bound to (`identity` of GetAuthTicketForWebApi); auth-steam passes the same to Steam.
+const IDENTITY := "imba-arena-online"
+## The session is treated as over this long before the token really expires.
+const EXPIRY_MARGIN := 60.0
 
 var base_url := ""
 var anon_key := ""
@@ -20,6 +24,8 @@ var enabled := Online.ENABLED
 ## Session JWT from auth-steam and its expiry (unix seconds).
 var token := ""
 var token_expires := 0.0
+## Our Steam id, as text (it does not fit in a JSON double), once signed in.
+var steam_id := ""
 
 var _down_until := 0.0
 var _was_available := true
@@ -51,6 +57,26 @@ func available() -> bool:
 func sign_out() -> void:
 	token = ""
 	token_expires = 0.0
+	steam_id = ""
+
+
+## Trades a Steam web-API ticket (see SteamBackend.request_web_auth_ticket) for a session token via auth-steam.
+## cb gets the usual result; on success the session is stored. Errors from the server: "ticket_rejected",
+## "dev_login_disabled" (a dev ticket on a real server), "invalid_ticket", ...
+func sign_in(ticket: String, cb: Callable) -> void:
+	if ticket == "":
+		cb.call(_fail("no_ticket", false))
+		return
+	call_edge("auth-steam", {"ticket": ticket}, func(r: Dictionary):
+		if r.ok:
+			var d = r.data
+			if typeof(d) != TYPE_DICTIONARY or str(d.get("token", "")) == "" or str(d.get("steam_id", "")) == "":
+				r = _fail("bad_response", false)
+			else:
+				token = str(d.token)
+				token_expires = _now() + float(d.get("expires_in", 0)) - EXPIRY_MARGIN
+				steam_id = str(d.steam_id)
+		cb.call(r))
 
 
 ## Calls a Postgres function (security definer RPC) as the signed-in player.
@@ -127,7 +153,7 @@ static func classify(result: int, code: int, text: String) -> Dictionary:
 		err = "forbidden"
 	elif code == 429:
 		err = "rate_limited"
-	elif typeof(parsed) == TYPE_DICTIONARY:
+	if typeof(parsed) == TYPE_DICTIONARY:
 		for key in ["message", "error"]:
 			var m := str(parsed.get(key, ""))
 			if _is_code(m):
