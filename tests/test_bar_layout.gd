@@ -163,6 +163,29 @@ func test_the_hud_draws_the_arranged_order() -> void:
 		hud.free())
 
 
+func test_bind_mode_arranges_the_bar_by_dragging() -> void:
+	var hud := _hud()
+	var center := hud.rect_of("bar").get_center()
+	check(not hud.blocks_mouse(center), "fuera del modo teclas la barra no retiene el mouse")
+	eq(hud._bar_drag(Vector2.ZERO, 0), null, "fuera del modo teclas no se arrastra")
+	check(not hud._bar_can_drop(Vector2.ZERO, {"bar_slot": 0}, 4), "ni se suelta")
+	hud.set_binding(true)
+	check(hud.blocks_mouse(center), "en el modo teclas arrastrar no mueve la cámara")
+	var data = hud._bar_drag(Vector2.ZERO, 0)
+	check(hud._bar_can_drop(Vector2.ZERO, data, 4), "acepta soltar sobre otro botón")
+	check(not hud._bar_can_drop(Vector2.ZERO, "otra cosa", 4), "rechaza otros arrastres")
+	hud._bar_drop(Vector2.ZERO, data, 4)
+	eq(BarLayout.shared().order(KIT), [4, 1, 2, 3, 0], "intercambia y lo aplica al kit")
+	eq(BarLayout.new(BarLayout.shared().path).order(KIT), [4, 1, 2, 3, 0], "queda guardado")
+	hud._build_bar()
+	eq((hud._slots[4].key as Label).text, Keybinds.shared().slot_label(0), "la barra se redibuja en el orden nuevo")
+	eq((hud._slots[0].root as Control).modulate, Color(1.0, 0.9, 0.6), "sigue marcada como en modo teclas")
+	hud.set_binding(false)
+	BarLayout.shared().reset(KIT)
+	BarLayout.shared().save()
+	hud.free()
+
+
 func test_a_talent_swap_stays_on_the_arranged_button() -> void:
 	var swaps := 0
 	for cls in GameData.playable_ids():

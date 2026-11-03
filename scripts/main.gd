@@ -176,6 +176,7 @@ func _ready() -> void:
 	_show("menu")
 	_set_preview(_menu.selected_map())
 	if args.has("playtest"):  # real-input automated playtest (see scripts/dev/playtest.gd, tools/playtest.sh)
+		BarLayout._shared = BarLayout.new("user://playtest_bar_layouts_unused.json")  # real-input runs press the default keys
 		var pt: Playtest = (PracticePlaytest.new() if args.has("practice-test") else (TutorialPlaytest.new() if args.has("tutorial-test") else Playtest.new()))
 		add_child(pt)
 		pt.run.call_deferred(self, str(args.get("cls", "mage")), str(args.get("shot", "/tmp/playtest")), str(args.get("spec", "")))

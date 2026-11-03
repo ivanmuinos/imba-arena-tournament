@@ -131,6 +131,8 @@ func add_overlay(c: Control, top: float, margin := 12.0, from_right := true) -> 
 
 ## True when a screen position is over one of the interactive overlays (practice panel, tutorial card): the world ignores that click.
 func blocks_mouse(pos: Vector2) -> bool:
+	if _binding_on and _bar_frame.get_global_rect().has_point(pos):
+		return true  # keybinding mode: a drag on the bar arranges it, it does not turn the camera
 	for c in _overlays:
 		if is_instance_valid(c) and c.is_visible_in_tree() and Rect2(c.global_position, c.size * ui_scale).has_point(pos):
 			return true
@@ -590,6 +592,7 @@ func _build_bar() -> void:
 		slot.mouse_entered.connect(_show_ability_tip.bind(i))
 		slot.mouse_exited.connect(_ability_tip.hush)
 		_track_hover(slot, "slot_%d" % _bar_pos(i))
+		slot.set_drag_forwarding(_bar_drag.bind(i), _bar_can_drop.bind(i), _bar_drop.bind(i))
 		var charge := ColorRect.new()
 		charge.color = Color(1.0, 0.7, 0.2, 0.35)
 		charge.position = Vector2(2, 58)
@@ -637,11 +640,13 @@ func _build_bar() -> void:
 	_build_trinket(dim_tex)
 	_build_macro_bar()
 	refresh_keys()
+	_tint_for_binding()
 	_fit_bar()
 
 
 ## Keybinding mode and the hovered button: every bar button reports its action while the mouse is over it.
 var _hovered := ""
+var _binding_on := false
 var _binding_banner: Label = null
 var _macro_buttons: Array = []  # [{root, key, index}]
 var _macro_bar: HBoxContainer
@@ -677,10 +682,34 @@ func set_binding(on: bool) -> void:
 		_binding_banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
 		_binding_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_root.add_child(_binding_banner)
-	_binding_banner.text = "MODO TECLAS · pasá el mouse por un botón y apretá la tecla · Esc: sin tecla · %s: salir" % Keybinds.shared().label("bind_mode")
+	_binding_banner.text = "MODO TECLAS · pasá el mouse por un botón y apretá la tecla · arrastrá para ordenar · Esc: sin tecla · %s: salir" % Keybinds.shared().label("bind_mode")
 	_binding_banner.visible = on
+	_binding_on = on
+	_tint_for_binding()
+
+
+func _tint_for_binding() -> void:
 	for sl in _slots:
-		(sl.root as Control).modulate = Color(1.0, 0.9, 0.6) if on else Color.WHITE
+		(sl.root as Control).modulate = Color(1.0, 0.9, 0.6) if _binding_on else Color.WHITE
+
+
+func _bar_drag(_at: Vector2, slot: int) -> Variant:
+	if not _binding_on or slot >= _slots.size():
+		return null
+	(_slots[slot].root as Control).set_drag_preview(Icons.rect(str(_my_abilities()[slot].icon), 56))
+	return {"bar_slot": slot}
+
+
+func _bar_can_drop(_at: Vector2, data: Variant, _slot: int) -> bool:
+	return _binding_on and data is Dictionary and data.has("bar_slot")
+
+
+func _bar_drop(_at: Vector2, data: Variant, slot: int) -> void:
+	if BarLayout.shared().swap(_kit_key(), _bar_pos(int(data.bar_slot)), _bar_pos(slot)):
+		BarLayout.shared().save()
+		_hovered = ""
+		_ability_tip.hush()
+		_build_bar.call_deferred()  # not now: this frees the very button that is handling the drop
 
 
 ## Your macros as small buttons after the trinket (only the ones with text): click to run, rebind in keybinding mode.
