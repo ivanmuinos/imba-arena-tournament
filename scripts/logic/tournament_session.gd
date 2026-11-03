@@ -121,3 +121,8 @@ static func reward_lines(rec: Dictionary) -> Array:
 ## Profile record of a normal offline match against bots (practice must not call this).
 static func record_bot(profile: ProfileStore, cls: String, won: bool, stats: Dictionary) -> Dictionary:
 	return profile.record_match("bot", cls, won, stats)
+
+
+## Profile record of a finished queue match (XP and class stats only: account level never reaches matchmaking).
+static func record_online(profile: ProfileStore, cls: String, won: bool, stats: Dictionary) -> Dictionary:
+	return profile.record_match("online", cls, won, stats)

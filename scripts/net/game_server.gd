@@ -23,12 +23,19 @@ static func game_version() -> String:
 const MAX_MSGS_PER_SEC := 120
 ## A full ranked lobby starts after this short countdown (time to see who you got).
 const RANKED_START_MS := 4000.0
+## A lobby made by the normal queue: starts this long after everyone matched is in, or after QUEUE_WAIT_MS with bots
+## covering whoever never showed up.
+const QUEUE_START_MS := 4000.0
+const QUEUE_WAIT_MS := 45000.0
 const BASE_TIME := 1_000_000.0  # sim clock start; keeps "ms since" fields away from zero
 
 ## mode 2|3, diff, map, dedicated (no local host), autopilot (bots drive human units: demos),
 ## auto_start_ms (dedicated: wait this long after the first player, 0 = never).
 ## ranked: no bots, teams split by rating, starts by itself when full, settings fixed (see Ranked).
-var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0, "practice": false, "ranked": false, "scripted": []}
+## queue_sides {steam id text: "red"|"blue"} + queue_host (the host's steam id text): a lobby made by the normal queue.
+## The online backend chose host and sides; only those players enter, they are placed by Steam id (preferences and
+## settings changes are ignored), and it starts by itself (see QUEUE_START_MS).
+var cfg := {"mode": 2, "diff": "normal", "map": "random", "dedicated": false, "autopilot": false, "auto_start_ms": 10000.0, "practice": false, "ranked": false, "scripted": [], "queue_sides": {}, "queue_host": ""}
 var state := "lobby"  # lobby | match
 var game: ArenaMatch = null
 ## peer -> {name, cls, pref}
@@ -49,6 +56,9 @@ var _budget_timer := 0.0
 var _acc := 0.0
 var _tick_n := 0
 var _auto_timer := -1.0
+var _queue_wait := 0.0
+var _queue_count := 0.0
+var _queue_done := false
 var _step_ms: float
 
 
@@ -118,10 +128,33 @@ func process(delta_ms: float) -> void:
 				start_match(true)  # ranked: matchmade, the countdown replaces the Listo check
 		else:
 			_auto_timer = RANKED_START_MS
+	elif state == "lobby" and is_queue_lobby() and not _queue_done:
+		_queue_tick(delta_ms)
 	elif state == "lobby" and bool(cfg.dedicated) and cfg.auto_start_ms > 0.0 and not players.is_empty():
 		_auto_timer -= delta_ms
 		if _auto_timer <= 0.0 or players.size() >= int(cfg.mode) * 2:
 			start_match()
+
+
+## A lobby made by the normal queue (host and sides decided by the online backend).
+func is_queue_lobby() -> bool:
+	return not (cfg.queue_sides as Dictionary).is_empty()
+
+
+func _queue_tick(delta_ms: float) -> void:
+	if players.is_empty():
+		_queue_wait = 0.0
+		_queue_count = 0.0
+		return
+	_queue_wait += delta_ms
+	if players.size() >= (cfg.queue_sides as Dictionary).size():
+		_queue_count += delta_ms
+		if _queue_count >= QUEUE_START_MS:
+			start_match(true)
+	else:
+		_queue_count = 0.0
+		if _queue_wait >= QUEUE_WAIT_MS:
+			start_match(true)
 
 
 # ---------------------------------------------------------------- peers
@@ -238,6 +271,11 @@ func _on_hello(from: int, msg: Dictionary) -> void:
 	var sid := 0
 	if _route[from].has_method("steam_id_of"):
 		sid = _route[from].steam_id_of(from)  # players that arrive through Steam are identified by their SteamID
+	elif is_queue_lobby() and _hosts.has(_route[from]) and str(cfg.queue_host).is_valid_int():
+		sid = int(str(cfg.queue_host))  # the local host has no Steam transport: the queue told us who it is
+	if is_queue_lobby() and not (cfg.queue_sides as Dictionary).has(str(sid)):
+		_kick(from, "Esta sala es de una partida en cola: no estás entre los jugadores emparejados.")
+		return
 	var mmr := Ranked.clamp_mmr(int(msg.get("mmr", Ranked.START))) if typeof(msg.get("mmr")) in [TYPE_INT, TYPE_FLOAT] else Ranked.START
 	players[from] = {"name": _unique_name(n.name), "cls": n.cls, "spec": n.spec, "pref": n.pref, "sid": str(sid) if sid != 0 else "", "mmr": mmr, "ready": false}
 	_clear_ready()
@@ -280,8 +318,9 @@ func _on_set(from: int, msg: Dictionary) -> void:
 	var n := MatchConfig.normalize({"cls": msg.get("cls", p.cls), "spec": msg.get("spec", p.get("spec", "")), "pref": msg.get("pref", p.pref)})
 	p.cls = n.cls
 	p.spec = n.spec
-	p.pref = n.pref
-	if from == host_peer and not bool(cfg.ranked):
+	if not is_queue_lobby():
+		p.pref = n.pref  # in a queue lobby the backend chose the sides
+	if from == host_peer and not bool(cfg.ranked) and not is_queue_lobby():
 		var c := MatchConfig.normalize({"mode": msg.get("mode", cfg.mode), "diff": msg.get("diff", cfg.diff), "map": msg.get("map", cfg.map)})
 		if c.mode * 2 >= players.size():
 			cfg.mode = c.mode
@@ -335,7 +374,10 @@ func lobby_entries(rng: RandomNumberGenerator = null) -> Array:
 	var humans: Array = []
 	for peer in players:
 		var p: Dictionary = players[peer]
-		humans.append({"peer": peer, "name": p.name, "cls": p.cls, "spec": p.get("spec", ""), "pref": p.pref})
+		var pref: String = p.pref
+		if is_queue_lobby():
+			pref = str((cfg.queue_sides as Dictionary).get(str(p.get("sid", "")), "any"))
+		humans.append({"peer": peer, "name": p.name, "cls": p.cls, "spec": p.get("spec", ""), "pref": pref})
 	if not (cfg.scripted as Array).is_empty():  # tournament: fixed rivals with their own skill, HP and damage
 		return MatchConfig.scripted_entries(cfg.scripted, humans)
 	return MatchConfig.build_entries(int(cfg.mode), humans, rng)
@@ -412,6 +454,8 @@ func start_match(skip_ready := false) -> bool:
 			if u.peer != 0 and u.brain == null:
 				u.brain = BotBrain.new(cfg.diff)
 	state = "match"
+	if is_queue_lobby():
+		_queue_done = true  # one match per queue lobby
 	_acc = 0.0
 	_tick_n = 0
 	var roster := game.roster()

@@ -98,6 +98,11 @@ static func error_text(code: String) -> String:
 	return "Ocurrió un error inesperado."
 
 
+## What to report from the end message's winner: "red" or "blue", "" for anything else (nothing is sent then).
+static func winner_to_report(winner: String) -> String:
+	return winner if winner == "red" or winner == "blue" else ""
+
+
 func in_group() -> bool:
 	return not group.is_empty()
 
