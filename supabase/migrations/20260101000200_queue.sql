@@ -8,7 +8,8 @@
 --     The accepted skill gap widens with the wait like Ranked.window (200 + 10 per second, at most 800).
 --   * Pairing locks tickets (`for update` on the caller's ticket, `skip locked` on candidates) so two concurrent polls can
 --     never use the same ticket twice; a partial unique index on active match players is the backstop.
---   * A ticket expires 20 s after any of its members stops polling `queue_status`.
+--   * A ticket expires 20 s after any of its members stops polling `queue_status`; a matched player who stays silent for
+--     two minutes (client closed mid-match) is released without any penalty.
 --   * Results: every player may report the winning side once. The match resolves only when BOTH sides reported and all
 --     reports agree; then the hidden skill changes (same formula as Ranked.delta). If reports disagree, or one side
 --     never reports within 30 minutes, nothing changes. No disputes and no penalty for leaving.
@@ -191,6 +192,16 @@ begin
                  where status = 'open' and created_at < now() - interval '30 minutes' for update skip locked);
   update public.online_match_players set active = false
    where active and match_id in (select id from public.online_matches where status <> 'open');
+  -- a matched player keeps polling during the match; two minutes of silence means the client is gone (closed mid-match):
+  -- release them (no report, no penalty) so they can search again, and keep the match for the others.
+  with gone as (
+    delete from public.ticket_members m using public.queue_tickets t
+     where m.ticket_id = t.id and t.status = 'matched' and m.last_poll < now() - interval '2 minutes'
+    returning m.steam_id)
+  update public.online_match_players set active = false
+   where active and steam_id in (select steam_id from gone);
+  delete from public.queue_tickets t
+   where t.status = 'matched' and not exists (select 1 from public.ticket_members m where m.ticket_id = t.id);
   delete from public.queue_tickets
    where status = 'matched' and (created_at < now() - interval '2 hours'
       or match_id in (select id from public.online_matches where status <> 'open'));

@@ -36,7 +36,7 @@ create function t.age(p_id bigint, p_secs int) returns void language sql securit
   update public.queue_tickets set created_at = created_at - make_interval(secs => p_secs)
    where id = (select ticket_id from public.ticket_members where steam_id = p_id) $$;
 create function t.stale(p_id bigint) returns void language sql security definer set search_path = '' as $$
-  update public.ticket_members set last_poll = now() - interval '2 minutes' where steam_id = p_id $$;
+  update public.ticket_members set last_poll = now() - interval '3 minutes' where steam_id = p_id $$;
 create function t.skill(p_id bigint, p_mode int) returns int language sql security definer set search_path = '' as $$
   select skill from public.player_skill where steam_id = p_id and mode = p_mode $$;
 create function t.games(p_id bigint, p_mode int) returns int language sql security definer set search_path = '' as $$
@@ -305,6 +305,22 @@ select is(t.state(8002), 'idle', 'el que se fue puede volver a buscar');
 select t.act(8001);
 select public.report_result(t.mid(), 'red');
 select is(t.skill(8001, 1), 1500, 'un solo lado: sin cambios');
+select public.leave_queue();
+select t.clear_rate();
+
+-- a matched player whose client closed mid-match (stops polling) is released after two minutes; the other keeps the match
+select t.act(8001);
+select public.join_queue(1, '0.7.0');
+select t.act(8002);
+select public.join_queue(1, '0.7.0');
+select isnt(t.match_of(8001), null, 'otra partida 1v1 para el cierre a mitad de partida');
+select t.stale(8001);
+select is(t.state(8002), 'matched', 'el que sigue consultando mantiene su partida');
+select is(t.match_of(8001), null, 'el que dejo de consultar queda libre');
+select t.act(8001);
+select lives_ok($$select public.join_queue(1, '0.7.0')$$, 'y puede volver a buscar');
+select public.leave_queue();
+select t.act(8002);
 select public.leave_queue();
 select t.clear_rate();
 
