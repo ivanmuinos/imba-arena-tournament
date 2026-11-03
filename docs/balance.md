@@ -412,3 +412,16 @@ Tiempo medio hasta la primera baja (s), fila contra columna:
 
 
 Lectura (con la salvedad de que los bots no usan el desenganche ni huyen): el asesino domina los duelos 1v1 (75% al Mago Fuego, 92% a Escarcha, 100% al Brujo y al Guerrero) y sólo pierde contra el Cazador (33%) porque éste lo ve venir y lo ralentiza; en equipo, donde no puede elegir presa, queda en 54%. El Guerrero tarda mucho en caer (columna con los tiempos más largos, 27-48 s hasta la primera baja) pero tampoco mata rápido, y le gana a Escarcha y al Brujo (67%) pero pierde contra el asesino (17%). El Brujo les gana a los magos y al Cazador pero no al asesino (0%). El Cazador le gana a Escarcha y al Guerrero y pierde contra el Brujo. El Sacerdote pierde todos los duelos 1v1 (no tiene daño: está hecho para el 2v2 y el 3v3). En la tabla de tiempos, la columna del asesino es la más corta: es el que cae primero (14-23 s contra 28-47 s de los demás). El tiempo incluye el cruce desde las salas de inicio (unos 5 s), por eso no refleja el "4 a 6 s" de una trabada ya encima del objetivo: con la rotación completa sin crítico (Impacto desde sigilo, Evisceración y Puñaladas) el asesino mata a un Mago de Fuego en unos 9 s en la prueba de `tests/test_classes.gd`; con críticos y el aturdimiento, menos.
+
+## Talentos, versión 1 (fase 2)
+
+`godot --headless --path . --script res://tools/balance_sim.gd -- --talent-eval --n=8 --maps=<mapa> --kit=<kit> [--only=id1,id2]`: cada kit con cada talento, de a uno, contra todos los kits sin talentos, en duelo. Se mira cuántos puntos de victoria mueve el talento respecto del mismo kit sin talentos (meta: menos de 5).
+
+Hicieron falta cuatro corridas (224 a 336 duelos por talento). El ruido es de unos ±4 puntos: el kit base del cazador, sin ningún cambio, dio 19,6% en una corrida y 28,1% en otra. Solo se corrigió lo que se desviaba en más de una corrida.
+
+- **1.ª corrida:** las mejoras numéricas sumaban de +5 a +17 puntos. Se bajaron más o menos a la mitad (por ejemplo, daño +20% → +8%, quemadura ×1,5 → ×1,25, recarga de Lanza de hielo ×0,6 → ×0,8).
+- **Cambios por la reserva:** sacar el poder de daño hundía el kit (Patada en lugar de Eviscerar: −45; Zurrar en lugar de Golpe mortal: −16). Patada ahora reemplaza a Ceguera y Zurrar a Seccionar.
+- **Compensaciones:** Renovar cura ×2 cuando entra por el Escudo divino. Zurrar recarga ×0,7 y suma Golpe mortal +12%. El Contrahechizo de Rompehechizos recarga ×1,7.
+- **Pendientes:** Rompehechizos queda en +7 y Zurrar en −8, en duelos de bots. El Contrahechizo rinde porque saca la Piroexplosión, que con 1,8 s de lanzamiento los bots se dejan interrumpir. A Zurrar le falta el ralentizar de Seccionar. Los dos son talentos de situación, y hay que mirarlos en 2v2 y 3v3 antes de tocarlos más.
+
+Todas las demás opciones quedan dentro de ±5 puntos de su kit base.

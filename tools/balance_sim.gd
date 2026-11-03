@@ -98,7 +98,7 @@ func _add(stats: Dictionary, key: String, won: bool) -> void:
 
 ## Talents (--talent-eval): every kit with no talent and with each single talent duels every other kit (base, no
 ## talents), `n` per map. RESULT JSON {"talent": {"kit|pick": [wins, games]}} where pick is "base" or "<row>:<i>:<id>".
-## A talent's effect is its win rate minus the kit's base win rate (meta: under 5 points).
+## A talent's effect is its win rate minus the kit's base win rate (meta: under 5 points). --only=id1,id2 limits the talents.
 func _talent_eval(args: Dictionary, rng: RandomNumberGenerator) -> void:
 	var variants: Array = []
 	for c in GameData.playable_ids():
@@ -106,6 +106,7 @@ func _talent_eval(args: Dictionary, rng: RandomNumberGenerator) -> void:
 		for s in (sp if not sp.is_empty() else [""]):
 			variants.append([c, s])
 	var only := str(args.get("kit", ""))
+	var only_ids: Array = str(args.get("only", "")).split(",", false)  # --only=id1,id2: just these talents (and the base)
 	var out := {}
 	for a in variants:
 		var kit := Talents.key(a[0], a[1])
@@ -115,6 +116,8 @@ func _talent_eval(args: Dictionary, rng: RandomNumberGenerator) -> void:
 		var rows := Talents.rows(a[0], a[1])
 		for row in rows.size():
 			for i in (rows[row] as Array).size():
+				if not only_ids.is_empty() and not only_ids.has(str(rows[row][i].id)):
+					continue
 				var p := [-1, -1]
 				p[row] = i
 				picks.append(["%d:%d:%s" % [row, i, rows[row][i].id], p])

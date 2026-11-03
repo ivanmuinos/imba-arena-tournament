@@ -11,6 +11,11 @@ func _split(k: String) -> Array:
 	return [p[0], p[1] if p.size() > 1 else ""]
 
 
+## Value of the first effect of a talent (the numbers live in data/talents.json and get tuned).
+func _val(cls: String, spec: String, row: int, i: int) -> float:
+	return float(Talents.talent(cls, spec, row, i).effects[0].value)
+
+
 # ---------------------------------------------------------------- data
 
 func test_every_playable_kit_has_two_rows_of_three() -> void:
@@ -38,6 +43,7 @@ func test_every_effect_points_at_something_real() -> void:
 				check(str(t.get("name", "")) != "", "%s sin nombre" % t.id)
 				check(Talents.icon(cs[0], cs[1], t) != "", "%s sin ícono" % t.id)
 				check(Talents.describe(cs[0], cs[1], t) != "", "%s sin descripción" % t.id)
+				var swapped_in: Array = t.effects.filter(func(x): return x.op == "swap").map(func(x): return x.to)
 				for e in t.effects:
 					match str(e.op):
 						"swap":
@@ -46,7 +52,7 @@ func test_every_effect_points_at_something_real() -> void:
 						"mul", "add":
 							check(FIELDS.has(e.field) or (not e.has("ability") and e.field == "crit"), "%s: campo %s" % [t.id, e.field])
 							if e.has("ability"):
-								check(kit_ids.has(e.ability), "%s: %s no está en el kit" % [t.id, e.ability])
+								check(kit_ids.has(e.ability) or swapped_in.has(e.ability), "%s: %s no está en el kit" % [t.id, e.ability])
 								check(GameData.find_ability(cs[0], e.ability, cs[1]).has(e.field), "%s: %s no tiene %s" % [t.id, e.ability, e.field])
 						_:
 							check(false, "%s: operación %s" % [t.id, e.op])
@@ -57,7 +63,7 @@ func test_every_effect_points_at_something_real() -> void:
 func test_apply_changes_numbers_and_never_the_data() -> void:
 	var base: float = GameData.find_ability("mage", "fireball", "fire").burnDps
 	var k := Talents.kit("mage", "fire", [0, -1])
-	near(float(k.abilities[0].burnDps), base * 1.5, 0.001, "Brasas: quemadura ×1,5")
+	near(float(k.abilities[0].burnDps), base * _val("mage", "fire", 0, 0), 0.001, "Brasas: más quemadura")
 	eq(float(GameData.find_ability("mage", "fireball", "fire").burnDps), base, "GameData queda igual")
 	eq(float(GameData.kit("mage", "fire").abilities[0].burnDps), base, "un kit nuevo no trae el talento")
 	eq(Talents.kit("mage", "fire", []).abilities[0].burnDps, base, "sin talentos, el kit base")
@@ -69,11 +75,12 @@ func test_swap_puts_the_reserve_ability_on_the_same_slot() -> void:
 	var p := Talents.kit("priest", "", [-1, 2])
 	eq(str(p.abilities[3].id), "renew", "Escudo divino → Renovar")
 	eq(str(GameData.ability("priest", 3).id), "pwshield", "el kit base no cambia")
+	near(float(p.abilities[3].heal), float(GameData.find_ability("priest", "renew").heal) * float(Talents.talent("priest", "", 1, 2).effects[1].value), 0.001, "el número se aplica a la habilidad que entró")
 
 
 func test_kit_level_talent_adds_crit() -> void:
 	var k := Talents.kit("rogue", "", [2, -1])
-	near(float(k.get("crit", 0.0)), float(GameData.kit("rogue").get("crit", 0.0)) + 0.05, 0.0001, "+5% de crítico")
+	near(float(k.get("crit", 0.0)), float(GameData.kit("rogue").get("crit", 0.0)) + _val("rogue", "", 0, 2), 0.0001, "más crítico")
 
 
 func test_normalize_drops_anything_invalid() -> void:
@@ -95,7 +102,7 @@ func test_match_units_get_their_talents() -> void:
 	var m := _match([{"name": "A", "cls": "mage", "spec": "fire", "team": "red", "peer": 1, "talents": [1, 2]},
 		{"name": "B", "cls": "warrior", "spec": "", "team": "blue", "peer": 2}])
 	var a: ArenaUnit = m.units[0]
-	near(float(a.ability(0).dmg), float(GameData.find_ability("mage", "fireball", "fire").dmg) * 1.12, 0.001, "daño de la Bola de fuego")
+	near(float(a.ability(0).dmg), float(GameData.find_ability("mage", "fireball", "fire").dmg) * _val("mage", "fire", 0, 1), 0.001, "daño de la Bola de fuego")
 	eq(str(a.ability(1).id), "counter", "Contrahechizo en el casillero 1")
 	eq(m.roster()[0].get("talents", []), [1, 2], "el roster lleva los talentos")
 	check(not m.roster()[1].has("talents"), "sin talentos no se manda nada")
@@ -105,7 +112,7 @@ func test_talented_cooldown_is_what_the_server_uses() -> void:
 	var m := _match([{"name": "A", "cls": "hunter", "spec": "", "team": "red", "peer": 1, "talents": [1, -1]},
 		{"name": "B", "cls": "warrior", "spec": "", "team": "blue", "peer": 2}])
 	var a: ArenaUnit = m.units[0]
-	near(float(a.ability(0).cd), float(GameData.ability("hunter", 0).cd) * 0.85, 0.001, "Tiro rápido")
+	near(float(a.ability(0).cd), float(GameData.ability("hunter", 0).cd) * _val("hunter", "", 0, 1), 0.001, "Tiro rápido")
 
 
 func test_trap_freeze_comes_from_the_owner_kit() -> void:
