@@ -33,6 +33,12 @@ check "arena de práctica con entradas simuladas" "$out"
 echo "$out" | grep -q "snapshot #1 " || { echo "✗ la arena de práctica no produjo snapshots"; fail=1; }
 out=$(limit 90 godot --headless --path . --quit-after 2500 -- --practice=tutorial --drive --cls=warrior --log 2>&1)
 check "tutorial con entradas simuladas" "$out"
+rm -rf /tmp/magma_smoke_save; mkdir -p /tmp/magma_smoke_save
+out=$(limit 120 godot --headless --path . --quit-after 6000 -- --tournament=1:bronze --save-dir=/tmp/magma_smoke_save --autopilot --time-scale=8 --rounds=1 --cls=mage --log 2>&1)
+check "torneo 1v1 Bronce (partida guionada hasta el final)" "$out"
+echo "$out" | grep -q "fin de partida" || { echo "✗ el torneo no terminó la partida"; fail=1; }
+grep -q '"history":\[{' /tmp/magma_smoke_save/tournament.json 2>/dev/null || { echo "✗ el torneo no registró el resultado"; fail=1; }
+grep -q '"xp":' /tmp/magma_smoke_save/profile.json 2>/dev/null || { echo "✗ el perfil no recibió la partida"; fail=1; }
 (limit 45 godot --headless --path . -- --server --port=7791 --wait=2 --autopilot > /tmp/magma_smoke_server.txt 2>&1 &)
 sleep 3
 out=$(limit 40 godot --headless --path . --quit-after 1200 -- --join=127.0.0.1:7791 --name=Smoke --log 2>&1)

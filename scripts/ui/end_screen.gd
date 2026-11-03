@@ -10,6 +10,8 @@ var _score: RichTextLabel
 var _teams := {}
 var _again: MButton
 var _mvp := ""
+var _extra: PanelContainer
+var _extra_text: Label
 
 
 func _ready() -> void:
@@ -57,6 +59,15 @@ func _ready() -> void:
 	_again.custom_minimum_size = Vector2(340, 66)
 	_again.pressed.connect(func(): again_pressed.emit())
 	stage.add_child(_again)
+	_extra = UiKit.glass(UiKit.LINE_STRONG, 12, 12, 3.0, 0.8)
+	_extra.position = Vector2(680, 540)
+	_extra.custom_minimum_size = Vector2(528, 0)
+	_extra.visible = false
+	_extra_text = UiKit.label("", 16, UiKit.INK)
+	_extra_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_extra_text.custom_minimum_size = Vector2(500, 0)
+	_extra.add_child(_extra_text)
+	stage.add_child(_extra)
 	var menu := MButton.new("Menú principal", "secondary", "ui_back")
 	menu.position = Vector2(428, 628)
 	menu.size = Vector2(230, 50)
@@ -107,8 +118,13 @@ func _num_cell(value: int, width: int, color: Color) -> Control:
 	return l
 
 
-## rows: [{name, team, cls, dmg, kills, deaths, heal}]
-func show_result(win: bool, score: Dictionary, rows: Array, again_text: String) -> void:
+## rows: [{name, team, cls, dmg, kills, deaths, heal}]. extra.lines (optional): what the match earned or what comes
+## next (cup progress, next rival, XP, level, rewards), one line each.
+func show_result(win: bool, score: Dictionary, rows: Array, again_text: String, extra := {}) -> void:
+	var lines: Array = extra.get("lines", [])
+	_extra.visible = not lines.is_empty()
+	_extra_text.text = "\n".join(lines)
+	_extra.reset_size()
 	_title.text = "VICTORIA" if win else "DERROTA"
 	var m := _title.material as ShaderMaterial
 	if m != null:

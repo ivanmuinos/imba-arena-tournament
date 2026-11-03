@@ -17,6 +17,9 @@ signal steam_browse
 signal steam_changed
 ## "Unirse" on a friend in the home's social panel: enter their Steam lobby.
 signal steam_join(lobby_id: int)
+## A cup from the tournament screen: new run (mode 1-3, tier id, match config) or continue the one in progress.
+signal play_tournament(mode: int, tier_id: String, cfg: Dictionary)
+signal continue_tournament
 ## The splash/hub asks for the 3D backdrop mood: "splash" (cinematic flythrough) or "hub".
 signal backdrop_requested(kind: String)
 
@@ -24,6 +27,9 @@ const DESIGN := Vector2(1280, 720)
 const SLIDE := 64.0
 
 var st: SettingsStore
+## Progress files (main.gd hands them over before the menu enters the tree; defaults for tests and tools).
+var profile: ProfileStore
+var tstore: TournamentStore
 var nav := MenuNav.new()
 var status: Label
 var steam_ok := false
@@ -54,6 +60,10 @@ var _status_tw: Tween
 func _ready() -> void:
 	theme = UiKit.theme()
 	st = SettingsStore.shared()
+	if profile == null:
+		profile = ProfileStore.new()
+	if tstore == null:
+		tstore = TournamentStore.new()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(UiKit.backdrop())
@@ -192,6 +202,12 @@ func debug_goto(spec: String) -> void:
 	_booted = true
 	_present(nav.current, 1, true)
 	backdrop_requested.emit("splash" if id == "splash" else "hub")
+
+
+## The tournament screen (after a cup ends on the end screen).
+func open_tournament() -> void:
+	if _views.has("tournament"):
+		go_tab("tournament")
 
 
 func set_steam_backend(b: SteamBackend) -> void:

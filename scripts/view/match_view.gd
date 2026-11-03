@@ -7,6 +7,8 @@ signal finished(end_msg: Dictionary, rows: Array)
 ## Practice arena / tutorial: the side panel asked to switch champion or to leave; and what the player just did (see TutorialFlow).
 signal practice_switch(cls: String, spec: String)
 signal leave_requested
+## The local player confirmed "Rendirse" (offline and tournament matches only).
+signal forfeit_requested
 signal gameplay_event(name: String)
 
 const PICK_MIN_RADIUS := 22.0  # px: far-away units stay clickable

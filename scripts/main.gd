@@ -7,6 +7,9 @@ extends Node
 ##   --server [--port=7777] [--mode=1|2|3] [--map=magma|moon] [--diff=easy|normal|hard] [--wait=SEC]
 ##   --offline | --host | --join=IP[:PORT]   skip the menu   (+ --name= --cls= --team= --mode= --map= --diff=)
 ##   --practice[=tutorial]   the training yard (or the guided tutorial in it)
+##   --tournament=<mode>:<tier>   start a cup offline (mode 1-3, tier bronze|silver|gold|gladiator; resumes a run in progress
+##                       of the same mode and tier); unlocks are ignored here (smoke tests, screenshots)
+##   --save-dir=PATH    keep tournament.json and profile.json in this folder instead of user:// (smoke tests)
 ##   --god              (playtests) human players take no damage and cannot be crowd controlled
 ##   --autopilot        bots drive the human units too (demos, smoke tests)
 ##   --target           keep an enemy selected (screenshots)
@@ -28,6 +31,10 @@ var server: GameServer = null
 var client: GameClient = null
 var offline := false
 var last_cfg := {}
+## Progress files and the cup being played (null outside a tournament match: practice and normal matches never set it).
+var profile: ProfileStore
+var tstore: TournamentStore
+var tsession: TournamentSession = null
 
 var _headless := false
 var _ui := CanvasLayer.new()
@@ -55,6 +62,8 @@ var _steam_cfg := {}
 var _via_steam := false
 var _last_error := ""
 var _tutorial_next := false
+var _forfeited := false
+var _tresult := {}  # TournamentSession.finish() result of the match on the end screen
 var _state := "menu"
 var _auto_start := false
 var _started_at := 0.0
@@ -84,6 +93,8 @@ func _ready() -> void:
 	if args.has("server"):
 		_run_dedicated()
 		return
+	profile = ProfileStore.new(_save_path("profile.json"))
+	tstore = TournamentStore.new(_save_path("tournament.json"))
 	_ui.layer = 20
 	add_child(_ui)
 	CursorKit.refit(Vector2(get_window().size))
@@ -103,10 +114,14 @@ func _ready() -> void:
 	_cut_fade.modulate.a = 0.0
 	fade_layer.add_child(_cut_fade)
 	_menu = MenuScreen.new()
+	_menu.profile = profile
+	_menu.tstore = tstore
+	_menu.play_tournament.connect(_start_tournament)
+	_menu.continue_tournament.connect(_continue_tournament)
 	_menu.play_offline.connect(_start_offline)
 	_menu.play_practice.connect(func(cfg): _start_practice(cfg))
 	_menu.start_tutorial.connect(func(cfg): _start_practice(cfg, true))
-	_menu.offer_tutorial = not (args.has("menu") or args.has("shot-times") or args.has("playtest") or args.has("menu-script") or args.has("offline"))
+	_menu.offer_tutorial = not (args.has("menu") or args.has("shot-times") or args.has("playtest") or args.has("menu-script") or args.has("offline") or args.has("tournament"))
 	_menu.host.connect(_start_host)
 	_menu.join.connect(_start_join)
 	_menu.map_changed.connect(_set_preview)
@@ -156,12 +171,13 @@ func _ready() -> void:
 			(_menu._views.champions as MChampions).debug_tip(int(args["menu-tip"]))
 	var cfg := _cfg_from_args()
 	if args.has("end-demo"):  # visual check of the end screen
+		offline = args.has("end-extra")  # (an offline end screen has no chat box)
 		_show("end")
 		_end.show_result(true, {"red": 2, "blue": 1}, [
 			{"name": "Ana", "team": "red", "cls": "mage", "dmg": 1480, "kills": 2, "deaths": 1, "heal": 0},
 			{"name": "Ignis", "team": "blue", "cls": "rogue", "dmg": 1120, "kills": 1, "deaths": 2, "heal": 0},
 			{"name": "Brasa", "team": "red", "cls": "priest", "dmg": 210, "kills": 0, "deaths": 1, "heal": 1650},
-			{"name": "Ceniza", "team": "blue", "cls": "warrior", "dmg": 900, "kills": 1, "deaths": 2, "heal": 0}], "JUGAR OTRA")
+			{"name": "Ceniza", "team": "blue", "cls": "warrior", "dmg": 900, "kills": 1, "deaths": 2, "heal": 0}], "JUGAR OTRA", {"lines": ["Avanzás a la ronda: Semifinal.", "Próximo rival: Los Cuervos.", "+90 XP · Nivel 3", "¡SUBISTE AL NIVEL 3!", "Desbloqueaste: Anillo gris (anillo)"]} if args.has("end-extra") else {})
 	elif args.has("lobby-demo"):  # visual check of the lobby
 		_show("lobby")
 		_lobby.show_lobby({"mode": 3, "map": "tomb", "diff": "normal", "you": 1, "host": 1, "members": [{"peer": 1, "pref": "red"}, {"peer": 2, "pref": "any"}],
@@ -172,6 +188,9 @@ func _ready() -> void:
 		_lobby._refresh_info("203.0.113.7")
 	elif args.has("practice"):  # --practice[=tutorial]: the training yard (see also --cls= --spec=)
 		_start_practice(cfg, str(args.practice) == "tutorial")
+	elif args.has("tournament"):
+		var tp := str(args.tournament).split(":")
+		_start_tournament(int(tp[0]), tp[1] if tp.size() > 1 else "bronze", cfg, true)
 	elif args.has("offline"):
 		_start_offline(cfg)
 	elif args.has("host"):
@@ -196,9 +215,17 @@ static func _parse(list: PackedStringArray) -> Dictionary:
 	return d
 
 
+## Where a progress file lives: user:// (Steam Cloud) or --save-dir=PATH.
+func _save_path(file: String) -> String:
+	if args.has("save-dir") and str(args["save-dir"]) != "true":
+		DirAccess.make_dir_recursive_absolute(str(args["save-dir"]))
+		return str(args["save-dir"]).path_join(file)
+	return "user://" + file
+
+
 func _cfg_from_args() -> Dictionary:
 	var base := {"name": "Jugador", "cls": "mage", "mode": 2, "diff": "normal", "map": "random", "pref": "any"}
-	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join") and not args.has("practice"):
+	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join") and not args.has("practice") and not args.has("tournament"):
 		return _menu._cfg()
 	for k in ["name", "cls", "spec", "mode", "diff", "map"]:
 		if args.has(k):
@@ -347,6 +374,7 @@ func _run_dedicated() -> void:
 # ---------------------------------------------------------------- flows
 
 func _teardown_session() -> void:
+	tsession = null  # _play_tournament sets it again right after
 	if steam_lobbies != null:
 		steam_lobbies.leave()
 	if _match != null:
@@ -428,6 +456,60 @@ func _start_practice(cfg: Dictionary, tutorial := false) -> void:
 	server.attach(link[0], true)
 	client = _new_client(cfg)
 	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": "red"})
+	_show("none")
+
+
+## Starts a new cup (or resumes the run in progress when it is the same mode and tier). `force` skips the lock check
+## (--tournament=). The champion, name and spec come from `cfg`.
+func _start_tournament(mode: int, tier_id: String, cfg: Dictionary, force := false) -> void:
+	var ts := TournamentSession.new(tstore, profile)
+	var resume := tstore.has_active_run() and int(tstore.run.mode) == mode and str(tstore.run.tier) == tier_id and str(tstore.run.player.cls) == str(cfg.cls)
+	if not resume:
+		var player := {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", "")}
+		if force:  # --tournament=: ignore the lock
+			tstore.run = Tournament.new_run(mode, tier_id, player, randi())
+			tstore.save()
+		elif not ts.start(mode, tier_id, player, randi()):
+			_menu.set_status("Ese nivel todavía está bloqueado.")
+			return
+	last_cfg = cfg
+	_play_tournament(ts)
+
+
+func _continue_tournament() -> void:
+	if not tstore.has_active_run():
+		return
+	var r: Dictionary = tstore.run
+	var cfg := _menu._cfg() if _menu != null else last_cfg
+	cfg = cfg.duplicate()
+	cfg["name"] = r.player.name
+	cfg["cls"] = r.player.cls
+	cfg["spec"] = r.player.get("spec", "")
+	last_cfg = cfg
+	_play_tournament(TournamentSession.new(tstore, profile))
+
+
+## Plays the run's current match (a resumed one is the very same match, see TournamentStore.begin_match).
+func _play_tournament(ts: TournamentSession) -> void:
+	var m := ts.begin()
+	if m.is_empty():
+		_to_menu()
+		return
+	_teardown_session()
+	tsession = ts
+	last_cfg = last_cfg.duplicate()
+	last_cfg["mode"] = int(m.mode)
+	last_cfg["map"] = str(m.map)
+	offline = true
+	_auto_start = true
+	_forfeited = false
+	var scfg := ts.server_cfg()
+	scfg.merge({"dedicated": false, "autopilot": args.has("autopilot"), "god": args.has("god")})
+	server = GameServer.new(scfg)
+	var link := LoopbackTransport.pair()
+	server.attach(link[0], true)
+	client = _new_client(last_cfg)
+	client.attach(link[1], {"name": last_cfg.name, "cls": last_cfg.cls, "spec": last_cfg.get("spec", ""), "pref": "red"})
 	_show("none")
 
 
@@ -537,6 +619,8 @@ func _on_match_started(msg: Dictionary) -> void:
 	add_child(_match)
 	_match.start(client, msg)
 	_match.finished.connect(_on_match_finished)
+	if offline and not _match.practice:
+		_match.forfeit_requested.connect(_on_forfeit)
 	if _match.practice:
 		_match.practice_switch.connect(_on_practice_switch)
 		_match.leave_requested.connect(func(): _to_menu.call_deferred())
@@ -559,13 +643,41 @@ func _on_match_finished(end: Dictionary, rows: Array) -> void:
 		for r in client.roster:
 			if r.id == client.unit_id:
 				mine = r.team
+	var won: bool = end.winner == mine
+	var my_stats := {}
+	for st in end.get("stats", []):
+		if client != null and int(st.id) == client.unit_id:
+			my_stats = st
+	var again_text := "JUGAR OTRA" if offline else "VOLVER A LA SALA"
+	var extra := {}
+	_tresult = {}
+	if tsession != null:  # a cup match: the run moves on (a forfeit counts as a loss)
+		_tresult = tsession.finish(won, my_stats, _forfeited)
+		again_text = _tresult.button
+		extra = {"lines": _tresult.lines}
+	elif offline and profile != null:  # a normal match against bots: XP and class stats (practice never gets here)
+		extra = {"lines": TournamentSession.reward_lines(TournamentSession.record_bot(profile, str(last_cfg.get("cls", "mage")), won, my_stats))}
+	_forfeited = false
 	_show("end")
 	_set_preview(last_cfg.get("map", "random"))
-	_end.show_result(end.winner == mine, end.score, rows, "JUGAR OTRA" if offline else "VOLVER A LA SALA")
+	_end.show_result(won, end.score, rows, again_text, extra)
+
+
+## "Rendirse" confirmed in the match: the server ends it with the local player's team losing.
+func _on_forfeit() -> void:
+	if server != null and server.forfeit_local():
+		_forfeited = true
 
 
 func _again() -> void:
-	if offline:
+	if tsession != null:
+		match str(_tresult.get("kind", "out")):
+			"next", "rematch":
+				_play_tournament(tsession)
+			_:
+				_to_menu()
+				_menu.open_tournament()
+	elif offline:
 		_start_offline(last_cfg)
 	elif client != null and not client.lobby.is_empty():
 		_show("lobby")
@@ -586,6 +698,7 @@ func _closed_deferred(reason: String) -> void:
 
 
 func _to_menu() -> void:
+	tsession = null  # leaving never loses the cup: the run (and a pending match) stay in tournament.json
 	_teardown_session()
 	_show("menu")
 	_set_preview(_menu.selected_map())
@@ -594,7 +707,7 @@ func _to_menu() -> void:
 func _show(state: String) -> void:
 	_state = state
 	if _chat != null:
-		_chat.activate(state in ["lobby", "match", "end"], state if state in ["match", "end"] else "lobby")
+		_chat.activate(state in ["lobby", "match"] or (state == "end" and not offline), state if state in ["match", "end"] else "lobby")
 	_menu.visible = state == "menu"
 	_lobby.visible = state == "lobby"
 	_end.visible = state == "end"

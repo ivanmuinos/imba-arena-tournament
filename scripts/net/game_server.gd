@@ -166,6 +166,18 @@ func _on_peer_disconnected(id: int) -> void:
 			host_peer = 0
 
 
+## Offline: the local player gives up the match in progress and their team loses (the usual end message follows, with the
+## stats). False when there is no match running, or it is practice or already over.
+func forfeit_local() -> bool:
+	if state != "match" or game == null or game.practice or game.phase == "over" or game.done:
+		return false
+	var me := game.unit_for_peer(host_peer)
+	if me == null:
+		return false
+	game.forfeit(me.team, sim_now)
+	return true
+
+
 ## 1v1 where the leaver's opponent is a human still connected (a bot opponent keeps the old bot replacement).
 func _is_walkover(leaver: ArenaUnit) -> bool:
 	if int(cfg.mode) != 1 or game.practice:
