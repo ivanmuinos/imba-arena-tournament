@@ -63,4 +63,4 @@ func test_lone_druid_keeps_its_healer_thresholds() -> void:
 	p.brain = BotBrain.new("hard")
 	p.brain.think(m, p, 1000.0)
 	var seen := m.fx.filter(func(f): return f.k == "cast" and f.id == p.id).map(func(f): return f.ability)
-	check(not seen.has("wrath"), "el druida solo no pasa a castigar a 58% (%s)" % str(seen))
+	check(not seen.has("wrath"), "el druida solo no pasa a castigar a 58 por ciento (%s)" % str(seen))
