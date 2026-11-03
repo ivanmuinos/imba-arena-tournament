@@ -585,7 +585,9 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			_label(u, "FILOTORMENTA", "#ffd166")
 		# ---- priest
 		"heal":
-			if target != null: _heal(target, spec.heal, u, now)
+			if target != null:
+				fx.append({"k": "healspell", "id": target.id, "ability": spec.id})  # always shown, even at full health
+				_heal(target, spec.heal, u, now)
 		"pwshield":
 			if target != null:
 				target.absorb = spec.heal
@@ -616,7 +618,9 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 					_heal(a, spec.heal, u, now)
 		# ---- druid
 		"regrowth":
-			if target != null: _heal(target, spec.heal, u, now)
+			if target != null:
+				fx.append({"k": "healspell", "id": target.id, "ability": spec.id})
+				_heal(target, spec.heal, u, now)
 		"rejuv":
 			if target != null:
 				target.hot_until = now + float(spec.durationMs)
