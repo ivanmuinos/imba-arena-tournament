@@ -26,7 +26,7 @@ func _ready() -> void:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 7)
 	panel.add_child(col)
-	_mode = _field(col, "Modo", Segmented.new().setup([["2", "2v2"], ["3", "3v3"]], "2"))
+	_mode = _field(col, "Modo", Segmented.new().setup([["1", "1v1"], ["2", "2v2"], ["3", "3v3"]], "2"))
 	_diff = _field(col, "Bots", Segmented.new().setup([["easy", "Fácil"], ["normal", "Normal"], ["hard", "Difícil"]], "normal"))
 	_pref = _field(col, "Tu equipo", Segmented.new().setup([["any", "Al azar"], ["red", "Rojo"], ["blue", "Azul"]], "any"))
 	_priv = Segmented.new().setup([["friends", "Sólo amigos"], ["public", "Pública"]], "friends")

@@ -1,0 +1,192 @@
+{
+ "version": 1,
+ "challenges": [
+  {
+   "id": "mage_1",
+   "cls": "mage",
+   "name": "Primeros pasos con el Mago",
+   "kind": "total",
+   "stat": "matches",
+   "goal": 3,
+   "desc": "Jugá 3 partidas con el Mago.",
+   "reward": "title_mage"
+  },
+  {
+   "id": "mage_2",
+   "cls": "mage",
+   "name": "Pirómano",
+   "kind": "total",
+   "stat": "dmg",
+   "goal": 4000,
+   "desc": "Hacé 4000 de daño en total con el Mago.",
+   "reward": "ring_mage"
+  },
+  {
+   "id": "mage_3",
+   "cls": "mage",
+   "name": "Intocable",
+   "kind": "match",
+   "when": {
+    "win": true,
+    "deaths_max": 0
+   },
+   "desc": "Ganá sin morir con el Mago.",
+   "reward": "recolor_mage"
+  },
+  {
+   "id": "warrior_1",
+   "cls": "warrior",
+   "name": "Primeros pasos con el Guerrero",
+   "kind": "total",
+   "stat": "matches",
+   "goal": 3,
+   "desc": "Jugá 3 partidas con el Guerrero.",
+   "reward": "title_warrior"
+  },
+  {
+   "id": "warrior_2",
+   "cls": "warrior",
+   "name": "Muro de golpes",
+   "kind": "total",
+   "stat": "dmg",
+   "goal": 5000,
+   "desc": "Hacé 5000 de daño en total con el Guerrero.",
+   "reward": "ring_warrior"
+  },
+  {
+   "id": "warrior_3",
+   "cls": "warrior",
+   "name": "Invicto de hierro",
+   "kind": "total",
+   "stat": "wins",
+   "goal": 5,
+   "desc": "Ganá 5 partidas con el Guerrero.",
+   "reward": "recolor_warrior"
+  },
+  {
+   "id": "rogue_1",
+   "cls": "rogue",
+   "name": "Primeros pasos con el Asesino",
+   "kind": "total",
+   "stat": "matches",
+   "goal": 3,
+   "desc": "Jugá 3 partidas con el Asesino.",
+   "reward": "title_rogue"
+  },
+  {
+   "id": "rogue_2",
+   "cls": "rogue",
+   "name": "Puñalada letal",
+   "kind": "match",
+   "when": {
+    "dmg_min": 700
+   },
+   "desc": "Hacé 700 de daño en una sola partida con el Asesino.",
+   "reward": "ring_rogue"
+  },
+  {
+   "id": "rogue_3",
+   "cls": "rogue",
+   "name": "Cazador de cabezas",
+   "kind": "total",
+   "stat": "kills",
+   "goal": 8,
+   "desc": "Conseguí 8 bajas con el Asesino.",
+   "reward": "recolor_rogue"
+  },
+  {
+   "id": "hunter_1",
+   "cls": "hunter",
+   "name": "Primeros pasos con el Cazador",
+   "kind": "total",
+   "stat": "matches",
+   "goal": 3,
+   "desc": "Jugá 3 partidas con el Cazador.",
+   "reward": "title_hunter"
+  },
+  {
+   "id": "hunter_2",
+   "cls": "hunter",
+   "name": "Lluvia de flechas",
+   "kind": "total",
+   "stat": "dmg",
+   "goal": 5000,
+   "desc": "Hacé 5000 de daño en total con el Cazador.",
+   "reward": "ring_hunter"
+  },
+  {
+   "id": "hunter_3",
+   "cls": "hunter",
+   "name": "Presa esquiva",
+   "kind": "match",
+   "when": {
+    "win": true,
+    "deaths_max": 0
+   },
+   "desc": "Ganá sin morir con el Cazador.",
+   "reward": "recolor_hunter"
+  },
+  {
+   "id": "warlock_1",
+   "cls": "warlock",
+   "name": "Primeros pasos con el Brujo",
+   "kind": "total",
+   "stat": "matches",
+   "goal": 3,
+   "desc": "Jugá 3 partidas con el Brujo.",
+   "reward": "title_warlock"
+  },
+  {
+   "id": "warlock_2",
+   "cls": "warlock",
+   "name": "Maldición mayor",
+   "kind": "total",
+   "stat": "dmg",
+   "goal": 4500,
+   "desc": "Hacé 4500 de daño en total con el Brujo.",
+   "reward": "ring_warlock"
+  },
+  {
+   "id": "warlock_3",
+   "cls": "warlock",
+   "name": "Pactos cumplidos",
+   "kind": "total",
+   "stat": "wins",
+   "goal": 5,
+   "desc": "Ganá 5 partidas con el Brujo.",
+   "reward": "recolor_warlock"
+  },
+  {
+   "id": "priest_1",
+   "cls": "priest",
+   "name": "Primeros pasos con el Sacerdote",
+   "kind": "total",
+   "stat": "matches",
+   "goal": 3,
+   "desc": "Jugá 3 partidas con el Sacerdote.",
+   "reward": "title_priest"
+  },
+  {
+   "id": "priest_2",
+   "cls": "priest",
+   "name": "Manantial",
+   "kind": "total",
+   "stat": "heal",
+   "goal": 4000,
+   "desc": "Curá 4000 de vida en total con el Sacerdote.",
+   "reward": "ring_priest"
+  },
+  {
+   "id": "priest_3",
+   "cls": "priest",
+   "name": "Luz inquebrantable",
+   "kind": "match",
+   "when": {
+    "win": true,
+    "heal_min": 1000
+   },
+   "desc": "Ganá curá 1000 en una sola partida con el Sacerdote.",
+   "reward": "recolor_priest"
+  }
+ ]
+}

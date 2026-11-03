@@ -146,11 +146,10 @@ func _hover(on: bool) -> void:
 
 
 func _apply() -> void:
-	if _style == null:
-		return
 	var hot := maxf(glow, 1.0 if selected else 0.0)
-	_style.border_color = UiKit.LINE.lerp(Color(accent.r, accent.g, accent.b, 1.0), hot)
-	_style.set_border_width_all(2 if selected else 1)
+	if _style != null:  # a textured glass panel has no border to light
+		_style.border_color = UiKit.LINE.lerp(Color(accent.r, accent.g, accent.b, 1.0), hot)
+		_style.set_border_width_all(2 if selected else 1)
 	if _title != null:
 		_title.add_theme_color_override("font_color", UiKit.INK.lerp(accent.lightened(0.4), hot * 0.6))
 	if _art != null and _art.has_meta("icon"):

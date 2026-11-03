@@ -42,7 +42,7 @@ func _init(p_name := "", p_base := DEFAULT_BASE, p_count := DEFAULT_COUNT, p_id 
 	_base = p_base
 	_count = p_count
 	_rng.randomize()
-	_id = p_id if p_id != 0 else 76561199000000000 + _rng.randi_range(1, 999999)
+	_id = p_id if p_id != 0 else (id_for_name(p_name) if p_name != "" else 76561199000000000 + _rng.randi_range(1, 999999))
 	_name = p_name if p_name != "" else "Jugador-%d" % (_id % 10000)
 	for port in range(_base, _base + _count):
 		if _sock.bind(port, "*") == OK:
@@ -54,6 +54,19 @@ func _init(p_name := "", p_base := DEFAULT_BASE, p_count := DEFAULT_COUNT, p_id 
 	_sock.set_broadcast_enabled(true)
 	_ok = true
 	_log("%s (id %d) escuchando en el puerto %d" % [_name, _id, _port])
+
+
+## The same name is the same "account" on every run and every machine, so a team made as Ana is still Ana's tomorrow.
+static func id_for_name(p_name: String) -> int:
+	var h := p_name.sha256_buffer()
+	var n := (h[0] << 24) | (h[1] << 16) | (h[2] << 8) | h[3]
+	return 76561199000000000 + 1 + n % 999999998
+
+
+## A development ticket for the online login: only accepted by a server started with its dev flag on.
+func request_web_auth_ticket(_identity: String) -> void:
+	var id := _id
+	_queue.append(func(): web_auth_ticket.emit(true, "dev:%d" % id))
 
 
 func _log(text: String) -> void:

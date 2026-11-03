@@ -4,9 +4,12 @@ extends Node
 ##
 ## Command line (after `--`):
 ##   --version          print `Imba Arena Tournament v<config/version>` and quit
-##   --server [--port=7777] [--mode=2|3] [--map=magma|moon] [--diff=easy|normal|hard] [--wait=SEC]
+##   --server [--port=7777] [--mode=1|2|3] [--map=magma|moon] [--diff=easy|normal|hard] [--wait=SEC]
 ##   --offline | --host | --join=IP[:PORT]   skip the menu   (+ --name= --cls= --team= --mode= --map= --diff=)
 ##   --practice[=tutorial]   the training yard (or the guided tutorial in it)
+##   --tournament=<mode>:<tier>   start a cup offline (mode 1-3, tier bronze|silver|gold|gladiator; resumes a run in progress
+##                       of the same mode and tier); unlocks are ignored here (smoke tests, screenshots)
+##   --save-dir=PATH    keep tournament.json and profile.json in this folder instead of user:// (smoke tests)
 ##   --god              (playtests) human players take no damage and cannot be crowd controlled
 ##   --autopilot        bots drive the human units too (demos, smoke tests)
 ##   --target           keep an enemy selected (screenshots)
@@ -19,6 +22,11 @@ extends Node
 ##   --steam-host[=public]   create a Steam lobby on start (friends only unless "public")
 ##   --steam-join=LOBBY_ID   join a Steam lobby on start (Steam itself launches us with `+connect_lobby ID` for invites)
 ##   --log / --steam-log     print every Steam callback
+##   --online                (development) turn the online features on for this run (Online.ENABLED ships false): sign-in,
+##                           teams, groups and the normal queue against the server in data/online.json or IMBA_ONLINE_URL;
+##                           IMBA_ONLINE_ANON_KEY gives the anon key. Same as IMBA_ONLINE=1.
+##   --queue=MODE            (development, with --online) search a normal match (1-3) as soon as the session is ready
+##                           (--cls= / --spec= pick the champion for it, handy with several copies)
 ##   --steam-mock[=NAME]     simulated Steam (no Steam client): copies on this PC or LAN see each other as friends
 
 const DEFAULT_PORT := 7777
@@ -28,6 +36,10 @@ var server: GameServer = null
 var client: GameClient = null
 var offline := false
 var last_cfg := {}
+## Progress files and the cup being played (null outside a tournament match: practice and normal matches never set it).
+var profile: ProfileStore
+var tstore: TournamentStore
+var tsession: TournamentSession = null
 
 var _headless := false
 var _ui := CanvasLayer.new()
@@ -55,12 +67,25 @@ var _steam_cfg := {}
 var _via_steam := false
 var _last_error := ""
 var _tutorial_next := false
+var _forfeited := false
+var _tresult := {}  # TournamentSession.finish() result of the match on the end screen
 var _state := "menu"
 var _auto_start := false
 var _started_at := 0.0
 var _shot_times: Array = []
 var _shot_n := 0
 var _menu_script: Array = []  # debug: scripted menu actions [[seconds, action, arg], ...]
+## Online (null unless Online.on()): sign-in, teams, groups and the normal queue.
+var online_api: OnlineApi = null
+var online_session: OnlineSession = null
+var team_service: TeamService = null
+var queue: QueueService = null
+## Id of the queue match whose lobby we host or joined (so it is never entered twice) and when it was found.
+var _queue_id := ""
+var _queue_found_at := 0.0
+var _online_tick := 0.0
+## A match found while we were busy (a bot match, a lobby): it waits this long for us to be back at the menu.
+const QUEUE_OFFER_TTL := 120.0
 
 
 func _ready() -> void:
@@ -84,6 +109,9 @@ func _ready() -> void:
 	if args.has("server"):
 		_run_dedicated()
 		return
+	profile = ProfileStore.new(_save_path("profile.json"))
+	tstore = TournamentStore.new(_save_path("tournament.json"))
+	Cosmetics.profile = profile
 	_ui.layer = 20
 	add_child(_ui)
 	CursorKit.refit(Vector2(get_window().size))
@@ -103,10 +131,14 @@ func _ready() -> void:
 	_cut_fade.modulate.a = 0.0
 	fade_layer.add_child(_cut_fade)
 	_menu = MenuScreen.new()
+	_menu.profile = profile
+	_menu.tstore = tstore
+	_menu.play_tournament.connect(_start_tournament)
+	_menu.continue_tournament.connect(_continue_tournament)
 	_menu.play_offline.connect(_start_offline)
 	_menu.play_practice.connect(func(cfg): _start_practice(cfg))
 	_menu.start_tutorial.connect(func(cfg): _start_practice(cfg, true))
-	_menu.offer_tutorial = not (args.has("menu") or args.has("shot-times") or args.has("playtest") or args.has("menu-script") or args.has("offline"))
+	_menu.offer_tutorial = not (args.has("menu") or args.has("shot-times") or args.has("playtest") or args.has("menu-script") or args.has("offline") or args.has("tournament"))
 	_menu.host.connect(_start_host)
 	_menu.join.connect(_start_join)
 	_menu.map_changed.connect(_set_preview)
@@ -137,6 +169,7 @@ func _ready() -> void:
 	_browser.join_entry.connect(_on_browser_join)
 	_ui.add_child(_browser)
 	_init_steam()
+	_init_online()
 	if args.has("shot-times"):
 		for t in str(args["shot-times"]).split(","):
 			_shot_times.append(float(t))
@@ -156,6 +189,7 @@ func _ready() -> void:
 			(_menu._views.champions as MChampions).debug_tip(int(args["menu-tip"]))
 	var cfg := _cfg_from_args()
 	if args.has("end-demo"):  # visual check of the end screen
+		offline = args.has("end-extra")  # (an offline end screen has no chat box)
 		_show("end")
 		_end.show_result(true, {"red": 2, "blue": 1}, [
 			{"name": "Ana", "team": "red", "cls": "mage", "dmg": 1480, "kills": 2, "deaths": 1, "heal": 0},
@@ -163,7 +197,7 @@ func _ready() -> void:
 			{"name": "Brasa", "team": "red", "cls": "priest", "dmg": 210, "kills": 0, "deaths": 1, "heal": 1650},
 			{"name": "Ceniza", "team": "blue", "cls": "warrior", "dmg": 900, "kills": 1, "deaths": 2, "heal": 0},
 			{"name": "Ascua", "team": "red", "cls": "hunter", "dmg": 1210, "kills": 1, "deaths": 0, "heal": 0},
-			{"name": "Vulcano", "team": "blue", "cls": "warlock", "dmg": 980, "kills": 0, "deaths": 2, "heal": 140}], "JUGAR OTRA")
+			{"name": "Vulcano", "team": "blue", "cls": "warlock", "dmg": 980, "kills": 0, "deaths": 2, "heal": 140}], "JUGAR OTRA", {"lines": ["Avanzás a la ronda: Semifinal.", "Próximo rival: Los Cuervos.", "+90 XP de cuenta · Nivel 3", "¡SUBISTE AL NIVEL 3!", "Desbloqueaste: Anillo gris (anillo)"]} if args.has("end-extra") else {})
 		_end.show_progress({"cls": "mage", "gain": 296, "level_before": 4, "level_after": 5, "xp": 120, "xp_next": 450, "first_win": true, "vs_bots": false})
 	elif args.has("lobby-demo"):  # visual check of the lobby
 		_show("lobby")
@@ -175,6 +209,9 @@ func _ready() -> void:
 		_lobby._refresh_info("203.0.113.7")
 	elif args.has("practice"):  # --practice[=tutorial]: the training yard (see also --cls= --spec=)
 		_start_practice(cfg, str(args.practice) == "tutorial")
+	elif args.has("tournament"):
+		var tp := str(args.tournament).split(":")
+		_start_tournament(int(tp[0]), tp[1] if tp.size() > 1 else "bronze", cfg, true)
 	elif args.has("offline"):
 		_start_offline(cfg)
 	elif args.has("host"):
@@ -199,9 +236,17 @@ static func _parse(list: PackedStringArray) -> Dictionary:
 	return d
 
 
+## Where a progress file lives: user:// (Steam Cloud) or --save-dir=PATH.
+func _save_path(file: String) -> String:
+	if args.has("save-dir") and str(args["save-dir"]) != "true":
+		DirAccess.make_dir_recursive_absolute(str(args["save-dir"]))
+		return str(args["save-dir"]).path_join(file)
+	return "user://" + file
+
+
 func _cfg_from_args() -> Dictionary:
 	var base := {"name": "Jugador", "cls": "mage", "mode": 2, "diff": "normal", "map": "random", "pref": "any"}
-	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join") and not args.has("practice"):
+	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join") and not args.has("practice") and not args.has("tournament"):
 		return _menu._cfg()
 	for k in ["name", "cls", "spec", "mode", "diff", "map"]:
 		if args.has(k):
@@ -229,7 +274,12 @@ func _init_steam() -> void:
 	steam_lobbies.hosted.connect(_on_steam_hosted)
 	steam_lobbies.list_changed.connect(func(e): _browser.show_entries(e))
 	steam_lobbies.joined.connect(_on_steam_joined)
-	steam_lobbies.failed.connect(func(text): _browser.set_status(text); _menu.set_status(text); _lobby.flash(text))
+	steam_lobbies.failed.connect(func(text):
+		_browser.set_status(text)
+		_menu.set_status(text)
+		_lobby.flash(text)
+		if _queue_id != "" and _state == "menu":
+			_queue_drop())
 	steam_lobbies.backend.join_requested.connect(func(_id): _browser.visible = false)  # invite accepted from the overlay
 	# An invite accepted while the game was closed: Steam starts us with `+connect_lobby <id>`.
 	var invited := SteamLobbies.lobby_from_cmdline(OS.get_cmdline_args())
@@ -239,6 +289,121 @@ func _init_steam() -> void:
 		(func(): _via_steam = true; steam_lobbies.join(invited)).call_deferred()
 	elif args.has("steam-host"):
 		(func(): _start_steam_host(_cfg_from_args(), str(args["steam-host"]) != "public")).call_deferred()
+
+
+# ---------------------------------------------------------------- online (sign-in, teams, groups, queue)
+
+func _init_online() -> void:
+	if not Online.on():
+		return
+	online_api = OnlineApi.new()
+	add_child(online_api)
+	online_session = OnlineSession.new(online_api, steam)
+	team_service = TeamService.new(online_api)
+	queue = QueueService.new(online_api)
+	queue.match_found.connect(_on_queue_match)
+	queue.lobby_published.connect(func(_info): _queue_try_start())
+	_menu.set_online(online_session, team_service, queue)
+	online_session.state_changed.connect(_on_online_state)
+	if args.has("log"):
+		online_session.state_changed.connect(func(): print("[online] sesión: %s %s" % [online_session.state, online_session.note]))
+		queue.match_found.connect(func(i): print("[cola] partida %s, anfitrión=%s, lado=%s" % [i.id, i.is_host, i.side]))
+		queue.lobby_published.connect(func(i): print("[cola] sala publicada %s" % i.lobby_id))
+	online_session.start.call_deferred()
+
+
+func _on_online_state() -> void:
+	if online_session == null or not online_session.is_ready():
+		return
+	team_service.refresh()
+	queue.refresh_group()
+	if args.has("queue") and queue.state == "idle":  # development: search right away
+		queue.join(clampi(int(str(args.queue)), 1, 3), false, func(r: Dictionary):
+			if args.has("log"):
+				print("[cola] buscando: ", "ok" if r.ok else str(r.get("error", ""))))
+
+
+## A match was formed for us by the server: start it when we are at the menu (host opens the lobby, guests wait for its id).
+func _on_queue_match(_info: Dictionary) -> void:
+	_queue_found_at = Time.get_ticks_msec() / 1000.0
+	_queue_try_start()
+
+
+## Never enters a queue match twice, and never while another game is on: a match found during a bot match or a lobby
+## waits (QUEUE_OFFER_TTL) until we are back at the menu.
+func _queue_try_start() -> void:
+	if queue == null or not queue.has_match():
+		return
+	var info: Dictionary = queue.current
+	if str(info.id) == _queue_id:
+		return
+	if _state != "menu":
+		if Time.get_ticks_msec() / 1000.0 - _queue_found_at > QUEUE_OFFER_TTL:
+			_queue_drop("La partida en cola se canceló porque estabas en otra partida.")
+		return
+	if bool(info.is_host):
+		if steam_lobbies == null:
+			_queue_drop("Steam no está disponible: se canceló la partida en cola.")
+			return
+		_start_queue_host(info)
+	elif str(info.lobby_id) != "":
+		if steam_lobbies == null:
+			_queue_drop("Steam no está disponible: se canceló la partida en cola.")
+			return
+		_join_queue_lobby(info)
+
+
+func _queue_drop(text := "No se pudo entrar a la partida en cola.") -> void:
+	_queue_id = ""
+	if queue != null:
+		queue.abandon()
+	if _menu != null and text != "":
+		_menu.set_status(text)
+
+
+## The host of a queue match opens a public Steam lobby (guests may not be friends) and publishes its id.
+func _start_queue_host(info: Dictionary) -> void:
+	_teardown_session()
+	_queue_id = str(info.id)
+	var cfg := _queue_cfg()
+	last_cfg = cfg
+	offline = false
+	_via_steam = true
+	_steam_cfg = cfg
+	var scfg := {"mode": queue.mode, "diff": "normal", "map": "random", "dedicated": false, "autopilot": args.has("autopilot"),
+		"queue_sides": QueueService.side_map(info), "queue_host": online_api.steam_id}
+	server = GameServer.new(scfg)
+	var link := LoopbackTransport.pair()
+	server.attach(link[0], true)
+	client = _new_client(cfg)
+	client.attach(link[1], {"name": _steam_name(cfg), "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": "any"})
+	steam_lobbies.host(false, {"mode": queue.mode, "map": "random", "name": _steam_name(cfg)})
+	_menu.set_status("Partida encontrada: abriendo la sala…")
+
+
+## The champion for a queue match: the saved choice, or --cls= / --spec= (development runs with several copies).
+func _queue_cfg() -> Dictionary:
+	var cfg: Dictionary = _menu._cfg().duplicate()
+	if args.has("cls"):
+		var n := MatchConfig.normalize({"cls": args.cls, "spec": args.get("spec", "")})
+		cfg["cls"] = n.cls
+		cfg["spec"] = n.spec
+	return cfg
+
+
+func _join_queue_lobby(info: Dictionary) -> void:
+	_teardown_session()
+	_queue_id = str(info.id)
+	_via_steam = true
+	_menu.set_status("Partida encontrada: entrando a la sala…")
+	steam_lobbies.join(int(str(info.lobby_id)))
+
+
+## Back at the menu without a result (left the lobby, lost the connection): the slot is freed, nothing is reported.
+func _queue_leave() -> void:
+	_queue_id = ""
+	if queue != null and queue.has_match():
+		queue.abandon()
 
 
 func _steam_name(cfg: Dictionary) -> String:
@@ -269,6 +434,8 @@ func _on_steam_hosted(lobby_id: int) -> void:
 	if server == null:
 		return
 	server.attach(SteamTransport.host(steam, lobby_id))
+	if _queue_id != "" and queue != null and queue.has_match():
+		queue.publish_lobby(lobby_id)  # the other players of the match are waiting for this id
 
 
 func _open_steam_browser() -> void:
@@ -316,7 +483,7 @@ func _update_presence() -> void:
 ## Joined a Steam lobby (from the list or from an overlay invite): talk to its owner over Steam messages.
 func _on_steam_joined(lobby_id: int, owner: int) -> void:
 	_browser.visible = false
-	var cfg: Dictionary = _menu._cfg() if _state == "menu" else last_cfg
+	var cfg: Dictionary = (_queue_cfg() if _queue_id != "" else _menu._cfg()) if _state == "menu" else last_cfg
 	last_cfg = cfg
 	offline = false
 	_via_steam = true
@@ -350,6 +517,7 @@ func _run_dedicated() -> void:
 # ---------------------------------------------------------------- flows
 
 func _teardown_session() -> void:
+	tsession = null  # _play_tournament sets it again right after
 	if steam_lobbies != null:
 		steam_lobbies.leave()
 	if _match != null:
@@ -431,6 +599,60 @@ func _start_practice(cfg: Dictionary, tutorial := false) -> void:
 	server.attach(link[0], true)
 	client = _new_client(cfg)
 	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": "red"})
+	_show("none")
+
+
+## Starts a new cup (or resumes the run in progress when it is the same mode and tier). `force` skips the lock check
+## (--tournament=). The champion, name and spec come from `cfg`.
+func _start_tournament(mode: int, tier_id: String, cfg: Dictionary, force := false) -> void:
+	var ts := TournamentSession.new(tstore, profile)
+	var resume := not bool(cfg.get("fresh", false)) and tstore.has_active_run() and int(tstore.run.mode) == mode and str(tstore.run.tier) == tier_id and str(tstore.run.player.cls) == str(cfg.cls)
+	if not resume:
+		var player := {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", "")}
+		if force:  # --tournament=: ignore the lock
+			tstore.run = Tournament.new_run(mode, tier_id, player, randi())
+			tstore.save()
+		elif not ts.start(mode, tier_id, player, randi()):
+			_menu.set_status("Ese nivel todavía está bloqueado.")
+			return
+	last_cfg = cfg
+	_play_tournament(ts)
+
+
+func _continue_tournament() -> void:
+	if not tstore.has_active_run():
+		return
+	var r: Dictionary = tstore.run
+	var cfg := _menu._cfg() if _menu != null else last_cfg
+	cfg = cfg.duplicate()
+	cfg["name"] = r.player.name
+	cfg["cls"] = r.player.cls
+	cfg["spec"] = r.player.get("spec", "")
+	last_cfg = cfg
+	_play_tournament(TournamentSession.new(tstore, profile))
+
+
+## Plays the run's current match (a resumed one is the very same match, see TournamentStore.begin_match).
+func _play_tournament(ts: TournamentSession) -> void:
+	var m := ts.begin()
+	if m.is_empty():
+		_to_menu()
+		return
+	_teardown_session()
+	tsession = ts
+	last_cfg = last_cfg.duplicate()
+	last_cfg["mode"] = int(m.mode)
+	last_cfg["map"] = str(m.map)
+	offline = true
+	_auto_start = true
+	_forfeited = false
+	var scfg := ts.server_cfg()
+	scfg.merge({"dedicated": false, "autopilot": args.has("autopilot"), "god": args.has("god")})
+	server = GameServer.new(scfg)
+	var link := LoopbackTransport.pair()
+	server.attach(link[0], true)
+	client = _new_client(last_cfg)
+	client.attach(link[1], {"name": last_cfg.name, "cls": last_cfg.cls, "spec": last_cfg.get("spec", ""), "pref": "red"})
 	_show("none")
 
 
@@ -536,10 +758,14 @@ func _on_match_started(msg: Dictionary) -> void:
 	_match.demo_target = args.has("target")
 	_match.gfx_choice = gfx_choice
 	_match.tutorial = _tutorial_next
+	_match.forfeit_enabled = offline
+	_match.forfeit_tournament = tsession != null
 	_match.chat = _chat
 	add_child(_match)
 	_match.start(client, msg)
 	_match.finished.connect(_on_match_finished)
+	if offline and not _match.practice:
+		_match.forfeit_requested.connect(_on_forfeit)
 	_match.leave_requested.connect(func(): _to_menu.call_deferred())  # practice panel or the Esc menu
 	if _match.practice:
 		_match.practice_switch.connect(_on_practice_switch)
@@ -564,10 +790,37 @@ func _on_match_finished(end: Dictionary, rows: Array) -> void:
 			if r.id == client.unit_id:
 				mine = r.team
 				my_cls = str(r.cls)
+	var won: bool = end.winner == mine
+	var my_stats := {}
+	for st in end.get("stats", []):
+		if client != null and int(st.id) == client.unit_id:
+			my_stats = st
+	var again_text := "JUGAR OTRA" if offline else "VOLVER A LA SALA"
+	var extra := {}
+	_tresult = {}
+	var queued := queue != null and _queue_id != "" and queue.has_match() and str(queue.current.id) == _queue_id
+	if queued:  # a normal queue match: both sides report the winner, the server decides whether it counts
+		again_text = "VOLVER AL MENÚ"
+		if profile != null:
+			extra = {"lines": TournamentSession.reward_lines(TournamentSession.record_online(profile, str(last_cfg.get("cls", "mage")), won, my_stats))}
+		queue.report_result(QueueService.winner_to_report(str(end.winner)), func(_r): queue.finish())
+	elif tsession != null:  # a cup match: the run moves on (a forfeit counts as a loss)
+		_tresult = tsession.finish(won, my_stats, _forfeited)
+		again_text = _tresult.button
+		extra = {"lines": _tresult.lines}
+	elif offline and profile != null:  # a normal match against bots: XP and class stats (practice never gets here)
+		extra = {"lines": TournamentSession.reward_lines(TournamentSession.record_bot(profile, str(last_cfg.get("cls", "mage")), won, my_stats))}
+	_forfeited = false
 	_show("end")
 	_set_preview(last_cfg.get("map", "random"))
-	_end.show_result(end.winner == mine, end.score, rows, "JUGAR OTRA" if offline else "VOLVER A LA SALA")
+	_end.show_result(won, end.score, rows, again_text, extra)
 	_end.show_progress(_award_progress(end, mine, my_cls))
+
+
+## "Rendirse" confirmed in the match: the server ends it with the local player's team losing.
+func _on_forfeit() -> void:
+	if server != null and server.forfeit_local():
+		_forfeited = true
 
 
 ## XP for your champion (Progress). Offline matches are against bots only: half XP.
@@ -583,7 +836,16 @@ func _award_progress(end: Dictionary, team: String, cls: String) -> Dictionary:
 
 
 func _again() -> void:
-	if offline:
+	if _queue_id != "":  # a queue match is over: back to the menu (a new search is a new ticket)
+		_to_menu()
+	elif tsession != null:
+		match str(_tresult.get("kind", "out")):
+			"next", "rematch":
+				_play_tournament(tsession)
+			_:
+				_to_menu()
+				_menu.open_tournament()
+	elif offline:
 		_start_offline(last_cfg)
 	elif client != null and not client.lobby.is_empty():
 		_show("lobby")
@@ -604,6 +866,8 @@ func _closed_deferred(reason: String) -> void:
 
 
 func _to_menu() -> void:
+	tsession = null  # leaving never loses the cup: the run (and a pending match) stay in tournament.json
+	_queue_leave()
 	_teardown_session()
 	_show("menu")
 	_set_preview(_menu.selected_map())
@@ -612,7 +876,7 @@ func _to_menu() -> void:
 func _show(state: String) -> void:
 	_state = state
 	if _chat != null:
-		_chat.activate(state in ["lobby", "match", "end"], state if state in ["match", "end"] else "lobby")
+		_chat.activate(state in ["lobby", "match"] or (state == "end" and not offline), state if state in ["match", "end"] else "lobby")
 	_menu.visible = state == "menu"
 	_lobby.visible = state == "lobby"
 	_end.visible = state == "end"
@@ -706,6 +970,14 @@ func _process(delta: float) -> void:
 	var ms := delta * 1000.0
 	if steam != null:
 		steam.run_callbacks()
+	if queue != null:
+		var real_dt := AutoQuality.real_delta(delta, Engine.time_scale)  # polling is paced by the wall clock, not --time-scale
+		queue.tick(real_dt)
+		_online_tick += real_dt
+		if _online_tick >= 1.0:
+			_online_tick = 0.0
+			online_session.tick()
+			_queue_try_start()
 	if server != null:
 		server.process(ms)
 	if client != null:

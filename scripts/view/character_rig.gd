@@ -117,6 +117,11 @@ static func _recolored(tex: Texture2D, key: String, rc: Dictionary) -> Texture2D
 	return t
 
 
+## Cache key of a recolored atlas: class, model file and the skin item ("" for the class's own colours).
+static func recolor_key(cls: String, file: String, skin: String) -> String:
+	return "%s_%s_%s" % [cls, file, skin]
+
+
 func _setup_kaykit(cls: String, team: Color) -> void:
 	var def: Dictionary = KAYKIT[cls].duplicate()
 	def.merge(skin, true)
@@ -144,7 +149,7 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 			sm.metallic = 0.0
 			sm.albedo_color = Color(0.84, 0.84, 0.86)  # the atlas is bright; keeps white armour from clipping under strong ambient light
 			if def.has("recolor") and sm.albedo_texture != null:
-				sm.albedo_texture = _recolored(sm.albedo_texture, "%s_%s_%s" % [cls, def.file, skin.get("id", "")], def.recolor)
+				sm.albedo_texture = _recolored(sm.albedo_texture, recolor_key(cls, str(def.file), str(skin.get("id", ""))), def.recolor)
 			if nm.ends_with("Cape"):  # the cape carries the team colour
 				sm.albedo_texture = null
 				sm.albedo_color = Color(str(skin.cape)).darkened(0.15) if skin.has("cape") else team.darkened(0.15)
@@ -186,6 +191,7 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 	_build_tree()
 
 
+## `p_skin`: see `skin` (Cosmetics.rig_skin gives the one equipped by the local player; {} for everyone else).
 func setup(cls: String, team: Color, p_skin := {}) -> void:
 	skin = p_skin
 	if _kk_ok(cls):

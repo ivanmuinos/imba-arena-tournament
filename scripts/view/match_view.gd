@@ -7,6 +7,8 @@ signal finished(end_msg: Dictionary, rows: Array)
 ## Practice arena / tutorial: the side panel asked to switch champion or to leave; and what the player just did (see TutorialFlow).
 signal practice_switch(cls: String, spec: String)
 signal leave_requested
+## The local player confirmed "Rendirse" (offline and tournament matches only).
+signal forfeit_requested
 signal gameplay_event(name: String)
 
 const PICK_MIN_RADIUS := 22.0  # px: far-away units stay clickable
@@ -49,6 +51,9 @@ var gfx_choice := "auto"
 var gfx_level := "alta"
 ## Practice arena (the yard) / guided tutorial inside it.
 var practice := false
+## Offline and tournament matches: the Esc menu's leave button gives up. `forfeit_tournament` words it as a tournament loss.
+var forfeit_enabled := false
+var forfeit_tournament := false
 var tutorial := false
 var practice_panel: PracticePanel = null
 var game_menu: GameMenu = null
@@ -177,13 +182,24 @@ func _build_game_menu() -> void:
 	hud.add_modal(game_menu)
 	if practice:
 		game_menu.set_leave_text("Volver al menú")
+	elif forfeit_enabled:
+		game_menu.set_leave_text(GameMenu.forfeit_text(forfeit_tournament))
 	elif client.is_host and not (client.transport is LoopbackTransport):
 		game_menu.set_leave_text("Abandonar (cierra la partida a todos)")
 	game_menu.setting_changed.connect(_on_menu_setting)
 	game_menu.binds_pressed.connect(func(): set_binding(true))
 	game_menu.keys_changed.connect(hud.refresh_keys)
-	game_menu.leave_pressed.connect(func(): leave_requested.emit())
+	game_menu.leave_pressed.connect(_on_menu_leave)
 	game_menu.quit_pressed.connect(func(): get_tree().quit())
+
+
+## Against bots there is no one to leave: the button gives up and the match ends as a loss.
+func _on_menu_leave() -> void:
+	if forfeit_enabled and not practice:
+		game_menu.close()
+		forfeit_requested.emit()
+	else:
+		leave_requested.emit()
 
 
 func _on_menu_setting(key: String) -> void:
@@ -359,7 +375,7 @@ func _finish() -> void:
 		for s in end.stats:
 			if int(s.id) == r.id:
 				st = s
-		rows.append({"name": r.name, "team": r.team, "cls": r.cls, "dmg": int(st.get("dmg", 0)), "kills": int(st.get("kills", 0)), "deaths": int(st.get("deaths", 0)), "heal": int(st.get("heal", 0))})
+		rows.append({"name": r.name, "team": r.team, "cls": r.cls, "dmg": int(st.get("dmg", 0)), "kills": int(st.get("kills", 0)), "deaths": int(st.get("deaths", 0)), "heal": int(st.get("heal", 0)), "me": r.id == my_id})
 	audio.play("win" if end.winner == my_team else "lose")
 	finished.emit(end, rows)
 

@@ -1,6 +1,6 @@
 extends SceneTree
 ## Headless bot-vs-bot balance simulation.
-##   godot --headless --path . --script res://tools/balance_sim.gd -- --n=200 --modes=2,3 --maps=bridge,pillars,tomb,living --seed=1 [--out=user://balance.json]
+##   godot --headless --path . --script res://tools/balance_sim.gd -- --n=200 --modes=2,3 --maps=bridge,pillars,tomb,living,spire --seed=1 [--out=user://balance.json]
 ## Each match draws two random teams (classes with repetition) and plays out with bots on a map. Per class we count
 ## appearances and wins (a class on a team of 3 counts once per copy). Teams are randomised red/blue so spawn side is neutral.
 ## Output: JSON on stdout (last line) with overall, per-mode, per-map and 2v2 pairing tables.
@@ -10,17 +10,21 @@ const STEP := 1000.0 / 60.0
 
 func _init() -> void:
 	GameData.ensure_loaded()
-	var args := {"n": "100", "modes": "2,3", "maps": "bridge,pillars,tomb,living", "seed": "1", "diff": "normal"}
+	var args := {"n": "100", "modes": "2,3", "maps": "bridge,pillars,tomb,living,spire", "seed": "1", "diff": "normal"}
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--"):
 			var kv := a.substr(2).split("=", true, 1)
 			args[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(args.seed)
-	var classes: Array = GameData.classes.keys()
+	var classes: Array = GameData.playable_ids()
 	var stats := {}    # key -> [wins, games]
 	var total_matches := 0
 	var draws := 0
+	var rounds := 0
+	var limit_rounds := 0
+	var draw_rounds := 0
+	var limit_by_mode := {}   # "2"/"3" -> [rounds, limit rounds, limit rounds with a winner, percent-HP winner differs, percent tie]
 	var durations: Array = []   # fight time per match in seconds (prep and between-round pauses excluded)
 	var n := int(args.n)
 	if args.has("duel"):
@@ -55,7 +59,18 @@ func _init() -> void:
 					now += STEP
 					m.tick(now)
 				total_matches += 1
-				durations.append((now - 1_000_000.0) / 1000.0 - 20.0 - 10.0 * float(m.round_n))
+				rounds += m.score.red + m.score.blue + m.draw_rounds
+				limit_rounds += m.limit_rounds
+				draw_rounds += m.draw_rounds
+				var lm: Array = limit_by_mode.get(str(mode), [0, 0, 0, 0, 0])
+				lm[0] += m.score.red + m.score.blue + m.draw_rounds
+				lm[1] += m.limit_rounds
+				lm[2] += m.limit_pct_decided
+				lm[3] += m.limit_pct_differs
+				lm[4] += m.limit_pct_ties
+				limit_by_mode[str(mode)] = lm
+				if m.done:
+					durations.append((now - 1_000_000.0) / 1000.0 - 20.0 - 10.0 * float(m.round_n))
 				var winner := ""
 				if m.done:
 					winner = "red" if m.score.red > m.score.blue else "blue"
@@ -82,7 +97,7 @@ func _init() -> void:
 						var pair: Array = (side[1] as Array).duplicate()
 						pair.sort()
 						_add(stats, "pair|%s+%s" % [pair[0], pair[1]], won)
-	print("RESULT ", JSON.stringify({"matches": total_matches, "unfinished": draws, "stats": stats, "durations": durations}))
+	print("RESULT ", JSON.stringify({"matches": total_matches, "unfinished": draws, "rounds": rounds, "limit_rounds": limit_rounds, "draw_rounds": draw_rounds, "limit_by_mode": limit_by_mode, "stats": stats, "durations": durations}))
 	quit()
 
 
@@ -94,10 +109,12 @@ func _add(stats: Dictionary, key: String, won: bool) -> void:
 
 
 ## 1v1 matchup matrix: every ordered pair of class/spec variants, `n` duels per map (best of 3 like a real match).
-## RESULT JSON: {"duel": {"A|B": [wins of A, games]}, "ttk": {"A|B": [seconds until the first death, games]}}
+## RESULT JSON: {"duel": {"A|B": [wins of A, finished games]}, "ttk": {"A|B": [seconds until the first death, fights with a death]},
+## "meta": {"A|B": [duels, unfinished, rounds, limit rounds, draw rounds, fight seconds of finished duels, limit rounds decided, ... won by higher max HP]}}
+## Unfinished duels (no result within 12 min) are counted in meta, never in the win/ttk tables.
 func _duels(args: Dictionary, rng: RandomNumberGenerator) -> void:
 	var variants: Array = []
-	for c in GameData.classes:
+	for c in GameData.playable_ids():
 		var sp := GameData.spec_ids(c)
 		if sp.is_empty():
 			variants.append([c, ""])
@@ -106,6 +123,7 @@ func _duels(args: Dictionary, rng: RandomNumberGenerator) -> void:
 				variants.append([c, s])
 	var duel := {}
 	var ttk := {}
+	var meta := {}
 	for map_id in str(args.maps).split(","):
 		for a in variants:
 			for b in variants:
@@ -123,15 +141,30 @@ func _duels(args: Dictionary, rng: RandomNumberGenerator) -> void:
 						m.tick(now)
 						if first < 0.0 and m.units.any(func(u): return not u.alive):
 							first = (now - m.fight_start) / 1000.0
+					var key := "%s%s|%s%s" % [a[0], "-" + a[1] if a[1] != "" else "", b[0], "-" + b[1] if b[1] != "" else ""]
+					var e: Array = meta.get(key, [0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0, 0])
+					e[0] += 1
+					e[2] += m.score.red + m.score.blue + m.draw_rounds
+					e[3] += m.limit_rounds
+					e[4] += m.draw_rounds
+					e[6] += m.limit_decided
+					e[7] += m.limit_hi_hp_wins
+					e[8] += m.limit_pct_decided
+					e[9] += m.limit_pct_differs
+					e[10] += m.limit_pct_ties
 					if not m.done:
+						e[1] += 1
+						meta[key] = e
 						continue
+					e[5] += (now - 1_000_000.0) / 1000.0 - 20.0 - 10.0 * float(m.round_n)
+					meta[key] = e
 					var a_team: String = "blue" if swap else "red"
 					var won: bool = (m.score.red > m.score.blue) == (a_team == "red")
-					var key := "%s%s|%s%s" % [a[0], "-" + a[1] if a[1] != "" else "", b[0], "-" + b[1] if b[1] != "" else ""]
 					_add(duel, key, won)
-					var t: Array = ttk.get(key, [0.0, 0])
-					t[0] += maxf(first, 0.0)
-					t[1] += 1
-					ttk[key] = t
-	print("RESULT ", JSON.stringify({"duel": duel, "ttk": ttk}))
+					if first >= 0.0:  # a fight with no death must not drag the mean down with a 0 s sample
+						var t: Array = ttk.get(key, [0.0, 0])
+						t[0] += first
+						t[1] += 1
+						ttk[key] = t
+	print("RESULT ", JSON.stringify({"duel": duel, "ttk": ttk, "meta": meta}))
 	quit()

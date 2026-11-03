@@ -17,13 +17,23 @@ signal steam_browse
 signal steam_changed
 ## "Unirse" on a friend in the home's social panel: enter their Steam lobby.
 signal steam_join(lobby_id: int)
+## A cup from the tournament screen: new run (mode 1-3, tier id, match config) or continue the one in progress.
+signal play_tournament(mode: int, tier_id: String, cfg: Dictionary)
+signal continue_tournament
 ## The splash/hub asks for the 3D backdrop mood: "splash" (cinematic flythrough) or "hub".
 signal backdrop_requested(kind: String)
+## The online session, the teams or the queue changed (the Equipos tab and the queue card follow it).
+signal online_changed
+## New data from the server (teams, invitations, group, queue state): screens redraw only if what they show changed.
+signal online_data_changed
 
 const DESIGN := Vector2(1280, 720)
 const SLIDE := 64.0
 
 var st: SettingsStore
+## Progress files (main.gd hands them over before the menu enters the tree; defaults for tests and tools).
+var profile: ProfileStore
+var tstore: TournamentStore
 var nav := MenuNav.new()
 var status: Label
 var steam_ok := false
@@ -33,6 +43,10 @@ var steam_backend: SteamBackend = null
 var top_bar: TopBar
 ## In-client private chat with friends (null without Steam).
 var dm: DirectChat = null
+## Online features (null while Online is off): sign-in, teams and groups/queue. main.gd hands them over.
+var online_session: OnlineSession = null
+var team_service: TeamService = null
+var queue: QueueService = null
 var scale_ := 1.0
 ## The hub offers the tutorial on the first launch (off for scripted runs and screenshots).
 var offer_tutorial := true
@@ -49,11 +63,18 @@ var _booted := false
 var _launching := false
 var _music: AudioStreamPlayer
 var _status_tw: Tween
+var _queue_bar: PanelContainer
+var _queue_label: Label
+var _queue_cancel: MButton
 
 
 func _ready() -> void:
 	theme = UiKit.theme()
 	st = SettingsStore.shared()
+	if profile == null:
+		profile = ProfileStore.new()
+	if tstore == null:
+		tstore = TournamentStore.new()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(UiKit.backdrop())
@@ -69,7 +90,7 @@ func _ready() -> void:
 	_stage = Control.new()
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_stage)
-	for pair in [["splash", MSplash], ["hub", MHub], ["play", MPlay], ["setup", MSetup], ["join", MJoin], ["champions", MChampions], ["settings", MSettings], ["howto", MHowTo]]:
+	for pair in [["splash", MSplash], ["hub", MHub], ["play", MPlay], ["setup", MSetup], ["join", MJoin], ["champions", MChampions], ["settings", MSettings], ["howto", MHowTo], ["tournament", MTournament], ["teams", MTeams]]:
 		var v: MenuView = pair[1].new()
 		v.menu = self
 		_views[pair[0]] = v
@@ -179,6 +200,12 @@ func debug_goto(spec: String) -> void:
 			nav.go("play")
 		"howto":
 			nav.go("howto")
+		"teams":
+			nav.go("teams")
+		"tournament":
+			nav.go("tournament")
+			if parts.size() > 1:
+				(_views.tournament as MTournament).select_page(parts[1])
 		"setup", "champions", "join":
 			nav.go("play")
 			nav.start_flow("join" if id == "join" else "practice")
@@ -194,6 +221,30 @@ func debug_goto(spec: String) -> void:
 	backdrop_requested.emit("splash" if id == "splash" else "hub")
 
 
+## The tournament screen (after a cup ends on the end screen).
+func open_tournament() -> void:
+	go_tab("tournament")
+
+
+## A new cup with the saved champion. `fresh` replaces a run in progress of the same mode and tier.
+func start_tournament(mode: int, tier_id: String, fresh := false) -> void:
+	if _launching:
+		return
+	_launching = true
+	var cfg := _cfg().duplicate()
+	cfg["fresh"] = fresh
+	play_tournament.emit(mode, tier_id, cfg)
+	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
+
+
+func resume_tournament() -> void:
+	if _launching:
+		return
+	_launching = true
+	continue_tournament.emit()
+	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
+
+
 func set_steam_backend(b: SteamBackend) -> void:
 	steam_backend = b
 	dm = DirectChat.new(b) if b.available() else null
@@ -202,6 +253,74 @@ func set_steam_backend(b: SteamBackend) -> void:
 	if b.available():
 		b.avatar_ready.connect(func(id, tex): if id == b.my_id(): top_bar.set_avatar(tex))
 		b.request_avatar(b.my_id())
+
+
+# ---------------------------------------------------------------- online (teams, groups, queue)
+
+## main.gd: the online services exist only when the switch is on (Online.on()). Shows the Equipos tab and the queue.
+func set_online(session: OnlineSession, teams: TeamService, q: QueueService) -> void:
+	online_session = session
+	team_service = teams
+	queue = q
+	top_bar.show_tab("teams", session != null)
+	if session != null:
+		session.state_changed.connect(func(): online_changed.emit())
+		q.changed.connect(_refresh_queue_bar)
+		q.changed.connect(func(): online_data_changed.emit())
+		teams.changed.connect(func(): online_data_changed.emit())
+	_refresh_queue_bar()
+	online_changed.emit()
+
+
+## Signed in and able to use the server right now.
+func online_ready() -> bool:
+	return online_session != null and online_session.is_ready()
+
+
+## What to tell the player when the online features cannot be used (never a raw error).
+func online_notice() -> String:
+	if online_session == null:
+		return "El juego en línea todavía no está disponible."
+	if online_session.note != "":
+		return online_session.note
+	return "Conectando con el servidor en línea…"
+
+
+## "Invitar" on a Steam friend: opens the teams screen with their id filled in.
+func invite_friend(friend: Dictionary) -> void:
+	if online_session == null:
+		return
+	go_tab("teams")
+	(_views.teams as MTeams).prefill(str(int(friend.id)))
+
+
+## Searches for a normal match (alone or with the group). Errors become a notice.
+func queue_join(mode: int, use_group: bool) -> void:
+	if queue == null:
+		return
+	queue.join(mode, use_group, func(r: Dictionary):
+		if not r.ok:
+			set_status(QueueService.error_text(str(r.get("error", "")))))
+
+
+func queue_cancel() -> void:
+	if queue != null:
+		queue.cancel()
+
+
+func _refresh_queue_bar() -> void:
+	if _queue_bar == null:
+		return
+	var q := queue
+	_queue_bar.visible = q != null and q.state != "idle"
+	if not _queue_bar.visible:
+		return
+	if q.state == "searching":
+		_queue_label.text = "Buscando partida %dv%d · %d en cola · %ds" % [q.mode, q.mode, maxi(q.searching, 1), q.wait]
+	elif q.current.get("lobby_id", "") == "" and not q.current.get("is_host", false):
+		_queue_label.text = "Partida encontrada: esperando la sala del anfitrión…"
+	else:
+		_queue_label.text = "Partida encontrada: entrando…"
 
 
 # ---------------------------------------------------------------- navigation
@@ -335,6 +454,22 @@ func _build_chrome() -> void:
 	ver.position = Vector2(24, -34)
 	ver.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_chrome.add_child(ver)
+	# searching for an online match stays visible on every menu screen
+	_queue_bar = UiKit.glass(UiKit.GOLD, 10, 8, 3.0, 0.7)
+	_queue_bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_queue_bar.position = Vector2(24, -86)
+	var qrow := HBoxContainer.new()
+	qrow.add_theme_constant_override("separation", 12)
+	_queue_bar.add_child(qrow)
+	_queue_label = UiKit.label("", 15, UiKit.INK)
+	_queue_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	qrow.add_child(_queue_label)
+	_queue_cancel = MButton.new("Cancelar", "ghost")
+	_queue_cancel.custom_minimum_size = Vector2(96, 30)
+	_queue_cancel.pressed.connect(queue_cancel)
+	qrow.add_child(_queue_cancel)
+	_queue_bar.visible = false
+	_chrome.add_child(_queue_bar)
 
 
 ## Tabs and JUGAR: one level under the home, so Esc / Volver always lead back to it.
@@ -351,12 +486,12 @@ func go_tab(screen: String) -> void:
 func active_tab(id: String) -> String:
 	if nav.mode != "" or id in ["play", "setup", "join"]:
 		return "play"
-	return id if id in ["hub", "champions", "howto"] else ""
+	return id if id in ["hub", "champions", "howto", "tournament", "teams"] else ""
 
 
 func _refresh_profile() -> void:
 	var online := steam_backend != null and steam_backend.available()
-	top_bar.set_profile(steam_backend.persona_name() if online else "", str(st.get_value("name")), online)
+	top_bar.set_profile(steam_backend.persona_name() if online else "", str(st.get_value("name")), online, Cosmetics.title())
 
 
 func _update_chrome(id: String) -> void:

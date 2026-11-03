@@ -34,6 +34,36 @@ func test_directional_blocks_use_defender_facing_and_skip_magic_dots_cc() -> voi
 	eq(m.block_chance(a, d, now, "strike"), 0.0, "non-warriors cannot shield block")
 
 
+func test_round_counters_track_time_limit_and_draws() -> void:
+	var m := _duel("warrior", "warrior")
+	eq(m.limit_rounds, 0, "no limit rounds at start")
+	eq(m.draw_rounds, 0, "no draws at start")
+	_advance(m, float(m.C.ROUND_LIMIT_MS) + 200.0)
+	eq(m.limit_rounds, 1, "stalled round counted at the limit")
+	eq(m.draw_rounds, 1, "equal health is a draw")
+	var h := _duel("warrior", "rogue")
+	_advance(h, float(h.C.ROUND_LIMIT_MS) + 200.0)
+	eq(h.limit_rounds, 1, "limit round counted")
+	eq(h.draw_rounds, 0, "unequal health is not a draw")
+	eq(h.limit_decided, 1, "limit round with a winner")
+	eq(h.limit_hi_hp_wins, 1, "higher max HP team wins the stalled round")
+
+
+func test_limit_round_counters_compare_percent_and_absolute_health() -> void:
+	var m := _duel("warrior", "rogue")
+	m.units[0].hp = 372.0   # warrior 60% of 620: more absolute health than the rogue...
+	m.units[1].hp = 300.0   # ...but the rogue has 79% of 380
+	_advance(m, float(m.C.ROUND_LIMIT_MS) + 200.0)
+	eq(m.limit_pct_decided, 1, "the limit round had an absolute-health winner")
+	eq(m.limit_pct_differs, 1, "the percent-health winner is the other team")
+	eq(m.limit_pct_ties, 0, "no percent tie")
+	var t := _duel("warrior", "rogue")
+	_advance(t, float(t.C.ROUND_LIMIT_MS) + 200.0)
+	eq(t.limit_pct_decided, 1, "full health: the higher absolute total wins")
+	eq(t.limit_pct_ties, 1, "both at 100%: a percent tie")
+	eq(t.limit_pct_differs, 0, "a tie is not a difference")
+
+
 func _match(entries: Array, map_id := "test", diff := "normal") -> ArenaMatch:
 	now = 1_000_000.0
 	return ArenaMatch.new(entries.size() / 2, entries, now, diff, map_id)
@@ -67,6 +97,27 @@ func _duel(a: String, b: String, ally := "", blocks := false) -> ArenaMatch:
 		m.units[2].z = s[1].z
 	_advance(m, 30)
 	return m
+
+
+func test_forfeit_gives_the_other_team_the_match() -> void:
+	var m := _match([{"name": "A", "cls": "mage", "team": "red", "peer": 1}, {"name": "B", "cls": "rogue", "team": "blue", "peer": 2}])
+	_advance(m, 20100)
+	m.forfeit("red", now)
+	eq(m.phase, "over", "termina la partida")
+	eq(m.score.blue, 2, "gana azul por abandono")
+	var ends := m.broadcasts.filter(func(b): return b.t == "end")
+	eq(ends.size(), 1, "un solo 'end'")
+	eq(ends[0].winner, "blue", "ganador")
+	eq(ends[0].stats.size(), 2, "con estadísticas")
+	m.forfeit("blue", now)
+	eq(m.broadcasts.filter(func(b): return b.t == "end").size(), 1, "no se repite una vez terminada")
+
+
+func test_one_vs_one_has_no_allies_and_ticks_clean() -> void:
+	var m := _match([{"name": "A", "cls": "priest", "team": "red"}, {"name": "B", "cls": "mage", "team": "blue"}], "bridge")
+	_advance(m, 25000)
+	eq(m.units.size(), 2, "1v1")
+	check(m.phase in ["fight", "between", "over"], "la simulación avanza")
 
 
 func _bots(classes: Array) -> Array:

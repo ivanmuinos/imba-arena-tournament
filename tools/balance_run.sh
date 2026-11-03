@@ -3,7 +3,7 @@
 # Usage: tools/balance_run.sh [matches_per_combo=150] [tag=baseline]
 cd "$(dirname "$0")/.."
 N=${1:-150}; TAG=${2:-baseline}; OUT=/tmp/balance_$TAG; rm -rf "$OUT"; mkdir -p "$OUT"
-for mode in 2 3; do for map in bridge pillars tomb living; do
+for mode in 2 3; do for map in bridge pillars tomb living spire; do
   (godot --headless --path . --script res://tools/balance_sim.gd -- --n=$N --modes=$mode --maps=$map --seed=$((mode*100+${#map}*7+N)) 2>&1 | grep '^RESULT ' | sed 's/^RESULT //' > "$OUT/${mode}_$map.json") &
 done; done
 wait

@@ -31,6 +31,17 @@ var fight_start := 0.0
 var round_n := 1
 var score := {"red": 0, "blue": 0}
 var done := false
+## Telemetry only (balance tools): rounds ended by the time limit, rounds ended without a winner, and, among limit
+## rounds that had a winner and teams of different total max HP, how many the higher-max-HP team won.
+var limit_rounds := 0
+var draw_rounds := 0
+var limit_decided := 0
+var limit_hi_hp_wins := 0
+## Telemetry only: among limit rounds that had a winner by absolute health, how many a percent-of-max-health rule would have
+## decided for the other team (differs) or left tied (ties). Percent = current health of the living / max health of the whole team.
+var limit_pct_decided := 0
+var limit_pct_differs := 0
+var limit_pct_ties := 0
 ## Practice arena ("Arena de práctica", offline): one endless fight against training dummies, no rounds, no dampening, instant respawn.
 var practice := false
 ## Debug (`--god`, used by the real-input playtests): human players take no damage and cannot be crowd controlled,
@@ -53,7 +64,7 @@ var _dt := 1.0 / 60.0
 var C: Dictionary
 
 
-## entries: [{name, cls, team, peer}] (peer 0 = bot).
+## entries: [{name, cls, team, peer}] (peer 0 = bot). Scripted matches add per unit: diff, skill, hp_mult, dmg_mult.
 func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id := "bridge") -> void:
 	GameData.ensure_loaded()
 	C = GameData.C
@@ -72,9 +83,12 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 		u.team = e.team
 		u.peer = e.get("peer", 0)
 		u.dummy = str(e.get("dummy", ""))
+		u.diff = str(e.get("diff", ""))
+		u.skill = float(e.get("skill", -1.0))
+		u.dmg_mult = float(e.get("dmg_mult", 1.0))
 		if u.peer == 0 and u.dummy == "":
-			u.brain = BotBrain.new(diff)
-		u.max_hp = float(e.hp) if u.dummy != "" else float(u.spec().hp)
+			u.brain = _new_brain(u)
+		u.max_hp = float(e.hp) if u.dummy != "" else float(u.spec().hp) * float(e.get("hp_mult", 1.0))
 		if u.dummy != "":
 			u.home = Vector2(float(e.x), float(e.z))
 		if practice and u.peer != 0:
@@ -93,6 +107,8 @@ func roster() -> Array:
 		if u.dummy != "":
 			r["dummy"] = u.dummy
 			r["hp"] = u.max_hp
+		elif not is_equal_approx(u.max_hp, float(u.spec().hp)):
+			r["hp"] = u.max_hp  # scripted HP: GameData.entry_max_hp (the HUD) reads it from here
 		return r)
 
 
@@ -113,7 +129,15 @@ func unit_by_id(id: int) -> ArenaUnit:
 ## A human left mid-match: a bot takes over so the arena stays fair.
 func leave(u: ArenaUnit) -> void:
 	u.peer = 0
-	u.brain = BotBrain.new(diff)
+	u.brain = _new_brain(u)
+
+
+## Bot brain of a unit: its own difficulty and fixed skill when scripted, else the match's.
+func _new_brain(u: ArenaUnit) -> BotBrain:
+	var b := BotBrain.new(u.diff if u.diff != "" else diff)
+	if u.skill >= 0.0:
+		b.skill = u.skill
+	return b
 
 
 # ---------------------------------------------------------------- rounds
@@ -167,6 +191,8 @@ func _end_round(winner: String, now: float) -> void:
 		return
 	if winner != "":
 		score[winner] += 1
+	else:
+		draw_rounds += 1
 	var over: bool = winner != "" and score[winner] >= C.ROUNDS_TO_WIN
 	phase = "over" if over else "between"
 	phase_ends_at = now + (OVER_MS if over else BETWEEN_MS)
@@ -175,6 +201,20 @@ func _end_round(winner: String, now: float) -> void:
 			"t": "end", "winner": winner, "score": score.duplicate(),
 			"stats": units.map(func(u): return {"id": u.id, "dmg": roundi(u.dmg), "kills": u.kills, "deaths": u.deaths, "heal": roundi(u.healed)}),
 		})
+
+
+## A player abandoned a 1v1 against another human: the other team wins by walkover.
+func forfeit(team: String, now: float) -> void:
+	if phase == "over" or done:
+		return
+	var winner := "blue" if team == "red" else "red"
+	score[winner] = maxi(int(score[winner]), int(C.ROUNDS_TO_WIN))
+	phase = "over"
+	phase_ends_at = now + OVER_MS
+	broadcasts.append({
+		"t": "end", "winner": winner, "score": score.duplicate(),
+		"stats": units.map(func(u): return {"id": u.id, "dmg": roundi(u.dmg), "kills": u.kills, "deaths": u.deaths, "heal": roundi(u.healed)}),
+	})
 
 
 # ---------------------------------------------------------------- commands
@@ -880,6 +920,8 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 		return
 	if god and t.peer != 0:
 		return
+	if src != null and src.dmg_mult != 1.0:
+		amount *= src.dmg_mult
 	if now < t.shield_until:
 		if src != null: fx.append({"k": "absorb", "id": t.id})
 		return
@@ -1130,7 +1172,27 @@ func tick(now: float) -> void:
 		var hp := {"red": 0.0, "blue": 0.0}
 		for u in alive_units:
 			hp[u.team] += u.hp
-		_end_round("red" if hp.red > hp.blue + 1.0 else ("blue" if hp.blue > hp.red + 1.0 else ""), now)
+		var limit_winner: String = "red" if hp.red > hp.blue + 1.0 else ("blue" if hp.blue > hp.red + 1.0 else "")
+		limit_rounds += 1
+		if limit_winner != "":
+			var team_max := {"red": 0.0, "blue": 0.0}
+			for u in units:
+				team_max[u.team] += u.max_hp
+			var pr: float = hp.red / maxf(team_max.red, 1.0)
+			var pb: float = hp.blue / maxf(team_max.blue, 1.0)
+			limit_pct_decided += 1
+			if absf(pr - pb) < 0.001:
+				limit_pct_ties += 1
+			elif ("red" if pr > pb else "blue") != limit_winner:
+				limit_pct_differs += 1
+			var mx := {"red": 0.0, "blue": 0.0}
+			for u in units:
+				mx[u.team] += u.max_hp
+			if absf(mx.red - mx.blue) > 1.0:
+				limit_decided += 1
+				if (mx[limit_winner] > mx.red + mx.blue - mx[limit_winner]):
+					limit_hi_hp_wins += 1
+		_end_round(limit_winner, now)
 		return
 	if fighting:
 		for u in alive_units:

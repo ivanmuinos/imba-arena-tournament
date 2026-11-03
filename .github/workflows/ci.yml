@@ -45,3 +45,26 @@ jobs:
 
       - name: Run tests
         run: ./run_tests.sh
+
+  # Server rules and permissions (pgTAP) on a local Supabase stack. Separate from `tests`, which stays the required check.
+  database:
+    name: database
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.78.1
+
+      - name: Start local Supabase
+        # Applies supabase/migrations to a throwaway Postgres in Docker; nothing here touches a cloud project.
+        run: supabase start
+
+      - name: Run database tests
+        run: supabase test db
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup

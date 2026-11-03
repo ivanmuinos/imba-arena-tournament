@@ -189,6 +189,86 @@ func test_only_host_changes_settings_and_starts() -> void:
 	eq([s.cfg.map, s.cfg.mode, s.cfg.diff], ["tomb", 3, "hard"], "el anfitrión sí")
 
 
+func test_host_cannot_switch_to_1v1_with_more_than_two_players() -> void:
+	var h := _hosted()
+	var s: GameServer = h.server
+	h.client.send_set({"mode": 1})
+	_pump(s, [h.client], 50.0)
+	eq(s.cfg.mode, 1, "con un jugador se puede pasar a 1v1")
+	var g2 := _remote(s, 2)
+	_pump(s, [h.client, g2], 50.0)
+	eq(s.players.size(), 2, "entran dos")
+	var g3 := _remote(s, 3, "C")
+	var errs := []
+	g3.server_error.connect(func(t): errs.append(t))
+	_pump(s, [h.client, g2, g3], 100.0)
+	eq(s.players.size(), 2, "1v1: la sala se llena con dos")
+	h.client.send_set({"mode": 2})
+	_pump(s, [h.client, g2], 50.0)
+	h.client.send_set({"mode": 3})
+	_pump(s, [h.client, g2], 50.0)
+	var g4 := _remote(s, 4, "D")
+	var g5 := _remote(s, 5, "E")
+	_pump(s, [h.client, g2, g4, g5], 100.0)
+	eq(s.players.size(), 4, "cuatro jugadores")
+	h.client.send_set({"mode": 1})
+	_pump(s, [h.client, g2, g4, g5], 50.0)
+	eq(s.cfg.mode, 3, "no se puede pasar a 1v1 con cuatro jugadores")
+
+
+func _duel_started() -> Dictionary:
+	var h := _hosted({"mode": 1})
+	var s: GameServer = h.server
+	var g := _remote(s, 2)
+	_pump(s, [h.client, g], 50.0)
+	for c in [h.client, g]: c.send_ready(true)
+	_pump(s, [h.client, g], 50.0)
+	check(s.start_match(), "1v1 humano contra humano arranca")
+	_pump(s, [h.client, g], 50.0)
+	return {"server": s, "host": h.client, "guest": g}
+
+
+func test_human_leaving_1v1_vs_human_is_a_walkover() -> void:
+	var d := _duel_started()
+	var s: GameServer = d.server
+	var host: GameClient = d.host
+	var winners := []
+	host.match_ended.connect(func(m): winners.append(m.winner))
+	var guest_unit := s.game.unit_for_peer(2)
+	var host_unit := s.game.unit_for_peer(host.peer_id)
+	d.guest.close()
+	_pump(s, [host], 100.0)
+	eq(s.game.phase, "over", "la partida termina")
+	eq(s.game.score[host_unit.team], 2, "gana el que se queda")
+	check(guest_unit.brain == null, "sin bot sustituto")
+	eq(winners, [host_unit.team], "el que queda recibe 'end'")
+
+
+func test_human_leaving_1v1_vs_bot_keeps_bot_replacement() -> void:
+	var h := _started({"mode": 1})
+	var s: GameServer = h.server
+	var u := s.game.unit_for_peer(h.client.peer_id)
+	h.client.close()
+	_pump(s, [], 100.0)
+	check(u.brain != null and u.peer == 0, "un bot toma el control")
+	check(s.game.phase != "over", "no hay abandono")
+
+
+func test_human_leaving_team_modes_still_hands_unit_to_a_bot() -> void:
+	var h := _hosted({"mode": 2})
+	var s: GameServer = h.server
+	var g := _remote(s, 2)
+	_pump(s, [h.client, g], 50.0)
+	for c in [h.client, g]: c.send_ready(true)
+	_pump(s, [h.client, g], 50.0)
+	check(s.start_match(), "2v2 arranca")
+	var u := s.game.unit_for_peer(2)
+	g.close()
+	_pump(s, [h.client], 100.0)
+	check(u.brain != null and u.peer == 0, "un bot toma el control en 2v2")
+	check(s.game.phase != "over", "no hay abandono en 2v2")
+
+
 # ---------------------------------------------------------------- match
 
 func _started(cfg := {}, cls := "mage") -> Dictionary:
