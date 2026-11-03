@@ -13,7 +13,7 @@ signal quit_pressed
 const HEIGHT := 64.0
 ## Width of the profile card, which is also the width of the friends column under it.
 const SIDE := 280.0
-const TABS := [["hub", "Inicio"], ["champions", "Campeones"], ["howto", "Cómo jugar"]]
+const TABS := [["hub", "Inicio"], ["champions", "Campeones"], ["howto", "Cómo jugar"], ["tournament", "Torneo"], ["teams", "Equipos"]]
 
 var play: MButton
 var back: MButton
@@ -64,6 +64,7 @@ func _init() -> void:
 		b.pressed.connect(func(): tab_pressed.emit(t[0]))
 		row.add_child(b)
 		_tabs[t[0]] = b
+	_tabs["teams"].visible = false  # only when the online features are on (MenuScreen.set_online)
 	back = MButton.new("Volver", "ghost", "ui_back")
 	back.custom_minimum_size = Vector2(120, 38)
 	back.add_theme_font_size_override("font_size", 16)
@@ -209,6 +210,11 @@ func tab(id: String) -> Button:
 	return _tabs.get(id)
 
 
+func show_tab(id: String, on: bool) -> void:
+	if _tabs.has(id):
+		(_tabs[id] as Button).visible = on
+
+
 ## id: a tab id, "play" (JUGAR and the play flow) or "" (nothing highlighted, e.g. settings).
 func set_active(id: String) -> void:
 	active = id
@@ -222,14 +228,15 @@ func set_active(id: String) -> void:
 
 
 ## Steam: its name (not editable) and "En línea"; without Steam the editable name and "Sin Steam".
-func set_profile(steam_name: String, saved_name: String, online: bool) -> void:
+func set_profile(steam_name: String, saved_name: String, online: bool, title := "") -> void:
 	persona.visible = steam_name != ""
 	name_edit.visible = steam_name == ""
 	persona.text = steam_name
 	if not name_edit.has_focus():
 		name_edit.text = saved_name
-	status.text = "En línea" if online else "Sin Steam"
-	status.add_theme_color_override("font_color", UiKit.GREEN if online else UiKit.DIM)
+	status.text = title if title != "" else ("En línea" if online else "Sin Steam")  # the dot already says online
+	status.clip_text = true
+	status.add_theme_color_override("font_color", UiKit.GOLD if title != "" else (UiKit.GREEN if online else UiKit.DIM))
 	_dot.add_theme_stylebox_override("panel", UiKit.box(UiKit.GREEN if online else UiKit.DIM, Color(0.035, 0.022, 0.018), 6, 2, 0))
 
 

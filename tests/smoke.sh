@@ -19,6 +19,8 @@ check() { # name, output
 godot --headless --path . --import >/dev/null 2>&1
 out=$(limit 60 godot --headless --path . --quit-after 120 2>&1)
 check "menú principal" "$out"
+out=$(limit 60 godot --headless --path . --quit-after 240 -- --online --log 2>&1)
+check "menú con online activado, sin Steam ni servidor" "$out"
 out=$(limit 90 godot --headless --path . --quit-after 1500 -- --offline --autopilot --log 2>&1)
 check "partida offline (1500 cuadros)" "$out"
 echo "$out" | grep -q "snapshot #1 " || { echo "✗ la partida offline no produjo snapshots"; fail=1; }
@@ -26,11 +28,19 @@ out=$(limit 90 godot --headless --path . --quit-after 2500 -- --offline --drive 
 check "jugador con entradas simuladas (priest, tomb, 3v3)" "$out"
 out=$(limit 90 godot --headless --path . --quit-after 2500 -- --offline --drive --cls=rogue --map=living --log 2>&1)
 check "jugador con entradas simuladas (rogue, living, 2v2)" "$out"
+out=$(limit 90 godot --headless --path . --quit-after 2500 -- --offline --drive --cls=priest --map=pillars --mode=1 --log 2>&1)
+check "jugador con entradas simuladas (priest, pillars, 1v1)" "$out"
 out=$(limit 90 godot --headless --path . --quit-after 2500 -- --practice --drive --cls=mage --log 2>&1)
 check "arena de práctica con entradas simuladas" "$out"
 echo "$out" | grep -q "snapshot #1 " || { echo "✗ la arena de práctica no produjo snapshots"; fail=1; }
 out=$(limit 90 godot --headless --path . --quit-after 2500 -- --practice=tutorial --drive --cls=warrior --log 2>&1)
 check "tutorial con entradas simuladas" "$out"
+rm -rf /tmp/magma_smoke_save; mkdir -p /tmp/magma_smoke_save
+out=$(limit 120 godot --headless --path . --quit-after 6000 -- --tournament=1:bronze --save-dir=/tmp/magma_smoke_save --autopilot --time-scale=8 --rounds=1 --cls=mage --log 2>&1)
+check "torneo 1v1 Bronce (partida guionada hasta el final)" "$out"
+echo "$out" | grep -q "fin de partida" || { echo "✗ el torneo no terminó la partida"; fail=1; }
+grep -q '"history":\[{' /tmp/magma_smoke_save/tournament.json 2>/dev/null || { echo "✗ el torneo no registró el resultado"; fail=1; }
+grep -q '"xp":' /tmp/magma_smoke_save/profile.json 2>/dev/null || { echo "✗ el perfil no recibió la partida"; fail=1; }
 (limit 45 godot --headless --path . -- --server --port=7791 --wait=2 --autopilot > /tmp/magma_smoke_server.txt 2>&1 &)
 sleep 3
 out=$(limit 40 godot --headless --path . --quit-after 1200 -- --join=127.0.0.1:7791 --name=Smoke --log 2>&1)

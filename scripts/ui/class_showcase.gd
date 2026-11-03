@@ -6,6 +6,7 @@ extends SubViewportContainer
 var _vp := SubViewport.new()
 var _pivot := Node3D.new()
 var _rig: CharacterRig = null
+var _skin := ""
 var _pet: CompanionView = null
 var _pet_key := ""
 var _cls := ""
@@ -145,9 +146,10 @@ func _tint(c: Color) -> void:
 
 func show_class(cls: String, team := Color("#ffb84d"), spec := "") -> void:
 	_show_pet(cls, spec, team)
-	if cls == _cls:
+	if cls == _cls and Cosmetics.skin_for(cls) == _skin:
 		return
 	_cls = cls
+	_skin = Cosmetics.skin_for(cls)
 	_tint(UiKit.class_color(cls))
 	if _rig != null and _rig.root != null:
 		_rig.root.queue_free()
@@ -155,7 +157,7 @@ func show_class(cls: String, team := Color("#ffb84d"), spec := "") -> void:
 	if not CharacterRig.available(cls):
 		return
 	_rig = CharacterRig.new()
-	_rig.setup(cls, team)
+	_rig.setup(cls, team, Cosmetics.rig_skin(cls))  # previews what you will wear
 	_pivot.add_child(_rig.root)
 	_pivot.rotation.y = 0.5
 	_spin_v = 0.0

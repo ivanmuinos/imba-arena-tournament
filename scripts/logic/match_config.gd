@@ -82,3 +82,45 @@ static func build_entries(mode: int, humans: Array, rng: RandomNumberGenerator =
 		if int(e.peer) == 0:
 			e["talents"] = Talents.random_picks(e.cls, e.spec, rng)
 	return entries
+
+
+## Scripted match (tournament): `script` is a list of units {team, cls, name, spec, diff, skill, hp_mult, dmg_mult};
+## the ones marked `human` take the connected players in order. Everything is clamped like a network input.
+static func scripted_entries(script: Array, humans: Array) -> Array:
+	GameData.ensure_loaded()
+	var pool := humans.duplicate()
+	var out: Array = []
+	for raw in script:
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var s: Dictionary = raw
+		var cls := str(s.get("cls", "mage"))
+		var name := str(s.get("name", ""))
+		var peer := 0
+		var spec := str(s.get("spec", ""))
+		var talents: Array = []  # tournament rivals play their base kit; the human brings their talents
+		if bool(s.get("human", false)) and not pool.is_empty():
+			var h: Dictionary = pool.pop_front()
+			peer = int(h.peer)
+			name = str(h.name)
+			cls = str(h.cls)
+			spec = str(h.get("spec", ""))
+			talents = h.get("talents", [])
+		var cls_ok := cls if GameData.playable(cls) else "mage"
+		var diff := str(s.get("diff", ""))
+		var e := {
+			"name": sanitize_name(name),
+			"cls": cls_ok,
+			"spec": GameData.normalize_spec(cls_ok, spec),
+			"talents": talents,
+			"team": "blue" if str(s.get("team", "red")) == "blue" else "red",
+			"peer": peer,
+			"hp_mult": clampf(float(s.get("hp_mult", 1.0)), 0.1, 3.0),
+			"dmg_mult": clampf(float(s.get("dmg_mult", 1.0)), 0.1, 3.0),
+		}
+		if peer == 0:
+			e["diff"] = diff if DIFFS.has(diff) else "normal"
+			if s.has("skill"):
+				e["skill"] = clampf(float(s.skill), 0.0, 1.0)
+		out.append(e)
+	return out

@@ -68,6 +68,11 @@ class FakeSteamBackend:
 		for c in q:
 			c.call()
 
+	func request_web_auth_ticket(_identity: String) -> void:
+		var ok := online
+		var id := sid
+		_queue.append(func(): web_auth_ticket.emit(ok, "fa%014x" % id if ok else ""))
+
 	func create_lobby(_friends_only: bool, max_members: int) -> void:
 		var id := net.new_lobby_id()
 		net.lobbies[id] = {"owner": sid, "members": [sid], "data": {"game": "imba-arena-tournament"}, "max": max_members, "joinable": true}

@@ -6,6 +6,10 @@ const SKILL := {"easy": [0.1, 0.3], "normal": [0.35, 0.55], "hard": [0.75, 0.95]
 const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "ct": 16.0, "ronin": 1.8, "crack": 11.0, "wizard": 14.0, "ki": 1.8, "warrior": 1.6, "rogue": 1.6}
 ## Classes that play as the team healer (slots laid out alike: 1 cast heal, 2 protect, 4 heal over time, 5 dispel, 6 ult).
 const HEALERS := ["priest", "druid"]
+## Heal thresholds (fraction of health) for shield, renew, flash heal, and flash heal with a melee on top. A healer with no
+## living ally is only healing itself, and every heal costs the 1.5 s global cooldown a smite would use: it defends later.
+const HEAL_AT := [0.6, 0.85, 0.7, 0.45]
+const HEAL_AT_ALONE := [0.45, 0.55, 0.5, 0.3]
 ## Ability ids in the old 7-slot order the tactics in think() index by (see `o` there). Ids the kit no longer has are
 ## in data/classes.json -> reserve and the bot just skips them.
 const LEGACY_KITS := {
@@ -63,6 +67,10 @@ func _steer(map: GameMap, u: ArenaUnit, d: Vector2) -> Vector2:
 
 ## Priest support: dispel, hymn, scream, shield, renew, flash heal. Returns "cast" (casting a heal: stand still),
 ## "instant" (used an instant spell this think) or "" (nothing to do: free to smite).
+func _has_living_ally(m: ArenaMatch, u: ArenaUnit) -> bool:
+	return m.units.any(func(a): return a != u and a.alive and a.team == u.team)
+
+
 func _priest_heal(m: ArenaMatch, u: ArenaUnit, now: float, ab: Array, ready: Callable, try_cast: Callable, chance: Callable, dn: float, o: Callable) -> String:
 	var pct := func(a: ArenaUnit) -> float: return a.hp / a.max_hp
 	var allies := m.units.filter(func(a): return a.alive and a.team == u.team and Vector2(a.x - u.x, a.z - u.z).length() < ab[o.call(1)].range \
@@ -75,6 +83,7 @@ func _priest_heal(m: ArenaMatch, u: ArenaUnit, now: float, ab: Array, ready: Cal
 			controlled = a
 			break
 	var hurt := allies.filter(func(a): return pct.call(a) < 0.5).size()
+	var at: Array = HEAL_AT if u.cls != "priest" or _has_living_ally(m, u) else HEAL_AT_ALONE
 	if controlled != null and ready.call(o.call(5)) and chance.call(0.8) and try_cast.call(o.call(5), controlled, controlled): return "instant"
 	# Curses and burns are dispellable damage: clean the most cursed ally (worth a global when 2 curses or a big one is ticking)
 	var cursed: ArenaUnit = null
@@ -93,10 +102,10 @@ func _priest_heal(m: ArenaMatch, u: ArenaUnit, now: float, ab: Array, ready: Cal
 	if lowest == null:
 		return ""
 	var guarded := lowest.absorb > 0 if u.cls == "priest" else now < lowest.wall_until  # shield / ironbark already on
-	if pct.call(lowest) < 0.6 and ready.call(o.call(2)) and not guarded and try_cast.call(o.call(2), lowest, lowest): return "instant"
-	if pct.call(lowest) < 0.85 and now >= lowest.hot_until and ready.call(o.call(4)) and try_cast.call(o.call(4), lowest, lowest): return "instant"
+	if pct.call(lowest) < at[0] and ready.call(o.call(2)) and not guarded and try_cast.call(o.call(2), lowest, lowest): return "instant"
+	if pct.call(lowest) < at[1] and now >= lowest.hot_until and ready.call(o.call(4)) and try_cast.call(o.call(4), lowest, lowest): return "instant"
 	# Flash Heal: avoid hard-casting with a melee on you, unless someone is about to die.
-	if pct.call(lowest) < 0.7 and (dn > 5 or pct.call(lowest) < 0.45) and ready.call(o.call(1)) and try_cast.call(o.call(1), lowest, lowest): return "cast"
+	if pct.call(lowest) < at[2] and (dn > 5 or pct.call(lowest) < at[3]) and ready.call(o.call(1)) and try_cast.call(o.call(1), lowest, lowest): return "cast"
 	return ""
 
 
@@ -491,7 +500,7 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 				var heal := "cast" if stop else _priest_heal(m, u, now, ab, ready, try_cast, chance, dn, o)
 				if heal == "cast":
 					stop = true
-				elif heal == "" and los and d <= ab[0].range and ready.call(0) and randf() < 0.35 + skill * 0.65:
+				elif heal == "" and los and d <= ab[0].range and ready.call(0) and (u.cls == "priest" and not _has_living_ally(m, u) or randf() < 0.35 + skill * 0.65):
 					try_cast.call(0, lead.call(target, ab[0].projSpeed), target)
 		if stop or not u.cast.is_empty():
 			u.input = Vector2.ZERO

@@ -1,0 +1,644 @@
+{
+ "version": 1,
+ "rounds": [
+  "Cuartos",
+  "Semifinal",
+  "Final"
+ ],
+ "tiers": [
+  {
+   "id": "bronze",
+   "name": "Bronce",
+   "diff": "easy",
+   "skill": [
+    0.15,
+    0.2,
+    0.3
+   ],
+   "ally_diff": "normal",
+   "rematches": 1,
+   "streak_cut": 0.05,
+   "hp_mult": 1.0,
+   "dmg_mult": 1.0,
+   "optional": false
+  },
+  {
+   "id": "silver",
+   "name": "Plata",
+   "diff": "normal",
+   "skill": [
+    0.4,
+    0.45,
+    0.55
+   ],
+   "ally_diff": "hard",
+   "rematches": 1,
+   "streak_cut": 0.05,
+   "hp_mult": 1.0,
+   "dmg_mult": 1.0,
+   "optional": false
+  },
+  {
+   "id": "gold",
+   "name": "Oro",
+   "diff": "hard",
+   "skill": [
+    0.75,
+    0.85,
+    0.95
+   ],
+   "ally_diff": "hard",
+   "rematches": 0,
+   "streak_cut": 0.0,
+   "hp_mult": 1.0,
+   "dmg_mult": 1.0,
+   "optional": false
+  },
+  {
+   "id": "gladiator",
+   "name": "Gladiador",
+   "diff": "hard",
+   "skill": [
+    0.95,
+    0.95,
+    0.95
+   ],
+   "ally_diff": "hard",
+   "rematches": 0,
+   "streak_cut": 0.0,
+   "hp_mult": 1.2,
+   "dmg_mult": 1.15,
+   "optional": true
+  }
+ ],
+ "allies": {
+  "warrior": [
+   "priest",
+   "mage"
+  ],
+  "rogue": [
+   "priest",
+   "warlock"
+  ],
+  "mage": [
+   "priest",
+   "warrior"
+  ],
+  "warlock": [
+   "priest",
+   "warrior"
+  ],
+  "hunter": [
+   "priest",
+   "warrior"
+  ],
+  "priest": [
+   "warrior",
+   "mage"
+  ]
+ },
+ "ally_names": [
+  "Tano",
+  "Mica",
+  "Cachi",
+  "Nacho",
+  "Lola",
+  "Fede",
+  "Juana",
+  "Rufo",
+  "Pipa",
+  "Ciro",
+  "Nina",
+  "Bruno"
+ ],
+ "modes": {
+  "1": {
+   "teams": [
+    {
+     "id": "m1_00",
+     "name": "Cuervo Gris",
+     "members": [
+      {
+       "name": "Cuervo Gris",
+       "cls": "warrior"
+      }
+     ]
+    },
+    {
+     "id": "m1_01",
+     "name": "Mariscal Roca",
+     "members": [
+      {
+       "name": "Mariscal Roca",
+       "cls": "mage"
+      }
+     ]
+    },
+    {
+     "id": "m1_02",
+     "name": "Nube Negra",
+     "members": [
+      {
+       "name": "Nube Negra",
+       "cls": "rogue"
+      }
+     ]
+    },
+    {
+     "id": "m1_03",
+     "name": "Tizón",
+     "members": [
+      {
+       "name": "Tizón",
+       "cls": "hunter"
+      }
+     ]
+    },
+    {
+     "id": "m1_04",
+     "name": "Lanza Rota",
+     "members": [
+      {
+       "name": "Lanza Rota",
+       "cls": "warlock"
+      }
+     ]
+    },
+    {
+     "id": "m1_05",
+     "name": "Viuda Roja",
+     "members": [
+      {
+       "name": "Viuda Roja",
+       "cls": "priest"
+      }
+     ]
+    },
+    {
+     "id": "m1_06",
+     "name": "Piedra Sorda",
+     "members": [
+      {
+       "name": "Piedra Sorda",
+       "cls": "rogue"
+      }
+     ]
+    },
+    {
+     "id": "m1_07",
+     "name": "Halcón Pardo",
+     "members": [
+      {
+       "name": "Halcón Pardo",
+       "cls": "mage"
+      }
+     ]
+    },
+    {
+     "id": "m1_08",
+     "name": "Brasa Joven",
+     "members": [
+      {
+       "name": "Brasa Joven",
+       "cls": "mage"
+      }
+     ],
+     "boss": "bronze"
+    },
+    {
+     "id": "m1_09",
+     "name": "Doña Escarcha",
+     "members": [
+      {
+       "name": "Doña Escarcha",
+       "cls": "warlock"
+      }
+     ],
+     "boss": "silver"
+    },
+    {
+     "id": "m1_10",
+     "name": "Rey Ceniza",
+     "members": [
+      {
+       "name": "Rey Ceniza",
+       "cls": "warrior"
+      }
+     ],
+     "boss": "gold"
+    },
+    {
+     "id": "m1_11",
+     "name": "El Coloso",
+     "members": [
+      {
+       "name": "El Coloso",
+       "cls": "rogue"
+      }
+     ],
+     "boss": "gladiator"
+    }
+   ]
+  },
+  "2": {
+   "teams": [
+    {
+     "id": "m2_00",
+     "name": "Los Cenizos",
+     "members": [
+      {
+       "name": "Nina",
+       "cls": "warrior"
+      },
+      {
+       "name": "Bruno",
+       "cls": "priest"
+      }
+     ]
+    },
+    {
+     "id": "m2_01",
+     "name": "Pura Brasa",
+     "members": [
+      {
+       "name": "Gonza",
+       "cls": "mage"
+      },
+      {
+       "name": "Sofi",
+       "cls": "warrior"
+      }
+     ]
+    },
+    {
+     "id": "m2_02",
+     "name": "Guardia Ocre",
+     "members": [
+      {
+       "name": "Vale",
+       "cls": "rogue"
+      },
+      {
+       "name": "Tomi",
+       "cls": "warlock"
+      }
+     ]
+    },
+    {
+     "id": "m2_03",
+     "name": "Lobos de Tiza",
+     "members": [
+      {
+       "name": "Lucho",
+       "cls": "hunter"
+      },
+      {
+       "name": "Pato",
+       "cls": "warrior"
+      }
+     ]
+    },
+    {
+     "id": "m2_04",
+     "name": "Sombra Dorada",
+     "members": [
+      {
+       "name": "Dante",
+       "cls": "warlock"
+      },
+      {
+       "name": "Eva",
+       "cls": "priest"
+      }
+     ]
+    },
+    {
+     "id": "m2_05",
+     "name": "Las Cuervas",
+     "members": [
+      {
+       "name": "Irma",
+       "cls": "mage"
+      },
+      {
+       "name": "Joaco",
+       "cls": "priest"
+      }
+     ]
+    },
+    {
+     "id": "m2_06",
+     "name": "Muralla Vieja",
+     "members": [
+      {
+       "name": "Mateo",
+       "cls": "rogue"
+      },
+      {
+       "name": "Olga",
+       "cls": "mage"
+      }
+     ]
+    },
+    {
+     "id": "m2_07",
+     "name": "Hijos del Puente",
+     "members": [
+      {
+       "name": "Quique",
+       "cls": "hunter"
+      },
+      {
+       "name": "Ramiro",
+       "cls": "mage"
+      }
+     ]
+    },
+    {
+     "id": "m2_08",
+     "name": "Cofradía Roja",
+     "members": [
+      {
+       "name": "Teo",
+       "cls": "hunter"
+      },
+      {
+       "name": "Uma",
+       "cls": "priest"
+      }
+     ],
+     "boss": "bronze"
+    },
+    {
+     "id": "m2_09",
+     "name": "Reina y Corte",
+     "members": [
+      {
+       "name": "Wanda",
+       "cls": "warrior"
+      },
+      {
+       "name": "Yago",
+       "cls": "priest"
+      }
+     ],
+     "boss": "silver"
+    },
+    {
+     "id": "m2_10",
+     "name": "Los Imbatibles",
+     "members": [
+      {
+       "name": "Tano",
+       "cls": "rogue"
+      },
+      {
+       "name": "Mica",
+       "cls": "warrior"
+      }
+     ],
+     "boss": "gold"
+    },
+    {
+     "id": "m2_11",
+     "name": "Gran Coliseo",
+     "members": [
+      {
+       "name": "Nacho",
+       "cls": "rogue"
+      },
+      {
+       "name": "Lola",
+       "cls": "warlock"
+      }
+     ],
+     "boss": "gladiator"
+    }
+   ]
+  },
+  "3": {
+   "teams": [
+    {
+     "id": "m3_00",
+     "name": "Los Cenizos",
+     "members": [
+      {
+       "name": "Maxi",
+       "cls": "warrior"
+      },
+      {
+       "name": "Vale",
+       "cls": "priest"
+      },
+      {
+       "name": "Tomi",
+       "cls": "mage"
+      }
+     ]
+    },
+    {
+     "id": "m3_01",
+     "name": "Pura Brasa",
+     "members": [
+      {
+       "name": "Cande",
+       "cls": "rogue"
+      },
+      {
+       "name": "Lucho",
+       "cls": "mage"
+      },
+      {
+       "name": "Pato",
+       "cls": "priest"
+      }
+     ]
+    },
+    {
+     "id": "m3_02",
+     "name": "Guardia Ocre",
+     "members": [
+      {
+       "name": "Rocio",
+       "cls": "hunter"
+      },
+      {
+       "name": "Dante",
+       "cls": "rogue"
+      },
+      {
+       "name": "Eva",
+       "cls": "priest"
+      }
+     ]
+    },
+    {
+     "id": "m3_03",
+     "name": "Lobos de Tiza",
+     "members": [
+      {
+       "name": "Gael",
+       "cls": "hunter"
+      },
+      {
+       "name": "Irma",
+       "cls": "warrior"
+      },
+      {
+       "name": "Joaco",
+       "cls": "priest"
+      }
+     ]
+    },
+    {
+     "id": "m3_04",
+     "name": "Sombra Dorada",
+     "members": [
+      {
+       "name": "Lila",
+       "cls": "rogue"
+      },
+      {
+       "name": "Mateo",
+       "cls": "hunter"
+      },
+      {
+       "name": "Olga",
+       "cls": "priest"
+      }
+     ]
+    },
+    {
+     "id": "m3_05",
+     "name": "Las Cuervas",
+     "members": [
+      {
+       "name": "Pia",
+       "cls": "rogue"
+      },
+      {
+       "name": "Quique",
+       "cls": "priest"
+      },
+      {
+       "name": "Ramiro",
+       "cls": "warlock"
+      }
+     ]
+    },
+    {
+     "id": "m3_06",
+     "name": "Muralla Vieja",
+     "members": [
+      {
+       "name": "Sol",
+       "cls": "hunter"
+      },
+      {
+       "name": "Teo",
+       "cls": "mage"
+      },
+      {
+       "name": "Uma",
+       "cls": "warrior"
+      }
+     ]
+    },
+    {
+     "id": "m3_07",
+     "name": "Hijos del Puente",
+     "members": [
+      {
+       "name": "Vito",
+       "cls": "warlock"
+      },
+      {
+       "name": "Wanda",
+       "cls": "mage"
+      },
+      {
+       "name": "Yago",
+       "cls": "priest"
+      }
+     ]
+    },
+    {
+     "id": "m3_08",
+     "name": "Cofradía Roja",
+     "members": [
+      {
+       "name": "Zoe",
+       "cls": "hunter"
+      },
+      {
+       "name": "Tano",
+       "cls": "warlock"
+      },
+      {
+       "name": "Mica",
+       "cls": "priest"
+      }
+     ],
+     "boss": "bronze"
+    },
+    {
+     "id": "m3_09",
+     "name": "Reina y Corte",
+     "members": [
+      {
+       "name": "Cachi",
+       "cls": "warrior"
+      },
+      {
+       "name": "Nacho",
+       "cls": "priest"
+      },
+      {
+       "name": "Lola",
+       "cls": "mage"
+      }
+     ],
+     "boss": "silver"
+    },
+    {
+     "id": "m3_10",
+     "name": "Los Imbatibles",
+     "members": [
+      {
+       "name": "Fede",
+       "cls": "rogue"
+      },
+      {
+       "name": "Juana",
+       "cls": "mage"
+      },
+      {
+       "name": "Rufo",
+       "cls": "priest"
+      }
+     ],
+     "boss": "gold"
+    },
+    {
+     "id": "m3_11",
+     "name": "Gran Coliseo",
+     "members": [
+      {
+       "name": "Pipa",
+       "cls": "hunter"
+      },
+      {
+       "name": "Ciro",
+       "cls": "rogue"
+      },
+      {
+       "name": "Nina",
+       "cls": "priest"
+      }
+     ],
+     "boss": "gladiator"
+    }
+   ]
+  }
+ }
+}

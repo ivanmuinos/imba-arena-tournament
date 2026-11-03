@@ -5,6 +5,8 @@ extends PanelContainer
 ## Without Steam it only explains why. Grouping and texts come from Social (unit tested).
 
 signal join_pressed(lobby_id: int)
+## "Invitar" on a friend (only offered while the online features are ready): invite them to a team or group.
+signal invite_pressed(friend: Dictionary)
 ## The friend's card was clicked: open the in-client chat with them.
 signal friend_pressed(friend: Dictionary)
 ## The list was rebuilt with fresh friend data.
@@ -18,6 +20,13 @@ const AVATAR := 30
 var rows: Array[Row] = []
 var message: Label
 var add_button: MButton
+## Show "Invitar" on every friend (set by the home once the online session is ready).
+var invite_enabled := false:
+	set(v):
+		if invite_enabled != v:
+			invite_enabled = v
+			if is_inside_tree():
+				refresh()
 ## In-client chat: unread counts on the cards (set by the home).
 var dm: DirectChat = null:
 	set(v):
@@ -42,6 +51,7 @@ class Row:
 	var avatar: TextureRect
 	var badge: Label
 	var join: MButton
+	var invite: MButton
 	var profile: MButton
 
 
@@ -193,6 +203,10 @@ func _row(f: Dictionary, app: int, group_key: String) -> Row:
 	r.join.add_theme_color_override("font_color", UiKit.GOLD)
 	r.join.pressed.connect(func(): join_pressed.emit(int(r.friend.lobby)))
 	r.box.add_child(r.join)
+	r.invite = _small("Invitar", "", "Invitar a un equipo o grupo")
+	r.invite.visible = invite_enabled
+	r.invite.pressed.connect(func(): invite_pressed.emit(r.friend))
+	r.box.add_child(r.invite)
 	r.profile = _small("", "ui_user", "Ver su perfil de Steam")
 	r.profile.pressed.connect(func(): _overlay("steamid", int(r.friend.id)))
 	r.box.add_child(r.profile)

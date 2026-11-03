@@ -95,6 +95,11 @@ func _init() -> void:
 		exits.add_child(b)
 
 
+## The leave button's wording when it means giving up a match against bots.
+static func forfeit_text(tournament: bool) -> String:
+	return "Rendirse (derrota en el torneo)" if tournament else "Rendirse (perdés la partida)"
+
+
 ## The leave button's wording: the host's leaving closes the match for everyone.
 func set_leave_text(text: String) -> void:
 	_leave_text = text

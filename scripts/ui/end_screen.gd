@@ -10,6 +10,8 @@ var _score: RichTextLabel
 var _teams := {}
 var _again: MButton
 var _mvp := ""
+var _extra: PanelContainer
+var _extra_text: Label
 ## Your champion's XP for this match (Progress): level, bar, gain and what it unlocked.
 var _prog: PanelContainer
 ## The panel's top with 2 players a team; each extra row of the tables pushes it down by ROW_H.
@@ -65,6 +67,15 @@ func _ready() -> void:
 	_again.custom_minimum_size = Vector2(340, 66)
 	_again.pressed.connect(func(): again_pressed.emit())
 	stage.add_child(_again)
+	_extra = UiKit.glass(UiKit.LINE_STRONG, 12, 12, 3.0, 0.8)
+	_extra.position = Vector2(680, 540)
+	_extra.custom_minimum_size = Vector2(528, 0)
+	_extra.visible = false
+	_extra_text = UiKit.label("", 16, UiKit.INK)
+	_extra_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_extra_text.custom_minimum_size = Vector2(500, 0)
+	_extra.add_child(_extra_text)
+	stage.add_child(_extra)
 	var menu := MButton.new("Menú principal", "secondary", "ui_back")
 	menu.position = Vector2(428, 628)
 	menu.size = Vector2(230, 50)
@@ -149,8 +160,13 @@ func _num_cell(value: int, width: int, color: Color) -> Control:
 	return l
 
 
-## rows: [{name, team, cls, dmg, kills, deaths, heal}]
-func show_result(win: bool, score: Dictionary, rows: Array, again_text: String) -> void:
+## rows: [{name, team, cls, dmg, kills, deaths, heal}]. extra.lines (optional): what the match earned or what comes
+## next (cup progress, next rival, XP, level, rewards), one line each.
+func show_result(win: bool, score: Dictionary, rows: Array, again_text: String, extra := {}) -> void:
+	var lines: Array = extra.get("lines", [])
+	_extra.visible = not lines.is_empty()
+	_extra_text.text = "\n".join(lines)
+	_extra.reset_size()
 	_title.text = "VICTORIA" if win else "DERROTA"
 	var m := _title.material as ShaderMaterial
 	if m != null:
@@ -198,7 +214,10 @@ func show_result(win: bool, score: Dictionary, rows: Array, again_text: String) 
 			nr.add_child(star)
 			nr.add_child(UiKit.heading("MVP", 12, UiKit.GOLD, 700, 2))
 		tc.add_child(nr)
-		tc.add_child(UiKit.label(str(GameData.classes[r.cls].name), 12, UiKit.MUTED))
+		var sub_text := str(GameData.classes[r.cls].name)
+		if r.get("me", false) and Cosmetics.title() != "":
+			sub_text += " · " + Cosmetics.title()
+		tc.add_child(UiKit.label(sub_text, 12, UiKit.GOLD if r.get("me", false) and Cosmetics.title() != "" else UiKit.MUTED))
 		h.add_child(tc)
 		h.add_child(_bar_cell(int(r.dmg), top_dmg, UiKit.LAVA, 100))
 		h.add_child(_bar_cell(int(r.heal), top_heal, UiKit.GREEN, 90))

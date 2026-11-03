@@ -103,6 +103,7 @@ func test_config_normalization() -> void:
 	eq(c.cls, "mage", "clase inválida")
 	eq(c.name, "Ana", "nombre limpio")
 	eq(MatchConfig.normalize({"mode": 3}).mode, 3, "3v3")
+	eq(MatchConfig.normalize({"mode": 1}).mode, 1, "1v1")
 	eq(MatchConfig.sanitize_name("").length() > 0, true, "nombre por defecto")
 	eq(MatchConfig.sanitize_name("x".repeat(40)).length(), 16, "máximo 16")
 

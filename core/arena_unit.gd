@@ -20,6 +20,11 @@ var team: String
 ## Network peer that controls this unit (0 = bot).
 var peer := 0
 var brain: BotBrain = null
+## Scripted matches: this unit's own bot difficulty ("" = the match's), fixed skill (< 0 = drawn from the difficulty) and
+## outgoing damage multiplier. The defaults leave a normal match untouched.
+var diff := ""
+var skill := -1.0
+var dmg_mult := 1.0
 ## Practice arena only: dummy kind ("" for real fighters), its home position and the next scripted action (ms).
 var dummy := ""
 var home := Vector2.ZERO

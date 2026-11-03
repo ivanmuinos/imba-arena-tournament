@@ -124,6 +124,12 @@ func test_settings_persist_round_trip_and_survive_garbage() -> void:
 	eq(u.get_value("master"), 0.8, "valor de tipo inválido: se usa el defecto")
 	eq(u.get_value("port"), 7777, "puerto basura: defecto")
 	eq(u.get_value("mode"), 2, "modo inválido")
+	u.set_value("mode", 1)
+	eq(u.get_value("mode"), 1, "1v1 se acepta")
+	u.set_value("mode", 3)
+	eq(u.get_value("mode"), 3, "3v3 se acepta")
+	u.set_value("mode", 0)
+	eq(u.get_value("mode"), 2, "0 -> 2v2")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	check(not SettingsStore.new().load("user://no_existe.cfg"), "archivo inexistente: false y defectos")
 

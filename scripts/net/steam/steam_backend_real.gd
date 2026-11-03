@@ -24,6 +24,14 @@ var _received := 0
 var _hooks: Array = []  # [signal name, callable]: all disconnected in shutdown()
 var _boards := {}  # leaderboard name -> handle
 var _friends_dirty := false
+## Web-API ticket in flight: the handle getAuthTicketForWebApi returned (0 = none) and when we give up waiting.
+var _web_ticket := 0
+var _web_ticket_deadline := 0.0
+## An issued ticket is kept (not cancelled) until the next one or shutdown: cancelling it early would make Steam
+## reject it when the backend verifies it.
+var _web_ticket_issued := 0
+const WEB_TICKET_WAIT := 10.0
+const RESULT_OK := 1  # EResult k_EResultOK
 var _presence_asked := {}  # steam_id -> true once their rich presence was requested
 
 
@@ -58,6 +66,8 @@ func _init(p_verbose := false) -> void:
 	_hook("persona_state_change", func(_id: int, _flags: int): _friends_dirty = true)
 	_hook("friend_rich_presence_update", func(_id: int, _app: int): _friends_dirty = true)
 	_hook("avatar_loaded", _on_avatar_loaded)
+	# GodotSteam 4.23.1: get_ticket_for_web_api(auth_ticket: int, result: int, ticket_size: int, ticket_buffer: PackedByteArray)
+	_hook("get_ticket_for_web_api", _on_web_ticket)
 	if _steam.has_method("initRelayNetworkAccess"):
 		_steam.initRelayNetworkAccess()
 
@@ -91,6 +101,10 @@ func my_id() -> int:
 func run_callbacks() -> void:
 	if _ok:
 		_steam.run_callbacks()
+		if _web_ticket != 0 and Time.get_ticks_msec() / 1000.0 > _web_ticket_deadline:
+			_log("el ticket web no llegó a tiempo")
+			_web_ticket = 0
+			web_auth_ticket.emit(false, "")
 		if _friends_dirty:
 			_friends_dirty = false
 			friends_changed.emit()
@@ -122,11 +136,48 @@ func shutdown() -> void:
 		return
 	_ok = false
 	_log("cerrando Steam")
+	if _web_ticket_issued != 0:
+		_steam.cancelAuthTicket(_web_ticket_issued)
+		_web_ticket_issued = 0
 	for h in _hooks:
 		if _steam.is_connected(h[0], h[1]):
 			_steam.disconnect(h[0], h[1])
 	_hooks.clear()
 	_steam.steamShutdown()
+
+
+## Ticket for the online backend (ISteamUser::GetAuthTicketForWebApi): the handle comes back now, the bytes later in
+## get_ticket_for_web_api. NOT checked against a live Steam client (needs a real App ID and the Web API key on the server).
+func request_web_auth_ticket(identity: String) -> void:
+	if not _ok:
+		web_auth_ticket.emit(false, "")
+		return
+	if _web_ticket_issued != 0:
+		_steam.cancelAuthTicket(_web_ticket_issued)
+		_web_ticket_issued = 0
+	_web_ticket = int(_steam.getAuthTicketForWebApi(identity))
+	_log("ticket web pedido (handle %d)" % _web_ticket)
+	if _web_ticket == 0:  # k_HAuthTicketInvalid
+		web_auth_ticket.emit(false, "")
+		return
+	_web_ticket_deadline = Time.get_ticks_msec() / 1000.0 + WEB_TICKET_WAIT
+
+
+func _on_web_ticket(handle: int, result: int, size: int, buffer: PackedByteArray) -> void:
+	var hex := parse_web_ticket(_web_ticket, handle, result, size, buffer)
+	if handle != _web_ticket or _web_ticket == 0:
+		return  # an answer to a request we gave up on
+	_log("ticket web: resultado %d, %d bytes" % [result, size])
+	_web_ticket_issued = _web_ticket if hex != "" else 0
+	_web_ticket = 0
+	web_auth_ticket.emit(hex != "", hex)
+
+
+## Ticket bytes as lowercase hex when the answer is the one we are waiting for and Steam says OK; "" otherwise.
+static func parse_web_ticket(expected: int, handle: int, result: int, size: int, buffer: PackedByteArray) -> String:
+	if expected == 0 or handle != expected or result != RESULT_OK or size <= 0 or size > buffer.size():
+		return ""
+	return buffer.slice(0, size).hex_encode()
 
 
 func create_lobby(friends_only: bool, max_members: int) -> void:
