@@ -17,7 +17,7 @@ func _init() -> void:
 			args[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(args.seed)
-	var classes: Array = GameData.playable_ids()
+	var classes: Array = GameData.playable_ids()  # disabled classes never play
 	var stats := {}    # key -> [wins, games]
 	var total_matches := 0
 	var draws := 0
@@ -29,6 +29,9 @@ func _init() -> void:
 	var n := int(args.n)
 	if args.has("duel"):
 		_duels(args, rng)
+		return
+	if args.has("talent-eval"):
+		_talent_eval(args, rng)
 		return
 	for mode_s in str(args.modes).split(","):
 		var mode := int(mode_s)
@@ -106,6 +109,55 @@ func _add(stats: Dictionary, key: String, won: bool) -> void:
 	e[0] += 1 if won else 0
 	e[1] += 1
 	stats[key] = e
+
+
+## Talents (--talent-eval): every kit with no talent and with each single talent duels every other kit (base, no
+## talents), `n` per map. RESULT JSON {"talent": {"kit|pick": [wins, games]}} where pick is "base" or "<row>:<i>:<id>".
+## A talent's effect is its win rate minus the kit's base win rate (meta: under 5 points). --only=id1,id2 limits the talents.
+func _talent_eval(args: Dictionary, rng: RandomNumberGenerator) -> void:
+	var variants: Array = []
+	for c in GameData.playable_ids():
+		var sp := GameData.spec_ids(c)
+		for s in (sp if not sp.is_empty() else [""]):
+			variants.append([c, s])
+	var only := str(args.get("kit", ""))
+	var only_ids: Array = str(args.get("only", "")).split(",", false)  # --only=id1,id2: just these talents (and the base)
+	var out := {}
+	for a in variants:
+		var kit := Talents.key(a[0], a[1])
+		if only != "" and only != kit:
+			continue
+		var picks: Array = [["base", [-1, -1]]]
+		var rows := Talents.rows(a[0], a[1])
+		for row in rows.size():
+			for i in (rows[row] as Array).size():
+				if not only_ids.is_empty() and not only_ids.has(str(rows[row][i].id)):
+					continue
+				var p := [-1, -1]
+				p[row] = i
+				picks.append(["%d:%d:%s" % [row, i, rows[row][i].id], p])
+		for pk in picks:
+			for map_id in str(args.maps).split(","):
+				for b in variants:
+					for i in int(args.n):
+						var swap := rng.randf() < 0.5
+						var entries := [
+							{"name": "A", "cls": a[0], "spec": a[1], "talents": pk[1], "team": "blue" if swap else "red"},
+							{"name": "B", "cls": b[0], "spec": b[1], "team": "red" if swap else "blue"}]
+						var now := 1_000_000.0
+						var m := ArenaMatch.new(2, entries, now, str(args.diff), map_id)
+						var limit := now + 12 * 60_000
+						while not m.done and now < limit:
+							now += STEP
+							m.tick(now)
+						if not m.done:
+							continue
+						var won: bool = (m.score.red > m.score.blue) == (not swap)
+						_add(out, "%s|%s" % [kit, pk[0]], won)
+						if args.has("by-rival"):  # --by-rival: also "kit|pick|vs:<rival kit>"
+							_add(out, "%s|%s|vs:%s" % [kit, pk[0], Talents.key(b[0], b[1])], won)
+	print("RESULT ", JSON.stringify({"talent": out}))
+	quit()
 
 
 ## 1v1 matchup matrix: every ordered pair of class/spec variants, `n` duels per map (best of 3 like a real match).

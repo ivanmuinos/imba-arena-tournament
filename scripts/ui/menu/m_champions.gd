@@ -23,6 +23,12 @@ var _panel: Control
 var _cls := ""
 var _spec_box: VBoxContainer
 var _spec_cards := {}
+var _tabs: Segmented
+var _pages := {}
+var _lvl_label: Label
+var _xp_bar: Bar
+var _tal_rows: Array = []  # per row: {caption: Label, buttons: [Button]}
+var _tal_desc: Label
 
 
 func _ready() -> void:
@@ -51,16 +57,27 @@ func _ready() -> void:
 	add_child(_tags)
 	# right column: stats/abilities panel with the confirm button right under it (the roster below gets the full width)
 	var right := VBoxContainer.new()
-	right.position = Vector2(800, 84)
+	right.position = Vector2(800, 76)
 	right.add_theme_constant_override("separation", 14)
 	add_child(right)
 	var p := UiKit.glass(UiKit.LINE, 14, 22)
-	p.custom_minimum_size = Vector2(408, 0)
+	p.custom_minimum_size = Vector2(408, 350)  # both tabs the same height: the confirm button stays put
 	right.add_child(p)
 	_panel = p
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 6)
+	p.add_child(outer)
+	_tabs = Segmented.new().setup([["abilities", "Habilidades"], ["talents", "Talentos"]], "abilities").as_tabs()
+	_tabs.add_theme_constant_override("separation", 8)
+	_tabs.changed.connect(show_tab)
+	outer.add_child(_tabs)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 9)
-	p.add_child(col)
+	col.add_theme_constant_override("separation", 6)
+	outer.add_child(col)
+	_pages["abilities"] = col
+	_pages["talents"] = _build_talents_page()
+	outer.add_child(_pages["talents"])
+	_pages["talents"].visible = false
 	col.add_child(UiKit.caption("Estadísticas", UiKit.MUTED, 12))
 	for s in STATS:
 		var r := HBoxContainer.new()
@@ -77,7 +94,7 @@ func _ready() -> void:
 		r.add_child(b)
 		_bars[s[0]] = b
 		col.add_child(r)
-	col.add_child(UiKit.spacer(8))
+	col.add_child(UiKit.spacer(2))
 	col.add_child(UiKit.caption("Habilidades (pasá el mouse o enfocá para ver)", UiKit.MUTED, 12))
 	_abil_row = HBoxContainer.new()
 	_abil_row.add_theme_constant_override("separation", 8)
@@ -86,7 +103,6 @@ func _ready() -> void:
 		var slot := _make_slot(i)
 		_abil_row.add_child(slot)
 		_slots.append(slot)
-	col.add_child(UiKit.spacer(6))
 	var role := UiKit.label("", 14, UiKit.MUTED)
 	role.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	role.name = "RoleLine"
@@ -115,6 +131,132 @@ func _ready() -> void:
 	add_child(_tip)
 
 
+func show_tab(id: String) -> void:
+	for k in _pages:
+		_pages[k].visible = k == id
+	_tip.hush()
+	_panel.reset_size()
+
+
+## Talents tab: champion level + XP, then one row of 3 choices per talent row (locked rows dimmed with their level).
+func _build_talents_page() -> VBoxContainer:
+	var page := VBoxContainer.new()
+	page.add_theme_constant_override("separation", 6)
+	_lvl_label = UiKit.heading("", 16, UiKit.INK, 700, 2)
+	page.add_child(_lvl_label)
+	_xp_bar = Bar.new(10.0, UiKit.GOLD)
+	_xp_bar.custom_minimum_size = Vector2(0, 10)
+	page.add_child(_xp_bar)
+	for row in Talents.ROWS:
+		var cap := UiKit.caption("", UiKit.MUTED, 12)
+		page.add_child(cap)
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override("separation", 8)
+		page.add_child(h)
+		var buttons: Array = []
+		for i in 3:
+			var b := _make_talent_button(row, i)
+			h.add_child(b)
+			buttons.append(b)
+		_tal_rows.append({"caption": cap, "buttons": buttons})
+	_tal_desc = UiKit.label("", 13, UiKit.INK)
+	_tal_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tal_desc.custom_minimum_size = Vector2(364, 36)
+	page.add_child(_tal_desc)
+	return page
+
+
+func _make_talent_button(row: int, i: int) -> Button:
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_ALL
+	b.custom_minimum_size = Vector2(116, 52)
+	b.clip_text = true
+	var v := HBoxContainer.new()
+	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	v.offset_left = 7
+	v.offset_right = -5
+	v.add_theme_constant_override("separation", 6)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(v)
+	var ic := Icons.rect("fireball", 30)
+	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	ic.custom_minimum_size = Vector2(30, 30)
+	ic.material = HudArt.circle_mask()
+	v.add_child(ic)
+	var mark := TalentMark.new()
+	mark.seal = 0.5
+	ic.add_child(mark)
+	b.set_meta("mark", mark)
+	var name := UiKit.label("", 12, UiKit.INK)
+	name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name.custom_minimum_size = Vector2(70, 0)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(name)
+	b.set_meta("icon", ic)
+	b.set_meta("name", name)
+	b.pressed.connect(_pick_talent.bind(row, i))
+	b.mouse_entered.connect(_describe_talent.bind(row, i))
+	b.focus_entered.connect(_describe_talent.bind(row, i))
+	return b
+
+
+func _talent_style(b: Button, picked: bool, locked: bool) -> void:
+	var border: Color = UiKit.GOLD if picked else (UiKit.LINE if not locked else Color(1, 1, 1, 0.08))
+	var bg := Color(0.16, 0.10, 0.05, 0.9) if picked else Color(0.06, 0.04, 0.03, 0.7)
+	for st in ["normal", "disabled"]:
+		b.add_theme_stylebox_override(st, UiKit.box(bg, border, 8, 2 if picked else 1, 6))
+	for st in ["hover", "focus", "pressed", "hover_pressed"]:
+		b.add_theme_stylebox_override(st, UiKit.box(bg.lightened(0.08), UiKit.LINE_STRONG, 8, 2, 6))
+
+
+func _refresh_talents(cls: String, sid: String) -> void:
+	var st := ProgressStore.shared()
+	var lvl := st.level(cls)
+	var ch := st.champion(cls)
+	var need := Progress.xp_to_next(lvl)
+	_lvl_label.text = "NIVEL %d" % lvl + ("" if need == 0 else "  ·  %d / %d XP" % [int(ch.xp), need])
+	_xp_bar.ratio = 1.0 if need == 0 else float(ch.xp) / float(need)
+	var open := Progress.talent_rows(lvl)
+	var picks := st.talents(cls, sid)
+	var rows := Talents.rows(cls, sid)
+	for row in _tal_rows.size():
+		var r: Dictionary = _tal_rows[row]
+		var locked := row >= open or row >= rows.size()
+		(r.caption as Label).text = "%s · %s" % [["Ataque básico", "Poder de daño"][row], ("se desbloquea en el nivel %d" % Progress.TALENT_ROWS[row]) if locked else "elegí 1"]
+		for i in (r.buttons as Array).size():
+			var b: Button = r.buttons[i]
+			var t := Talents.talent(cls, sid, row, i)
+			b.visible = not t.is_empty()
+			if t.is_empty():
+				continue
+			(b.get_meta("icon") as TextureRect).texture = Icons.tex(Talents.icon(cls, sid, t))
+			(b.get_meta("mark") as TalentMark).kind = Talents.mark_kind(t)
+			(b.get_meta("name") as Label).text = str(t.name)
+			b.disabled = locked
+			b.modulate.a = 0.45 if locked else 1.0
+			_talent_style(b, not locked and int(picks[row]) == i, locked)
+	_tal_desc.text = "Pasá el mouse por un talento para ver qué hace." if open > 0 else "Los talentos se desbloquean en el nivel 5. Jugá partidas con este campeón para subirlo."
+
+
+func _describe_talent(row: int, i: int) -> void:
+	var sid := GameData.normalize_spec(_cls, str(menu.st.get_value("spec")))
+	var t := Talents.talent(_cls, sid, row, i)
+	if not t.is_empty():
+		_tal_desc.text = "%s: %s." % [t.name, Talents.describe(_cls, sid, t)]
+
+
+func _pick_talent(row: int, i: int) -> void:
+	var sid := GameData.normalize_spec(_cls, str(menu.st.get_value("spec")))
+	var st := ProgressStore.shared()
+	var cur := int(st.talents(_cls, sid)[row])
+	if st.set_talent(_cls, sid, row, -1 if cur == i else i):  # pressing the picked one again clears it
+		UiSound.play("uiSelect")
+		select(_cls)
+		_describe_talent(row, i)
+
+
 func _make_slot(i: int) -> Button:
 	var b := Button.new()
 	b.flat = true
@@ -128,6 +270,9 @@ func _make_slot(i: int) -> Button:
 	ic.material = HudArt.circle_mask()  # the painted icons are round: shown in a circle, ringed below
 	b.add_child(ic)
 	b.set_meta("icon", ic)
+	var mark := TalentMark.new()
+	ic.add_child(mark)
+	b.set_meta("mark", mark)
 	var key := UiKit.heading("", 12, UiKit.MUTED, 700, 1, HORIZONTAL_ALIGNMENT_CENTER)
 	key.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	key.offset_top = -12
@@ -193,7 +338,8 @@ func select(id: String, from_user := false) -> void:
 	for k in _tiles:
 		_tiles[k].selected = k == id
 	var sid := GameData.normalize_spec(id, str(menu.st.get_value("spec")))
-	var spec: Dictionary = GameData.kit(id, sid)
+	var spec: Dictionary = Talents.kit(id, sid, ProgressStore.shared().talents(id, sid))  # tooltips show the numbers with your talents
+	_refresh_talents(id, sid)
 	var tint: Color = Color(str(spec.spec_color)) if spec.has("spec_color") else UiKit.class_color(id)
 	_build_spec_cards(id, sid)
 	_name.text = str(spec.name).to_upper()
@@ -216,6 +362,7 @@ func select(id: String, from_user := false) -> void:
 		var a: Dictionary = spec.abilities[i]
 		slot.set_meta("ability", a)
 		(slot.get_meta("icon") as TextureRect).texture = Icons.tex(str(a.icon))
+		(slot.get_meta("mark") as TalentMark).kind = TalentMark.kind_of(a)
 		var kl: Label = slot.get_meta("key")
 		kl.text = Keybinds.shared().slot_label(i)
 		kl.add_theme_color_override("font_color", UiKit.GOLD if a.get("ult", false) else UiKit.MUTED)

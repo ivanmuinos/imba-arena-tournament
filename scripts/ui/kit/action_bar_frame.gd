@@ -93,3 +93,9 @@ func set_health(hp: float, max_hp: float) -> void:
 func set_ult(pct: float) -> void:
 	_ult.value = clampf(pct / 100.0, 0.0, 1.0)
 	_ult_text.text = "%d%%" % int(pct)
+
+
+## A kit without an ultimate (Frost: Blink with charges on R): the orb stays empty and unlabelled.
+func set_no_ult() -> void:
+	_ult.value = 0.0
+	_ult_text.text = ""

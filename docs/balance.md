@@ -700,3 +700,30 @@ Las tablas anteriores de este documento son de antes de pasar a kits de 4 podere
 | 3v3 | 39/40 | 36/40 | 39/40 |
 
 Plata, Oro y Gladiador no se tocaron.
+
+## Talentos, versión 1 (fase 2)
+
+`godot --headless --path . --script res://tools/balance_sim.gd -- --talent-eval --n=8 --maps=<mapa> --kit=<kit> [--only=id1,id2]`: cada kit con cada talento, de a uno, contra todos los kits sin talentos, en duelo. Se mira cuántos puntos de victoria mueve el talento respecto del mismo kit sin talentos (meta: menos de 5).
+
+Hicieron falta cuatro corridas (224 a 336 duelos por talento). El ruido es de unos ±4 puntos: el kit base del cazador, sin ningún cambio, dio 19,6% en una corrida y 28,1% en otra. Solo se corrigió lo que se desviaba en más de una corrida.
+
+- **1.ª corrida:** las mejoras numéricas sumaban de +5 a +17 puntos. Se bajaron más o menos a la mitad (por ejemplo, daño +20% → +8%, quemadura ×1,5 → ×1,25, recarga de Lanza de hielo ×0,6 → ×0,8).
+- **Cambios por la reserva:** sacar el poder de daño hundía el kit (Patada en lugar de Eviscerar: −45; Zurrar en lugar de Golpe mortal: −16). Patada ahora reemplaza a Ceguera y Zurrar a Seccionar.
+- **Compensaciones:** Renovar cura ×2 cuando entra por el Escudo divino. Zurrar recarga ×0,7 y suma Golpe mortal +12%. El Contrahechizo de Rompehechizos recarga ×1,7.
+- **Pendientes:** Rompehechizos queda en +7 y Zurrar en −8, en duelos de bots. El Contrahechizo rinde porque saca la Piroexplosión, que con 1,8 s de lanzamiento los bots se dejan interrumpir. A Zurrar le falta el ralentizar de Seccionar. Los dos son talentos de situación, y hay que mirarlos en 2v2 y 3v3 antes de tocarlos más.
+
+Todas las demás opciones quedan dentro de ±5 puntos de su kit base.
+
+## Mago Escarcha: Traslación helada y enraizar en la Descarga
+
+Duelos de bots contra todos los kits (`--talent-eval --by-rival --only=__none`), con 336 duelos y las mismas semillas para cada versión:
+
+| Versión | Total | vs Guerrero | vs Asesino |
+|---|---|---|---|
+| Kit anterior (Nova, Polimorfia, Ventisca) | 26,5% | 4% | 12% |
+| + Descarga con 15% de enraizar 1,5 s | 29,5% | 6% | 12% |
+| Traslación de 2 cargas en la R, sin Ventisca | 6,8% | 0% | 2% |
+| Traslación de 2 cargas en lugar de la Polimorfia | 28,3% | 12% | 19% |
+| **Traslación helada (Nova + Traslación, 2 cargas) + enraizar** | **31,0%** | **17%** | **40%** |
+
+Quedó la última. La Nova estalla donde estabas y enraíza 2 s a los que tenías encima, y después te teletransportás 8 m. Las cargas vuelven de a una, cada 12 s, y la recarga arranca con el primer uso. La Ventisca era la mayor parte del daño del Escarcha: sacarla lo hundía. La Nova y la Traslación de antes quedan en la reserva.

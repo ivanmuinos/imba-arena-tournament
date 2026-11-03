@@ -9,7 +9,7 @@ const OF := {
 	"shadowbolt": "shadow", "corruption": "shadow", "agony": "shadow", "fear": "shadow", "darkpact": "shadow", "drainlife": "nature", "soulrot": "shadow",
 	"fireball": "fire", "pyro": "fire", "meteor": "fire", "volley": "fire", "dragonbreath": "fire",
 	"nova": "frost", "trap": "frost", "conc": "frost", "frostbolt": "frost", "icelance": "frost", "blizzard": "frost",
-	"poly": "arcane", "blink": "arcane", "counter": "arcane",
+	"poly": "arcane", "blink": "arcane", "frostblink": "frost", "counter": "arcane",
 	"shot": "physical", "aimed": "physical", "disengage": "physical",
 	"strike": "physical", "mortal": "physical", "charge": "physical", "hamstring": "physical", "shieldwall": "physical", "pummel": "physical", "bladestorm": "physical",
 	"stab": "physical", "eviscerate": "physical", "cheapshot": "physical", "kick": "physical",

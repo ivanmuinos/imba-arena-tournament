@@ -31,10 +31,12 @@ static func normalize(c: Dictionary) -> Dictionary:
 	var map_id := str(c.get("map", "random"))
 	var pref := str(c.get("pref", "any"))
 	var cls_ok := cls if GameData.playable(cls) else "mage"
+	var spec := GameData.normalize_spec(cls_ok, str(c.get("spec", "")))
 	return {
 		"name": sanitize_name(str(c.get("name", ""))),
 		"cls": cls_ok,
-		"spec": GameData.normalize_spec(cls_ok, str(c.get("spec", ""))),
+		"spec": spec,
+		"talents": Talents.normalize(cls_ok, spec, c.get("talents", [])),
 		"mode": int(c.get("mode", 2)) if int(c.get("mode", 2)) in [1, 2, 3] else 2,
 		"diff": diff if DIFFS.has(diff) else "normal",
 		"map": map_id if (GameData.maps.has(map_id) or map_id == "random" or map_id == "test") else "random",
@@ -71,11 +73,14 @@ static func build_entries(mode: int, humans: Array, rng: RandomNumberGenerator =
 	var entries: Array = []
 	for team in ["red", "blue"]:
 		for h in teams[team]:
-			entries.append({"name": h.name, "cls": h.cls, "spec": GameData.normalize_spec(h.cls, str(h.get("spec", ""))), "team": team, "peer": h.peer})
+			entries.append({"name": h.name, "cls": h.cls, "spec": GameData.normalize_spec(h.cls, str(h.get("spec", ""))), "team": team, "peer": h.peer, "talents": h.get("talents", [])})
 		for i in range(teams[team].size(), mode):
 			var bot_cls: String = classes[rng.randi() % classes.size()]
 			var bot_specs := GameData.spec_ids(bot_cls)
 			entries.append({"name": bots.pop_back() if not bots.is_empty() else "Bot%d" % i, "cls": bot_cls, "spec": bot_specs[rng.randi() % bot_specs.size()] if not bot_specs.is_empty() else "", "team": team, "peer": 0})
+	for e in entries:  # bots pick random talents (after every bot is placed, so the rng gives the same classes as before)
+		if int(e.peer) == 0:
+			e["talents"] = Talents.random_picks(e.cls, e.spec, rng)
 	return entries
 
 
@@ -93,18 +98,21 @@ static func scripted_entries(script: Array, humans: Array) -> Array:
 		var name := str(s.get("name", ""))
 		var peer := 0
 		var spec := str(s.get("spec", ""))
+		var talents: Array = []  # tournament rivals play their base kit; the human brings their talents
 		if bool(s.get("human", false)) and not pool.is_empty():
 			var h: Dictionary = pool.pop_front()
 			peer = int(h.peer)
 			name = str(h.name)
 			cls = str(h.cls)
 			spec = str(h.get("spec", ""))
+			talents = h.get("talents", [])
 		var cls_ok := cls if GameData.playable(cls) else "mage"
 		var diff := str(s.get("diff", ""))
 		var e := {
 			"name": sanitize_name(name),
 			"cls": cls_ok,
 			"spec": GameData.normalize_spec(cls_ok, spec),
+			"talents": talents,
 			"team": "blue" if str(s.get("team", "red")) == "blue" else "red",
 			"peer": peer,
 			"hp_mult": clampf(float(s.get("hp_mult", 1.0)), 0.1, 3.0),

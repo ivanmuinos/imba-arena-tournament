@@ -204,7 +204,7 @@
             "id": "frostbolt",
             "name": "Descarga de escarcha",
             "icon": "frostbolt",
-            "desc": "Lanzamiento de 1,5 s: daño moderado y ralentiza al objetivo un 40% durante 3 s.",
+            "desc": "Lanzamiento de 1,3 s: daño moderado y ralentiza al objetivo un 40% durante 3 s. A veces (15%) también lo enraíza 1,5 s.",
             "cd": 300,
             "cast": 1300,
             "range": 20,
@@ -212,7 +212,9 @@
             "projSpeed": 30,
             "projR": 0.4,
             "slowPct": 0.4,
-            "ccMs": 3000
+            "ccMs": 3000,
+            "rootChance": 0.15,
+            "rootMs": 1500
           },
           "1": {
             "id": "icelance",
@@ -228,16 +230,18 @@
             "shatter": 2.5
           },
           "2": {
-            "id": "nova",
-            "name": "Nova de escarcha",
-            "icon": "nova",
-            "desc": "Congela los pies de los enemigos cercanos: los enraíza 2 s.",
-            "cd": 10000,
+            "id": "frostblink",
+            "name": "Traslación helada",
+            "icon": "blink",
+            "desc": "Te teletransportás 8 m hacia adelante y donde estabas estalla una nova: enraíza 2 s a los enemigos cercanos. Rompe raíces. 2 cargas: cada una vuelve a los 12 s, de a una.",
+            "cd": 12000,
             "cast": 0,
-            "range": 0,
+            "range": 8,
+            "dist": 8,
             "aoe": 4.5,
             "dmg": 18,
-            "ccMs": 2000
+            "ccMs": 2000,
+            "charges": 2
           },
           "3": {
             "id": "poly",
@@ -270,6 +274,18 @@
         "hp": 480,
         "companion": {"name": "Elemental de escarcha", "kind": "crystal", "fly": 1.25, "glow": "#7fd8ff", "bond": "#8fe4ff"},
         "reserve": [
+          {
+            "id": "nova",
+            "name": "Nova de escarcha",
+            "icon": "nova",
+            "desc": "Congela los pies de los enemigos cercanos: los enraíza 2 s.",
+            "cd": 10000,
+            "cast": 0,
+            "range": 0,
+            "aoe": 4.5,
+            "dmg": 18,
+            "ccMs": 2000
+          },
           {
             "id": "blink",
             "name": "Traslación",

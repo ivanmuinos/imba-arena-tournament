@@ -11,6 +11,11 @@ var spec_id := "":
 		spec_id = v
 		_kit = {}
 var _kit := {}
+## Talent picks (Talents: one index per row, -1 = none), applied to the kit.
+var talents: Array = []:
+	set(v):
+		talents = v
+		_kit = {}
 var team: String
 ## Network peer that controls this unit (0 = bot).
 var peer := 0
@@ -42,6 +47,9 @@ var hp := 0.0
 var max_hp := 0.0
 var alive := true
 var cds: Array[float] = []
+## Abilities with charges (ability.charges > 1, e.g. Frost Blink): slot -> {left, next}. `next` is when the next
+## charge comes back (0 = all charges in). cds[slot] still says when the slot is usable (now while a charge is left).
+var charges := {}
 ## Global cooldown (WoW): after an ability, every other on-GCD ability waits until this.
 var gcd_until := 0.0
 ## PvP trinket: breaks every loss-of-control effect, ready again at this time.
@@ -111,12 +119,20 @@ func is_bot() -> bool:
 
 func spec() -> Dictionary:
 	if _kit.is_empty():
-		_kit = GameData.kit(cls, spec_id)
+		_kit = Talents.kit(cls, spec_id, talents)
 	return _kit
 
 
 func ability(slot: int) -> Dictionary:
 	return spec().abilities[slot]
+
+
+## The ability with this id in this unit's kit ({} when it is not equipped).
+func ability_by_id(ability_id: String) -> Dictionary:
+	for a in spec().abilities:
+		if str(a.id) == ability_id:
+			return a
+	return {}
 
 
 ## Puts one of this class's abilities (kit or reserve) on `slot` for this unit only; false if it has no such ability.
@@ -133,6 +149,7 @@ func equip(slot: int, ability_id: String) -> bool:
 ## Combat effects cleared at the start of every round.
 func reset_effects() -> void:
 	curses.clear()
+	charges.clear()
 	tempest_stacks = 0
 	cast = {}
 	auto_on = false

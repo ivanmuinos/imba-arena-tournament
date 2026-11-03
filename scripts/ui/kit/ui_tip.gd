@@ -60,6 +60,10 @@ func set_ability(a: Dictionary, key: String) -> void:
 	_key.text = key
 	_meta.text = meta_line(a)
 	_desc.text = str(a.desc).trim_prefix("DEFINITIVA: ")
+	if a.has("talent"):  # changed by a talent (Talents.apply): say which and how
+		_desc.text += "
+
+Talento %s: %s." % [a.talent.name, a.talent.text]
 	_usage.text = usage_line(a, key)
 	reset_size()
 
@@ -85,6 +89,8 @@ static func meta_line(a: Dictionary) -> String:
 		parts.append("Recarga %s s" % _num(float(a.cd) / 1000.0))
 	else:
 		parts.append("Sin recarga")
+	if int(a.get("charges", 1)) > 1:
+		parts.append("%d cargas" % int(a.charges))
 	if float(a.get("cast", 0)) > 0.0:
 		parts.append("Lanzamiento %s s" % _num(float(a.cast) / 1000.0))
 	if float(a.get("range", 0)) > 0.0:

@@ -80,6 +80,7 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 		u.name = e.name
 		u.cls = e.cls
 		u.spec_id = GameData.normalize_spec(u.cls, str(e.get("spec", "")))
+		u.talents = Talents.normalize(u.cls, u.spec_id, e.get("talents", []))
 		u.team = e.team
 		u.peer = e.get("peer", 0)
 		u.dummy = str(e.get("dummy", ""))
@@ -97,6 +98,7 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 		u.ult = C.ULT_START
 		u.cds.resize(int(C.SLOT_COUNT))
 		u.cds.fill(0.0)
+		u.charges.clear()
 		units.append(u)
 	_reset_round(now)
 
@@ -104,6 +106,8 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 func roster() -> Array:
 	return units.map(func(u):
 		var r := {"id": u.id, "name": u.name, "cls": u.cls, "spec": u.spec_id, "team": u.team, "bot": u.is_bot()}
+		if u.talents.any(func(v): return v >= 0):
+			r["talents"] = u.talents
 		if u.dummy != "":
 			r["dummy"] = u.dummy
 			r["hp"] = u.max_hp
@@ -171,6 +175,7 @@ func _reset_round(now: float) -> void:
 			u.aim_x = 0.0
 			u.aim_z = 0.0
 			u.cds.fill(0.0)
+			u.charges.clear()
 			u.gcd_until = 0.0
 			u.trinket_ready = 0.0  # every round starts with everything ready, the trinket too (like Solo Shuffle)
 	if practice:
@@ -484,12 +489,44 @@ func team_can_see(team: String, t: ArenaUnit, now: float) -> bool:
 
 # ---------------------------------------------------------------- abilities
 
+## One charge spent: the recharge starts with the first one and brings them back one at a time.
+func _spend_charge(u: ArenaUnit, slot: int, spec: Dictionary, now: float) -> void:
+	var st: Dictionary = u.charges.get(slot, {"left": int(spec.charges), "next": 0.0})
+	st.left = maxi(0, int(st.left) - 1)
+	if float(st.next) <= 0.0:
+		st.next = now + float(spec.cd)
+	u.charges[slot] = st
+	u.cds[slot] = now if int(st.left) > 0 else float(st.next)
+
+
+func _refill_charges(u: ArenaUnit, now: float) -> void:
+	for slot in u.charges:
+		var st: Dictionary = u.charges[slot]
+		var spec := u.ability(slot)
+		var most := int(spec.get("charges", 1))
+		while float(st.next) > 0.0 and now >= float(st.next):
+			st.left = mini(most, int(st.left) + 1)
+			st.next = (float(st.next) + float(spec.cd)) if int(st.left) < most else 0.0
+			u.cds[slot] = minf(u.cds[slot], now)
+
+
+## Charges left per slot for the HUD (-1 = the ability has no charges).
+func charges_left(u: ArenaUnit) -> Array:
+	var out: Array = []
+	for i in u.spec().abilities.size():
+		var most := int(u.ability(i).get("charges", 1))
+		out.append(int(u.charges.get(i, {"left": most}).left) if most > 1 else -1)
+	return out
+
+
 func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now: float, lock_id := -1) -> void:
 	var spec := u.ability(slot)
 	if practice and u.peer != 0:
 		meter_for(u).record_cast(spec.id, now)
 	if spec.get("ult", false):
 		u.ult = 0.0
+	elif int(spec.get("charges", 1)) > 1:
+		_spend_charge(u, slot, spec, now)
 	else:
 		u.cds[slot] = now + spec.cd
 	u.revealed_until = maxf(u.revealed_until, now + 1500)
@@ -536,6 +573,17 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			for i in range(-4, 5):
 				var a := base + i / 4.0 * spread / 2
 				_spawn_proj(u, spec, Vector2(sin(a), cos(a)))
+		"frostblink":  # Frost Blink: a nova where you stood, then the blink
+			fx.append({"k": "nova", "x": u.x, "z": u.z, "r": spec.aoe})
+			for e in _enemies_within(u, u.x, u.z, spec.aoe):
+				_damage(e, spec.dmg, u, now, id)
+				_cc(e, "root", spec.ccMs, now)
+			var bp := Rules.blink_target(map, u.x, u.z, dir.x, dir.y, spec.dist)
+			fx.append({"k": "blink", "x0": u.x, "z0": u.z, "x1": bp.x, "z1": bp.y})
+			u.root_until = 0.0
+			u.dash_left = 0.0
+			u.x = bp.x
+			u.z = bp.y
 		"nova":
 			fx.append({"k": "nova", "x": u.x, "z": u.z, "r": spec.aoe})
 			for e in _enemies_within(u, u.x, u.z, spec.aoe):
@@ -894,6 +942,8 @@ var _dot_tick := false
 var block_front := 0.30
 var block_rear := 0.05
 var block_rng := RandomNumberGenerator.new()
+## Chance effects of abilities (Frostbolt's root).
+var proc_rng := RandomNumberGenerator.new()
 
 
 func block_chance(defender: ArenaUnit, attacker: ArenaUnit, now: float, ability: String) -> float:
@@ -1144,6 +1194,8 @@ func tick(now: float) -> void:
 	for u in units:
 		if not u.alive:
 			continue
+		if not u.charges.is_empty():
+			_refill_charges(u, now)
 		if fighting:
 			u.ult = minf(100, u.ult + C.ULT_PER_SECOND * dt)
 			if not u.cast.is_empty() and u.dummy == "": _progress_cast(u, now)
@@ -1364,7 +1416,10 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 		"frostbolt":
 			t.slow_pct = maxf(t.slow_pct if now < t.slow_until else 0.0, float(spec.slowPct))
 			t.slow_until = maxf(t.slow_until, now + float(spec.ccMs))
-			_label(t, "RALENTIZADO", "#4da3ff")
+			if float(spec.get("rootChance", 0.0)) > 0.0 and proc_rng.randf() < float(spec.rootChance):
+				_cc(t, "root", float(spec.rootMs), now)  # labels ENRAIZADO itself (and sets up Ice Lance's shatter)
+			else:
+				_label(t, "RALENTIZADO", "#4da3ff")
 		"icelance":
 			if now < t.root_until or (now < t.incap_until and t.incap_kind == "freeze"):
 				_damage(t, float(spec.dmg) * float(spec.shatter), p.owner, now, spec.id)
@@ -1439,7 +1494,8 @@ func _step_traps(now: float) -> void:
 			keep.append(tr)
 			continue
 		fx.append({"k": "trap", "x": tr.x, "z": tr.z})
-		_cc(victim, "incap", GameData.find_ability("hunter", "trap").ccMs, now, "freeze")
+		var trap: Dictionary = tr.owner.ability_by_id("trap")  # the owner's kit: talents may change the freeze
+		_cc(victim, "incap", (trap if not trap.is_empty() else GameData.find_ability("hunter", "trap")).ccMs, now, "freeze")
 	traps = keep
 
 
@@ -1517,6 +1573,7 @@ func _reset_dummy(u: ArenaUnit, now: float) -> void:
 	u.patrol_dir = 1.0
 	u.dummy_next = now + 1500.0
 	u.cds.fill(0.0)
+	u.charges.clear()
 
 
 ## A fighter "reaches 0": dummies refill (they never die), the player gets back up at the start point at once.
@@ -1534,6 +1591,7 @@ func _practice_down(t: ArenaUnit, now: float) -> void:
 	t.vz = 0.0
 	t.dash_left = 0.0
 	t.cds.fill(0.0)
+	t.charges.clear()
 	_label(t, "REAPARECISTE", "#ffd166")
 
 
@@ -1548,6 +1606,7 @@ func _practice_pre(now: float) -> void:
 		if u.dummy == "":
 			if nocd and u.peer != 0:
 				u.cds.fill(0.0)
+				u.charges.clear()
 			continue
 		if focus != null:
 			u.aim_x = focus.x
@@ -1606,11 +1665,13 @@ func practice_command(u: ArenaUnit, cmd: String, on: bool, now: float) -> void:
 					_reset_dummy(d, now)
 			u.cast = {}
 			u.cds.fill(0.0)
+			u.charges.clear()
 			u.hp = u.max_hp
 		"nocd":
 			nocd = on
 			if on:
 				u.cds.fill(0.0)
+				u.charges.clear()
 		"ult":
 			u.ult = 100.0
 		"stun":  # tutorial: a long stun to break with the trinket
@@ -1677,6 +1738,7 @@ func snapshot_for(viewer: ArenaUnit, now: float) -> Dictionary:
 		"you": {
 			"cds": range(abilities.size()).map(func(i): return 0 if abilities[i].get("ult", false) else maxi(0, roundi(maxf(viewer.cds[i], viewer.gcd_until if on_gcd(abilities[i]) else 0.0) - now))),
 			"trinket": maxi(0, roundi(viewer.trinket_ready - now)),
+			"ch": charges_left(viewer),
 			"ult": floori(viewer.ult),
 			"auto": viewer.auto_on,
 			"inBush": Rules.bush_at(map, viewer.x, viewer.z) >= 0,
