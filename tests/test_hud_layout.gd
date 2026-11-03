@@ -141,3 +141,38 @@ func test_hud_sizes_apply_live_from_the_settings() -> void:
 
 func test_action_bar_has_one_hole_per_button_and_no_empty_ones() -> void:
 	eq(ActionBarFrame.HOLES_X.size(), int(GameData.C.SLOT_COUNT) + 1, "un hueco por habilidad más el abalorio, ninguno vacío")
+
+
+func test_options_menu_rebinds_your_abilities_in_the_keys_tab() -> void:
+	var kpath := "user://test_menu_keys.json"
+	Keybinds._shared = Keybinds.new(kpath)
+	var menu := GameMenu.new()
+	TestBase.tree.root.add_child(menu)
+	menu.kit_cls = "warrior"
+	menu.open()
+	check(menu._pages.general.visible and not menu._pages.keys.visible, "abre en General")
+	menu.show_tab("keys")
+	check(menu._pages.keys.visible and not menu._pages.general.visible, "solapa Teclas")
+	eq((menu._key_names.slot_1 as Label).text, "2. Golpe mortal", "nombra el poder real de tu campeón")
+	eq((menu._key_names.slot_4 as Label).text, "Definitiva: Filotormenta", "y la definitiva")
+	var changed := [0]
+	menu.keys_changed.connect(func(): changed[0] += 1)
+	(menu._key_buttons.slot_1 as MButton).pressed.emit()
+	eq(menu.capturing, "slot_1", "espera la tecla")
+	var e := InputEventKey.new()
+	e.keycode = KEY_G
+	e.pressed = true
+	check(menu.capture_key(e), "toma la tecla")
+	eq(Keybinds.shared().key_of("slot_1"), "G", "queda asignada")
+	eq((menu._key_buttons.slot_1 as MButton).text, "G", "el botón la muestra")
+	eq(changed[0], 1, "avisa para redibujar la barra")
+	(menu._key_buttons.slot_1 as MButton).pressed.emit()
+	var esc := InputEventKey.new()
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	menu.capture_key(esc)
+	eq(Keybinds.shared().key_of("slot_1"), "", "Esc la deja sin tecla")
+	check(not menu.capture_key(e), "sin esperar tecla no captura")
+	menu.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(kpath))
+	Keybinds._shared = null

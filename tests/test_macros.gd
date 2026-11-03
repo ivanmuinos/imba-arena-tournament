@@ -63,4 +63,8 @@ func test_store_saves_texts_and_keybinds_keep_one_action_per_key() -> void:
 	v2b.store_string(JSON.stringify({"slot_4": "5", "slot_6": "7", "_v": 2}))
 	v2b.close()
 	eq(Keybinds.new(kpath).key_of("slot_4"), "R", "la definitiva pasa a la R")
+	var v2c := FileAccess.open(kpath, FileAccess.WRITE)
+	v2c.store_string(JSON.stringify({"slot_0": "Q", "slot_6": "R", "trinket": "", "_v": 2}))
+	v2c.close()
+	eq(Keybinds.new(kpath).key_of("trinket"), "T", "el abalorio sin tecla vuelve a la T")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(kpath))

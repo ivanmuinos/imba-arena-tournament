@@ -181,6 +181,7 @@ func _build_game_menu() -> void:
 		game_menu.set_leave_text("Abandonar (cierra la partida a todos)")
 	game_menu.setting_changed.connect(_on_menu_setting)
 	game_menu.binds_pressed.connect(func(): set_binding(true))
+	game_menu.keys_changed.connect(hud.refresh_keys)
 	game_menu.leave_pressed.connect(func(): leave_requested.emit())
 	game_menu.quit_pressed.connect(func(): get_tree().quit())
 
@@ -199,6 +200,8 @@ func _on_menu_setting(key: String) -> void:
 
 func open_menu() -> void:
 	_release_gameplay()
+	game_menu.kit_cls = my_cls
+	game_menu.kit_spec = my_spec
 	game_menu.open()
 
 
@@ -590,7 +593,11 @@ func _input(event: InputEvent) -> void:
 	if not _active:
 		return
 	if game_menu != null and game_menu.visible:
-		# The menu has the input: Esc / Start close it, everything else goes to its buttons and sliders.
+		# The menu has the input: a key being rebound in Teclas takes it (Esc there = no key); otherwise Esc / Start
+		# close it and everything else goes to its buttons and sliders.
+		if game_menu.capture_key(event):
+			get_viewport().set_input_as_handled()
+			return
 		if event.is_pressed() and not event.is_echo() and ((event is InputEventKey and event.keycode == KEY_ESCAPE) or (event is InputEventJoypadButton and event.button_index == JOY_BUTTON_START)):
 			get_viewport().set_input_as_handled()
 			game_menu.close()

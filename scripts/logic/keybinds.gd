@@ -69,6 +69,9 @@ func load_file() -> void:
 		var want: String = defaults().slot_4 if ult == V2_ULT_DEFAULT or ult == "" else ult
 		if action_for(want) == "":
 			keys.slot_4 = want
+		# the trinket could end up with no key (taken by another action); it is too important to stay that way
+		if keys.trinket == "" and action_for(defaults().trinket) == "":
+			keys.trinket = defaults().trinket
 
 
 func save() -> void:
