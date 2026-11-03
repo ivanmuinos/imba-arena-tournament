@@ -36,8 +36,10 @@ func test_curses_refresh_without_delaying_ticks_and_keep_each_owner() -> void:
 	m._execute(b, old(b, 1), t.x, t.z, t.id, 100)
 	m._execute(a, old(a, 2), t.x, t.z, t.id, 100)
 	m._step_effects(t, 600)
-	near(a.dmg, 6.0, 0.01, "dos maldiciones propias, sin duplicar al refrescar")
-	near(b.dmg, 3.5, 0.01, "atribución independiente")
+	var corr: float = GameData.find_ability("warlock", "corruption").dotDps * 0.5  # one tick (500 ms)
+	var agony: float = GameData.find_ability("warlock", "agony").dotDps * 0.5
+	near(a.dmg, corr + agony, 0.01, "dos maldiciones propias, sin duplicar al refrescar")
+	near(b.dmg, corr, 0.01, "atribución independiente")
 	var hp := t.hp
 	m._step_effects(t, 20000)
 	eq(t.hp, hp, "no hay daño después de expirar")
@@ -62,16 +64,17 @@ func test_drain_heals_only_lost_health_after_absorbs_and_dampening() -> void:
 	eq(a.hp, 200.0, "absorción completa no cura")
 	t.absorb = 10
 	m._execute(a, old(a, 5), t.x, t.z, t.id, 200)
-	near(a.hp, 222.0, 0.01, "cura daño real (32 menos 10)")
+	var drain: float = GameData.find_ability("warlock", "drainlife").dmg
+	near(a.hp, 200.0 + drain - 10.0, 0.01, "cura daño real (el drenaje menos 10 de escudo)")
 	t.hp = 5
 	# Keep the fight alive so the final siphon can heal after a kill.
 	m.units[1].team = "blue"
 	m._execute(a, old(a, 5), t.x, t.z, t.id, 300)
-	near(a.hp, 227.0, 0.01, "sin curación por overkill")
+	near(a.hp, 200.0 + drain - 10.0 + 5.0, 0.01, "sin curación por overkill")
 	t.alive = true
 	t.hp = 100
 	m._execute(a, old(a, 5), t.x, t.z, t.id, 60000)
-	near(a.hp, 246.2, 0.01, "amortiguación reduce la sanación")
+	near(a.hp, 200.0 + drain - 10.0 + 5.0 + drain * 0.6, 0.01, "amortiguación reduce la sanación")
 
 func test_fear_forces_fleeing_blocks_casts_and_restores_input() -> void:
 	if not GameData.classes.has("warlock"): return
@@ -221,7 +224,7 @@ func test_curses_keep_kill_credit_after_owner_death_and_do_not_replace_burn() ->
 	t.burn_until = 3000
 	t.burn_next = 600
 	m._step_effects(t, 600)
-	near(a.dmg, 3.5, 0.01, "maldición atribuida al brujo")
+	near(a.dmg, GameData.find_ability("warlock", "corruption").dotDps * 0.5, 0.01, "maldición atribuida al brujo")
 	near(b.dmg, 3, 0.01, "quemadura independiente")
 	a.alive = false
 	t.hp = 1

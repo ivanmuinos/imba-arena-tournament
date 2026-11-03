@@ -104,7 +104,7 @@
             "cd": 700,
             "cast": 0,
             "range": 18,
-            "dmg": 73,
+            "dmg": 38,
             "projSpeed": 34,
             "projR": 0.35,
             "burnDps": 6,
@@ -118,7 +118,7 @@
             "cd": 7000,
             "cast": 1800,
             "range": 22,
-            "dmg": 110,
+            "dmg": 88,
             "projSpeed": 30,
             "projR": 0.55
           },
@@ -208,7 +208,7 @@
             "cd": 300,
             "cast": 1300,
             "range": 20,
-            "dmg": 50,
+            "dmg": 56,
             "projSpeed": 30,
             "projR": 0.4,
             "slowPct": 0.4,
@@ -346,11 +346,11 @@
         "id": "shadowbolt",
         "name": "Descarga de las sombras",
         "icon": "shadowbolt",
-        "desc": "Lanzamiento de 1,2 s: proyectil de 34 de daño. Moverte cancela; no es auto-ataque.",
+        "desc": "Lanzamiento de 1,2 s: proyectil de 38 de daño. Moverte cancela; no es auto-ataque.",
         "cd": 300,
         "cast": 1200,
         "range": 22,
-        "dmg": 30,
+        "dmg": 38,
         "projSpeed": 30,
         "projR": 0.35
       },
@@ -358,12 +358,12 @@
         "id": "corruption",
         "name": "Corrupción",
         "icon": "corruption",
-        "desc": "Maldice al objetivo: 9 de daño por segundo durante 8 s. Refrescar no acumula daño. Disipable.",
+        "desc": "Maldice al objetivo: 10 de daño por segundo durante 8 s. Refrescar no acumula daño. Disipable.",
         "cd": 2500,
         "cast": 0,
         "range": 20,
         "targeted": true,
-        "dotDps": 7,
+        "dotDps": 10,
         "durationMs": 8000
       },
       {
@@ -386,7 +386,7 @@
         "cast": 1500,
         "range": 18,
         "targeted": true,
-        "dmg": 32
+        "dmg": 42
       },
       {
         "id": "soulrot",
@@ -436,7 +436,7 @@
     "name": "Cazador",
     "role": "Daño sostenido y trampas",
     "icon": "class_hunter",
-    "hp": 560,
+    "hp": 520,
     "speed": 7.2,
     "abilities": [
       {
@@ -447,7 +447,7 @@
         "cd": 450,
         "cast": 0,
         "range": 22,
-        "dmg": 28,
+        "dmg": 12,
         "projSpeed": 50,
         "projR": 0.22,
         "physical": true,
@@ -461,7 +461,7 @@
         "cd": 7000,
         "cast": 1100,
         "range": 26,
-        "dmg": 64,
+        "dmg": 54,
         "projSpeed": 66,
         "projR": 0.26
       },
@@ -559,7 +559,7 @@
         "cd": 900,
         "cast": 0,
         "range": 3.2,
-        "dmg": 8,
+        "dmg": 10,
         "melee": true,
         "physical": true,
         "auto": true
@@ -572,7 +572,7 @@
         "cd": 6000,
         "cast": 0,
         "range": 3.2,
-        "dmg": 14,
+        "dmg": 18,
         "melee": true,
         "physical": true
       },
@@ -675,7 +675,7 @@
         "cd": 800,
         "cast": 0,
         "range": 20,
-        "dmg": 22,
+        "dmg": 28,
         "projSpeed": 40,
         "projR": 0.3
       },
@@ -683,11 +683,11 @@
         "id": "heal",
         "name": "Sanación",
         "icon": "heal",
-        "desc": "Lanzamiento de 1,5 s: cura 72 al aliado elegido (F1-F3) o al más herido.",
+        "desc": "Lanzamiento de 1,5 s: cura 90 al aliado elegido (F1-F3) o al más herido.",
         "cd": 1000,
         "cast": 1500,
         "range": 24,
-        "heal": 40,
+        "heal": 90,
         "friendly": true
       },
       {
@@ -705,11 +705,11 @@
         "id": "pwshield",
         "name": "Escudo divino",
         "icon": "pwshield",
-        "desc": "Escudo que absorbe 77 de daño durante 10 s.",
+        "desc": "Escudo que absorbe 75 de daño durante 10 s.",
         "cd": 10000,
         "cast": 0,
         "range": 24,
-        "heal": 42,
+        "heal": 75,
         "friendly": true
       },
       {
@@ -780,7 +780,7 @@
         "cd": 600,
         "cast": 0,
         "range": 3,
-        "dmg": 16,
+        "dmg": 18,
         "melee": true,
         "physical": true,
         "auto": true
@@ -793,7 +793,7 @@
         "cd": 7000,
         "cast": 0,
         "range": 3,
-        "dmg": 85,
+        "dmg": 95,
         "melee": true,
         "physical": true
       },
