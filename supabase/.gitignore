@@ -1,0 +1,13 @@
+# Supabase
+.branches
+.temp
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local
+
+# Secrets de las Edge Functions: nunca al repo (ver functions/.env.example)
+functions/.env
+functions/.env.*
+!functions/.env.example
