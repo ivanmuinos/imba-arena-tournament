@@ -12,6 +12,7 @@ var active := 0   # plates that count right now
 var halted := false
 var _fired := {}  # trigger index -> true
 var _by_key := {}  # unit key -> ArenaUnit
+var _actors := {}  # unit key -> LessonActor
 
 
 func _init(p_scenario: Dictionary) -> void:
@@ -32,6 +33,8 @@ func setup(m: ArenaMatch, now: float) -> void:
 			u.x = u.home.x
 			u.z = u.home.y
 	for spec in scenario.get("units", []):
+		if str(spec.kind) == "actor":
+			_actors[str(spec.key)] = LessonActor.new(_by_key[str(spec.key)], spec.get("script", []))
 		if bool(spec.get("dormant", false)):
 			var u: ArenaUnit = _by_key[str(spec.key)]
 			u.dormant = true
@@ -45,6 +48,9 @@ func setup(m: ArenaMatch, now: float) -> void:
 func step(m: ArenaMatch, now: float) -> void:
 	if halted:
 		return
+	var player := _player(m)
+	for key in _actors:
+		(_actors[key] as LessonActor).tick(m, player, now)
 	for u in m.units:
 		if u.peer == 0 or not u.alive:
 			continue
@@ -124,6 +130,9 @@ func _action(m: ArenaMatch, a: Array, now: float) -> void:
 			m.spawn_power(str(a[1]), float(a[2]), float(a[3]))
 		"nocd":
 			m.nocd = bool(a[1])
+		"cast":
+			if _actors.has(str(a[1])):
+				(_actors[str(a[1])] as LessonActor).order_cast(m, str(a[2]), player, now)
 
 
 func _spawn(m: ArenaMatch, key: String, now: float) -> void:
