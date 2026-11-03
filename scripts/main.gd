@@ -4,7 +4,7 @@ extends Node
 ##
 ## Command line (after `--`):
 ##   --version          print `Imba Arena Tournament v<config/version>` and quit
-##   --server [--port=7777] [--mode=2|3] [--map=magma|moon] [--diff=easy|normal|hard] [--wait=SEC]
+##   --server [--port=7777] [--mode=1|2|3] [--map=magma|moon] [--diff=easy|normal|hard] [--wait=SEC]
 ##   --offline | --host | --join=IP[:PORT]   skip the menu   (+ --name= --cls= --team= --mode= --map= --diff=)
 ##   --practice[=tutorial]   the training yard (or the guided tutorial in it)
 ##   --god              (playtests) human players take no damage and cannot be crowd controlled

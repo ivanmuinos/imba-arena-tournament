@@ -26,6 +26,8 @@ out=$(limit 90 godot --headless --path . --quit-after 2500 -- --offline --drive 
 check "jugador con entradas simuladas (priest, tomb, 3v3)" "$out"
 out=$(limit 90 godot --headless --path . --quit-after 2500 -- --offline --drive --cls=rogue --map=living --log 2>&1)
 check "jugador con entradas simuladas (rogue, living, 2v2)" "$out"
+out=$(limit 90 godot --headless --path . --quit-after 2500 -- --offline --drive --cls=priest --map=pillars --mode=1 --log 2>&1)
+check "jugador con entradas simuladas (priest, pillars, 1v1)" "$out"
 out=$(limit 90 godot --headless --path . --quit-after 2500 -- --practice --drive --cls=mage --log 2>&1)
 check "arena de práctica con entradas simuladas" "$out"
 echo "$out" | grep -q "snapshot #1 " || { echo "✗ la arena de práctica no produjo snapshots"; fail=1; }

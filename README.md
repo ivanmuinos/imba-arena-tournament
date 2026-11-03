@@ -1,6 +1,6 @@
 # Imba Arena Tournament (Godot 4.7)
 
-Arenas PvP 2v2 / 3v3 con controles estilo World of Warcraft, cuatro arenas estratégicas de diseño propio, bots que
+Arenas PvP 1v1 / 2v2 / 3v3 con controles estilo World of Warcraft, cuatro arenas estratégicas de diseño propio, bots que
 llenan los lugares libres y juego online por IP (ENet) o por Steam. Port del prototipo web (`../magma-arena`) a Godot 4
 en GDScript.
 
@@ -41,13 +41,13 @@ línea LF (`.gitattributes`) porque Godot reescribe los recursos con LF.
 | Modo | Comando |
 |------|---------|
 | Menú | `godot --path .` (título -> menú principal -> Jugar / Campeones / Configuración) |
-| Sin conexión (bots) | menú → **Jugar → Práctica**, o `godot --path . -- --offline --cls=warrior --map=bridge` |
+| Sin conexión (bots) | menú → **Jugar → Práctica**, o `godot --path . -- --offline --cls=warrior --map=bridge` (agregá `--mode=1` para un 1v1) |
 | Anfitrión por IP | menú → **Jugar → Crear partida** (UDP 7777 por defecto; el puerto se cambia en el menú). La sala muestra puerto, IP local y pública con botones **Copiar** |
 | Unirse por IP | menú → **Jugar → Unirse** → IP + puerto (se recuerda la última dirección; acepta `IP:PUERTO`) |
 | Steam | menú → **Jugar → Steam** → **Crear sala** (sólo amigos / pública) o **Buscar salas**; también por invitación desde la superposición |
 | Servidor dedicado | `godot --headless --path . -- --server --port=7777 --mode=2 --map=random --wait=10` |
 
-Opciones de línea de comandos (tras `--`): `--map=random|bridge|pillars|tomb|living`, `--cls=`, `--mode=2|3`, `--diff=`, `--gfx=auto|alta|media|baja`,
+Opciones de línea de comandos (tras `--`): `--map=random|bridge|pillars|tomb|living`, `--cls=`, `--mode=1|2|3` (1v1, 2v2, 3v3), `--diff=`, `--gfx=auto|alta|media|baja`,
 `--name=`, `--team=`, `--host`, `--join=IP[:PUERTO]`, `--autopilot`, `--drive` (jugador scripteado), `--target` (mantiene un enemigo seleccionado),
 `--log`, `--shot=PREFIJO --shot-times=3,10` (capturas), `--time-scale=N`, `--rounds=N`, `--no-capture`,
 `--version` (imprime `Imba Arena Tournament v<versión>` y sale; ej. `godot --headless --path . -- --version`).

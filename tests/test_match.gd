@@ -69,6 +69,27 @@ func _duel(a: String, b: String, ally := "", blocks := false) -> ArenaMatch:
 	return m
 
 
+func test_forfeit_gives_the_other_team_the_match() -> void:
+	var m := _match([{"name": "A", "cls": "mage", "team": "red", "peer": 1}, {"name": "B", "cls": "rogue", "team": "blue", "peer": 2}])
+	_advance(m, 20100)
+	m.forfeit("red", now)
+	eq(m.phase, "over", "termina la partida")
+	eq(m.score.blue, 2, "gana azul por abandono")
+	var ends := m.broadcasts.filter(func(b): return b.t == "end")
+	eq(ends.size(), 1, "un solo 'end'")
+	eq(ends[0].winner, "blue", "ganador")
+	eq(ends[0].stats.size(), 2, "con estadísticas")
+	m.forfeit("blue", now)
+	eq(m.broadcasts.filter(func(b): return b.t == "end").size(), 1, "no se repite una vez terminada")
+
+
+func test_one_vs_one_has_no_allies_and_ticks_clean() -> void:
+	var m := _match([{"name": "A", "cls": "priest", "team": "red"}, {"name": "B", "cls": "mage", "team": "blue"}], "bridge")
+	_advance(m, 25000)
+	eq(m.units.size(), 2, "1v1")
+	check(m.phase in ["fight", "between", "over"], "la simulación avanza")
+
+
 func _bots(classes: Array) -> Array:
 	var out := []
 	for i in classes.size():

@@ -154,12 +154,26 @@ func _on_peer_disconnected(id: int) -> void:
 		if game != null:
 			var u := game.unit_for_peer(id)
 			if u != null:
-				game.leave(u)  # a bot takes over
+				if _is_walkover(u):
+					u.peer = 0
+					game.forfeit(u.team, sim_now)  # 1v1 vs another human: the one who stays wins
+				else:
+					game.leave(u)  # a bot takes over
 		if state == "lobby":
 			_clear_ready()
 			_send_lobby()
 		if id == host_peer:
 			host_peer = 0
+
+
+## 1v1 where the leaver's opponent is a human still connected (a bot opponent keeps the old bot replacement).
+func _is_walkover(leaver: ArenaUnit) -> bool:
+	if int(cfg.mode) != 1 or game.practice:
+		return false
+	for u in game.units:
+		if u != leaver and u.team != leaver.team and u.peer != 0 and players.has(u.peer):
+			return true
+	return false
 
 
 func _on_message(from: int, msg: Dictionary) -> void:

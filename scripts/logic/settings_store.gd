@@ -60,7 +60,7 @@ func set_value(key: String, v: Variant) -> Variant:
 			values.specs = clean
 			values.spec = GameData.normalize_spec(values.cls, str(values.specs.get(values.cls, "")))
 		"mode":
-			values.mode = 3 if (typeof(v) in [TYPE_INT, TYPE_FLOAT] and int(v) == 3) else 2
+			values.mode = int(v) if (typeof(v) in [TYPE_INT, TYPE_FLOAT] and int(v) in [1, 2, 3]) else 2
 		"map":
 			var m := str(v)
 			values.map = m if (m == "random" or GameMap.IDS.has(m)) else "random"

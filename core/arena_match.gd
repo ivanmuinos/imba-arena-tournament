@@ -177,6 +177,20 @@ func _end_round(winner: String, now: float) -> void:
 		})
 
 
+## A player abandoned a 1v1 against another human: the other team wins by walkover.
+func forfeit(team: String, now: float) -> void:
+	if phase == "over" or done:
+		return
+	var winner := "blue" if team == "red" else "red"
+	score[winner] = maxi(int(score[winner]), int(C.ROUNDS_TO_WIN))
+	phase = "over"
+	phase_ends_at = now + OVER_MS
+	broadcasts.append({
+		"t": "end", "winner": winner, "score": score.duplicate(),
+		"stats": units.map(func(u): return {"id": u.id, "dmg": roundi(u.dmg), "kills": u.kills, "deaths": u.deaths, "heal": roundi(u.healed)}),
+	})
+
+
 # ---------------------------------------------------------------- commands
 
 func input(u: ArenaUnit, dx: float, dz: float, ax: float, az: float) -> void:
