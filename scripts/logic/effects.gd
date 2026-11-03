@@ -57,6 +57,7 @@ static func debuffs_of(cc: Dictionary) -> Array:
 	if cc.has("root"): out.append(_fx("root", "fx_root", "Enraizado", cc.root, Color("#7fdbff"), true, false))
 	if cc.has("slow"): out.append(_fx("slow", "fx_slow", "Ralentizado", cc.slow, Color("#4da3ff"), false, false))
 	if cc.has("burn"): out.append(_fx("burn", "fx_burn", "Quemadura", cc.burn, Color("#ff7a2a"), false, false))
+	if cc.has("poison"): out.append(_fx("poison", "fx_burn", "Veneno", cc.poison, Color("#7ddc5a"), false, false))
 	if cc.has("mortal"): out.append(_fx("mortal", "fx_mortal", "Herida mortal (−50% curación)", cc.mortal, Color("#ff4d4d"), false, false))
 	if cc.has("marked"): out.append(_fx("marked", "fx_marked", "Marcado (+40% daño recibido)", cc.marked, Color("#ff2a2a"), false, false))
 	return out

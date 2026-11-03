@@ -839,11 +839,17 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 	else:
 		_bar_frame.set_no_ult()
 	var ch: Array = s.you.get("ch", [])
+	var st: Array = s.you.get("st", [])
 	for i in _slots.size():
 		var a: Dictionary = abilities[i]
 		var sl: Dictionary = _slots[i]
+		var lbl := sl.charges as Label
 		if i < ch.size() and int(ch[i]) >= 0:
-			(sl.charges as Label).text = str(int(ch[i]))
+			lbl.text = str(int(ch[i]))
+		elif i < st.size() and int(st[i]) >= 0:  # talent counter: "every Nth" casts so far / crits towards Pyroblast
+			lbl.visible = int(st[i]) > 0
+			lbl.text = str(int(st[i]))
+			lbl.add_theme_color_override("font_color", TalentMark.GOLD)
 		var locked: bool = stunned or (silenced and not a.get("physical", false))
 		(sl.icon as TextureRect).modulate = Color(1, 1, 1, 0.35) if locked else Color.WHITE
 		if sl.auto:  # auto-attack toggle indicator: lit border while it is on

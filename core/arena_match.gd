@@ -393,8 +393,9 @@ func cast_ability(u: ArenaUnit, slot: int, ax: float, az: float, now: float, tar
 	u.cast = {}
 	if on_gcd(spec):
 		u.gcd_until = now + gcd_ms(u)  # starts when the ability starts, cast time or not (WoW)
-	if spec.cast > 0:
-		u.cast = {"slot": slot, "start_at": now, "ends_at": now + spec.cast, "ax": ax, "az": az, "target_id": target, "lock": lock, "pushes": 0}
+	var cast_ms := _cast_ms(u, spec, target if target >= 0 else lock, ax, az, now)
+	if cast_ms > 0:
+		u.cast = {"slot": slot, "start_at": now, "ends_at": now + cast_ms, "ax": ax, "az": az, "target_id": target, "lock": lock, "pushes": 0}
 		u.vx = 0.0
 		u.vz = 0.0
 		return true
@@ -487,6 +488,143 @@ func team_can_see(team: String, t: ArenaUnit, now: float) -> bool:
 	return false
 
 
+# ---------------------------------------------------------------- talent mechanics
+
+## Cast time of a spell after talent mechanics: Pyroblast is instant after `instantAfterCrits` crits, Shadow Bolt casts
+## `curseHaste` faster on a target with your curse.
+func _cast_ms(u: ArenaUnit, spec: Dictionary, target_id: int, ax: float, az: float, now: float) -> float:
+	var ms := maxf(0.0, float(spec.cast))
+	if ms <= 0.0:
+		return 0.0
+	var need := int(spec.get("instantAfterCrits", 0))
+	if need > 0 and u.crit_streak >= need:
+		u.crit_streak = 0
+		_label(u, "¡RACHA CALIENTE!", "#ffb347")
+		return 0.0
+	if float(spec.get("curseHaste", 0.0)) > 0.0:
+		var t := unit_by_id(target_id) if target_id >= 0 else _find_target(u, ax, az, spec.range, now)
+		if t != null and t.curses.values().any(func(d): return int(d.owner) == u.id and now < float(d.until) and str(d.ability) != "poison"):
+			ms *= 1.0 - float(spec.curseHaste)
+	return ms
+
+
+## Counts a cast of an "every Nth" ability; true when this one is the Nth (it is empowered).
+func _count_nth(u: ArenaUnit, spec: Dictionary) -> bool:
+	var n := int(spec.get("nth", 0))
+	if n <= 1:
+		return false
+	var c := int(u.stacks.get(spec.id, 0)) + 1
+	if c >= n:
+		u.stacks[spec.id] = 0
+		return true
+	u.stacks[spec.id] = c
+	return false
+
+
+## Counters shown on the action bar (-1 = none): "every Nth" casts so far, or crits towards an instant Pyroblast.
+func stacks_shown(u: ArenaUnit) -> Array:
+	var out: Array = []
+	for a in u.spec().abilities:
+		if int(a.get("nth", 0)) > 1:
+			out.append(int(u.stacks.get(a.id, 0)))
+		elif int(a.get("instantAfterCrits", 0)) > 0:
+			out.append(mini(u.crit_streak, int(a.instantAfterCrits)))
+		else:
+			out.append(-1)
+	return out
+
+
+## Damage multiplier of a talent condition: vs slowed/rooted targets (`vsSlowed`), from behind (`behind`).
+func _talent_bonus(a: Dictionary, src: ArenaUnit, t: ArenaUnit, now: float) -> float:
+	var m := 1.0
+	if float(a.get("vsSlowed", 0.0)) > 0.0 and _hindered(t, now):
+		m *= 1.0 + float(a.vsSlowed)
+	if float(a.get("behind", 0.0)) > 0.0 and _behind(src, t):
+		m *= 1.0 + float(a.behind)
+	return m
+
+
+func _hindered(t: ArenaUnit, now: float) -> bool:
+	return now < t.slow_until or now < t.root_until
+
+
+## The attacker stands in the target's back half.
+func _behind(src: ArenaUnit, t: ArenaUnit) -> bool:
+	var to := Vector2(src.x - t.x, src.z - t.z)
+	return to.length_squared() > 0.0001 and Vector2(sin(t.rot), cos(t.rot)).dot(to.normalized()) < 0.0
+
+
+## What a talented hit does after its damage lands: leech, healing an ally, cooldown cuts, poison, stacking slows,
+## the warlock's mark, the Nth-hit freeze and resets on a kill.
+func _after_hit(t: ArenaUnit, src: ArenaUnit, a: Dictionary, amount: float, now: float) -> void:
+	if float(a.get("leech", 0.0)) > 0.0:
+		_heal(src, amount * float(a.leech), src, now)
+	if float(a.get("allyHeal", 0.0)) > 0.0:
+		var low: ArenaUnit = null
+		for o in units:
+			if o.alive and o.team == src.team and o.hp < o.max_hp and (low == null or o.hp / o.max_hp < low.hp / low.max_hp):
+				low = o
+		if low != null:
+			_heal(low, amount * float(a.allyHeal), src, now)
+	if a.has("cdOf"):
+		for cid in (a.cdOf if a.cdOf is Array else [a.cdOf]):
+			var slot := _slot_of(src, str(cid))
+			if slot >= 0:
+				src.cds[slot] = maxf(now, src.cds[slot] - float(a.get("cdBy", 0.0)))
+				break
+	if float(a.get("poison", 0.0)) > 0.0 and t.alive:
+		_apply_curse(t, src, {"id": "poison", "name": "Veneno", "dotDps": a.poison, "durationMs": a.get("poisonMs", 6000.0)}, now, true)
+	if float(a.get("slowStack", 0.0)) > 0.0 and t.alive:
+		var cap := float(a.slowStack) * float(a.get("slowStacks", 3))
+		t.slow_pct = minf(cap, (t.slow_pct if now < t.slow_until else 0.0) + float(a.slowStack))
+		t.slow_until = maxf(t.slow_until, now + float(a.get("slowMs", 3000.0)))
+	if float(a.get("curseMark", 0.0)) > 0.0:
+		t.curse_mark = float(a.curseMark)
+		t.curse_mark_until = now + float(a.get("markMs", 6000.0))
+	if _hit_emp and str(a.get("nthEffect", "")) == "freeze" and t.alive:
+		_cc(t, "incap", float(a.get("nthMs", 1000.0)), now, "freeze")
+	if t.hp <= 0.0 and a.has("killReset"):
+		var slot := _slot_of(src, str(a.killReset))
+		if slot >= 0:
+			src.cds[slot] = now
+			src.charges.erase(slot)
+			_label(src, "¡REINICIADO!", "#ffd166")
+
+
+func _slot_of(u: ArenaUnit, ability_id: String) -> int:
+	var abilities: Array = u.spec().abilities
+	for i in abilities.size():
+		if str(abilities[i].id) == ability_id:
+			return i
+	return -1
+
+
+## A projectile with `bounce` jumps once from the unit it hit to the nearest other enemy in reach, at that share of the damage.
+func _bounce(p: Dictionary, t: ArenaUnit, now: float) -> void:
+	var spec: Dictionary = p.spec
+	if float(spec.get("bounce", 0.0)) <= 0.0 or p.get("bounced", false):
+		return
+	var best: ArenaUnit = null
+	for e in units:
+		if e == t or not e.alive or e.team == p.owner.team or not team_can_see(p.owner.team, e, now):
+			continue
+		var d := _dist(e, t)
+		if d <= float(spec.get("bounceRange", 8.0)) and Rules.has_los(map, t, e) and (best == null or d < _dist(best, t)):
+			best = e
+	if best == null:
+		return
+	var s2: Dictionary = spec.duplicate()
+	s2.dmg = float(spec.get("dmg", 0.0)) * float(spec.bounce)
+	if s2.has("burnDps"): s2.burnDps = float(s2.burnDps) * float(spec.bounce)
+	var dir := Vector2(best.x - t.x, best.z - t.z).normalized()
+	projs.append({
+		"id": _new_id(), "owner": p.owner, "spec": s2, "x": t.x + dir.x * 0.6, "z": t.z + dir.y * 0.6,
+		"vx": dir.x * float(s2.projSpeed), "vz": dir.y * float(s2.projSpeed), "left": float(spec.get("bounceRange", 8.0)) + 6.0,
+		"target": best, "bounced": true, "emp": false, "hits": [t.id],
+	})
+	fx.append({"k": "label", "id": t.id, "text": "¡REBOTE!", "color": "#ffd166"})
+
+
 # ---------------------------------------------------------------- abilities
 
 ## One charge spent: the recharge starts with the first one and brings them back one at a time.
@@ -528,7 +666,10 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 	elif int(spec.get("charges", 1)) > 1:
 		_spend_charge(u, slot, spec, now)
 	else:
-		u.cds[slot] = now + spec.cd
+		var still := float(spec.get("stillCd", 0.0)) if u.input.length() < 0.1 else 0.0
+		u.cds[slot] = now + spec.cd * (1.0 - still)
+	_cast_emp = _count_nth(u, spec)
+	_hit_emp = _cast_emp
 	u.revealed_until = maxf(u.revealed_until, now + 1500)
 	var from_stealth := now < u.stealth_until  # rogue openers hit harder from stealth
 	u.stealth_until = 0.0  # attacking breaks stealth
@@ -552,6 +693,11 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			if target != null and target.alive:
 				_damage(target, spec.get("dmg", 0.0), u, now, id)
 				_apply_curse(target, u, spec, now)
+				if float(spec.get("spread", 0.0)) > 0.0:
+					for e in _enemies_within(u, target.x, target.z, float(spec.spread)):
+						if e != target and team_can_see(u.team, e, now):
+							_apply_curse(e, u, spec, now)
+							break
 		"fear":
 			if target != null and target.alive and Rules.has_los(map, u, target) and _dist(target, u) <= spec.range + 1:
 				target.fear_x = u.x
@@ -566,7 +712,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			if target != null and target.alive and Rules.has_los(map, u, target) and _dist(target, u) <= spec.range + 1:
 				var before := target.hp
 				_damage(target, spec.dmg, u, now, id)
-				_heal(u, maxf(0.0, before - target.hp), u, now)
+				_heal(u, maxf(0.0, before - target.hp) * float(spec.get("drainHeal", 1.0)), u, now)
 		"volley":
 			var base := atan2(dir.x, dir.y)
 			var spread := deg_to_rad(70)
@@ -645,6 +791,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			if target != null:
 				_damage(target, spec.dmg, u, now, id)
 				target.mortal_until = now + 8000
+				target.mortal_pct = float(spec.get("healCut", 0.5))
 				_label(target, "HERIDA MORTAL", "#ff4d4d")
 		"hamstring":
 			if target != null:
@@ -676,6 +823,10 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			if target != null:
 				fx.append({"k": "healspell", "id": target.id, "ability": spec.id})  # always shown, even at full health
 				_heal(target, spec.heal, u, now)
+				if float(spec.get("hotHps", 0.0)) > 0.0:
+					target.hot_until = now + float(spec.get("hotMs", 6000.0))
+					target.hot_hps = float(spec.hotHps)
+					target.hot_by = u
 		"pwshield":
 			if target != null:
 				target.absorb = spec.heal
@@ -910,6 +1061,8 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				u.dash_left = 0.0
 				target.marked_until = now + spec.ccMs
 				_label(target, "MARCADO", "#ff3b3b")
+	_cast_emp = false
+	_hit_emp = false
 
 
 func _new_id() -> int:
@@ -922,6 +1075,7 @@ func _spawn_proj(u: ArenaUnit, spec: Dictionary, dir: Vector2, target: ArenaUnit
 	projs.append({
 		"id": _new_id(), "owner": u, "spec": spec, "x": u.x + dir.x * 0.6, "z": u.z + dir.y * 0.6,
 		"vx": dir.x * s, "vz": dir.y * s, "left": spec.range + (6.0 if target != null else 0.0), "target": target,
+		"emp": _cast_emp, "hits": [],
 	})
 
 
@@ -944,6 +1098,9 @@ var block_rear := 0.05
 var block_rng := RandomNumberGenerator.new()
 ## Chance effects of abilities (Frostbolt's root).
 var proc_rng := RandomNumberGenerator.new()
+## The cast being executed is an "every Nth" one (its projectiles carry it), and the hit being dealt comes from one.
+var _cast_emp := false
+var _hit_emp := false
 
 
 func block_chance(defender: ArenaUnit, attacker: ArenaUnit, now: float, ability: String) -> float:
@@ -957,7 +1114,8 @@ func block_chance(defender: ArenaUnit, attacker: ArenaUnit, now: float, ability:
 	if incoming.length_squared() < 0.0001:
 		return 0.0
 	var facing := Vector2(sin(defender.rot), cos(defender.rot))
-	return clampf(block_front if facing.dot(incoming.normalized()) >= 0.0 else block_rear, 0.0, 1.0)
+	var bonus := float(defender.spec().get("block", 0.0))
+	return clampf((block_front if facing.dot(incoming.normalized()) >= 0.0 else block_rear) + bonus, 0.0, 1.0)
 
 
 ## Crit chance of a unit: the global base plus its class/spec bonus (assassins crit a lot).
@@ -980,9 +1138,15 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 		fx.append({"k": "block", "id": t.id, "by": src.id})
 		return
 	var crit := false
+	var a: Dictionary = src.ability_by_id(ability) if src != null and ability != "" and not _dot_tick else {}
 	if src != null:
+		if not a.is_empty():
+			amount *= _talent_bonus(a, src, t, now)
 		crit = now < src.crit_until or randf() < crit_chance(src)
+		if not a.is_empty() and not crit:
+			crit = (_hit_emp and str(a.get("nthEffect", "")) == "crit") or (a.get("critVsSlowed", false) and _hindered(t, now))
 		if crit: amount *= C.CRIT_MULT
+		if crit and not _dot_tick: src.crit_streak += 1
 		var armor := float(t.spec().get("armor", 0.0))
 		if armor > 0.0 and SpellSchools.explicit(ability) and SpellSchools.school_of(ability) == "physical":
 			amount *= 1.0 - armor  # armor: physical hits only (not magic, not periodic effects)
@@ -1008,12 +1172,12 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 			if t.fear_dmg > 40: t.fear_until = 0.0  # fear breaks after enough damage
 	t.hp -= amount
 	if now < t.incap_until: t.incap_until = 0.0  # sheep / freeze / blind break on damage
-	if not t.cast.is_empty() and int(t.cast.get("pushes", 0)) < int(C.PUSHBACK_MAX):
+	if not t.cast.is_empty() and int(t.cast.get("pushes", 0)) < int(C.PUSHBACK_MAX) and not t.ability(t.cast.slot).get("noPushback", false):
 		t.cast.ends_at += float(C.PUSHBACK_MS)  # WoW pushback: each hit delays the cast, at most twice
 		t.cast.pushes = int(t.cast.get("pushes", 0)) + 1
 	if src != null:
 		src.dmg += amount
-		src.ult = minf(100, src.ult + amount * C.ULT_PER_DAMAGE)
+		src.ult = minf(100, src.ult + amount * C.ULT_PER_DAMAGE * float(a.get("ultGain", 1.0)))
 		t.ult = minf(100, t.ult + amount * C.ULT_PER_DAMAGE_TAKEN)
 		t.last_hit_by = src.id
 		t.last_hit_at = now
@@ -1021,6 +1185,8 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 		fx.append({"k": "hit", "id": t.id, "amt": roundi(amount), "x": t.x, "z": t.z, "crit": crit, "by": src.id, "ability": ability, "dot": _dot_tick})
 		if practice and src.peer != 0 and t.dummy != "" and t.team != src.team:
 			meter_for(src).record_damage(ability, amount, crit, now)
+		if not a.is_empty() and t.team != src.team:
+			_after_hit(t, src, a, amount, now)
 	if t.hp <= 0:
 		if practice:
 			_practice_down(t, now)
@@ -1034,7 +1200,7 @@ func _sheep_heal(u: ArenaUnit, now: float) -> void:
 	if not u.alive or phase != "fight":
 		return
 	var amount := u.max_hp * float(C.POLY_HEAL_PCT) * _dt
-	if now < u.mortal_until: amount *= 0.5
+	if now < u.mortal_until: amount *= 1.0 - u.mortal_pct
 	amount *= 1.0 - _damp(now)
 	var real := minf(u.max_hp - u.hp, amount)
 	if real > 0.0:
@@ -1055,7 +1221,7 @@ func _sheep_heal_number(u: ArenaUnit) -> void:
 func _heal(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, quiet := false) -> void:
 	if not t.alive or phase != "fight":
 		return
-	if now < t.mortal_until: amount *= 0.5  # Mortal Strike
+	if now < t.mortal_until: amount *= 1.0 - t.mortal_pct  # Mortal Strike
 	amount *= 1.0 - _damp(now)
 	var real := minf(t.max_hp - t.hp, amount)
 	if real <= 0:
@@ -1268,7 +1434,8 @@ func _step_effects(u: ArenaUnit, now: float) -> void:
 		if now >= dot.next:
 			dot.next += 500.0
 			_dot_tick = true
-			_damage(u, dot.dps * 0.5, unit_by_id(dot.owner), now, dot.ability)
+			var mark := (1.0 + u.curse_mark) if now < u.curse_mark_until and dot.ability != "poison" else 1.0
+			_damage(u, dot.dps * 0.5 * mark, unit_by_id(dot.owner), now, dot.ability)
 			_dot_tick = false
 			if not u.alive: return
 	if now < u.burn_until and u.burn_by != null and now >= u.burn_next:
@@ -1292,20 +1459,20 @@ func _step_effects(u: ArenaUnit, now: float) -> void:
 			_damage(e, spec.dmg, u, now, spec.id)
 
 
-func _apply_curse(t: ArenaUnit, src: ArenaUnit, spec: Dictionary, now: float) -> void:
+func _apply_curse(t: ArenaUnit, src: ArenaUnit, spec: Dictionary, now: float, quiet := false) -> void:
 	if not t.alive or now < t.shield_until: return
 	var key := "%d:%s" % [src.id, spec.id]
 	var old: Dictionary = t.curses.get(key, {})
 	t.curses[key] = {"owner": src.id, "ability": spec.id, "dps": float(spec.dotDps),
 		"until": now + float(spec.durationMs),
 		"next": old.next if not old.is_empty() and now < old.until else now + 500.0}
-	_label(t, spec.name.to_upper(), "#b18ae8")
+	if not quiet: _label(t, spec.name.to_upper(), "#b18ae8")
 
 
 func _progress_cast(u: ArenaUnit, now: float) -> void:
 	var c := u.cast
 	var spec := u.ability(c.slot)
-	var moving := u.input.length() > 0.1
+	var moving: bool = u.input.length() > 0.1 and not spec.get("castMove", false)
 	if moving or _can_act(u, spec, now) != "":
 		u.cast = {}
 		if moving and now >= u.fear_until:
@@ -1352,15 +1519,21 @@ func _step_projectiles(now: float) -> void:
 		var hit: ArenaUnit = null
 		var hit_t := INF
 		for u in units:
-			if not u.alive or u.team == p.owner.team:
+			if not u.alive or u.team == p.owner.team or u.id in p.get("hits", []):
 				continue
 			var t := Rules.segment_circle(p.x, p.z, nx, nz, u.x, u.z, Rules.PLAYER_R + spec.projR)
 			if t >= 0 and t < hit_t:
 				hit = u
 				hit_t = t
 		if hit != null and (wall_t < 0 or hit_t <= wall_t):
+			_hit_emp = p.get("emp", false)
 			_on_proj_hit(p, hit, now)
-			continue
+			var pierce: bool = _hit_emp and str(spec.get("nthEffect", "")) == "pierce"
+			_hit_emp = false
+			if not pierce:
+				continue
+			p.hits.append(hit.id)  # piercing shot: keeps flying through
+			p.target = null
 		if wall_t >= 0:
 			if spec.id in ["fireball", "pyro", "frostbolt", "icelance"]:
 				fx.append({"k": "boom", "x": p.x + (nx - p.x) * wall_t, "z": p.z + (nz - p.z) * wall_t, "r": 0.8, "kind": spec.id})
@@ -1424,6 +1597,7 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 			if now < t.root_until or (now < t.incap_until and t.incap_kind == "freeze"):
 				_damage(t, float(spec.dmg) * float(spec.shatter), p.owner, now, spec.id)
 				_label(t, "¡ASTILLADO!", "#bff4ff")
+				_bounce(p, t, now)
 				return
 		"headshot", "awp":
 			_label(t, "¡A LA CABEZA!", "#ff5a4a")
@@ -1450,6 +1624,7 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 		t.burn_dps = float(spec.burnDps)
 		t.burn_next = now + 500.0
 		t.burn_by = p.owner
+	_bounce(p, t, now)
 
 
 func _step_aoes(now: float) -> void:
@@ -1720,6 +1895,16 @@ func _snap_unit(u: ArenaUnit, now: float) -> Dictionary:
 
 ## What one player is allowed to see: their team's vision only (hidden enemies are never sent).
 func snapshot_for(viewer: ArenaUnit, now: float) -> Dictionary:
+	var snap := _snapshot(viewer, now)
+	# Charges and talent counters only travel for kits that have them (the packet is tight in a 3v3).
+	var ch := charges_left(viewer)
+	if ch.any(func(v): return v >= 0): snap.you.ch = ch
+	var st := stacks_shown(viewer)
+	if st.any(func(v): return v >= 0): snap.you.st = st
+	return snap
+
+
+func _snapshot(viewer: ArenaUnit, now: float) -> Dictionary:
 	var abilities: Array = viewer.spec().abilities
 	return {
 		"t": "state",
@@ -1738,7 +1923,6 @@ func snapshot_for(viewer: ArenaUnit, now: float) -> Dictionary:
 		"you": {
 			"cds": range(abilities.size()).map(func(i): return 0 if abilities[i].get("ult", false) else maxi(0, roundi(maxf(viewer.cds[i], viewer.gcd_until if on_gcd(abilities[i]) else 0.0) - now))),
 			"trinket": maxi(0, roundi(viewer.trinket_ready - now)),
-			"ch": charges_left(viewer),
 			"ult": floori(viewer.ult),
 			"auto": viewer.auto_on,
 			"inBush": Rules.bush_at(map, viewer.x, viewer.z) >= 0,

@@ -2,12 +2,12 @@ class_name TalentMark
 extends Control
 ## Overlay for an ability icon changed by a talent: a gold ring and a small seal with what changed
 ## (sword = damage, clock = cooldown, bolt = cast time, target = range, flame = burn/dot, snowflake = slow/shatter,
-## star = crit, cross = healing, arrows = swapped ability). Put it full-rect over the icon; `kind` "" hides it.
+## star = crit, cross = healing, arrows = swapped ability, hop = bounce, three dots = every Nth). Put it full-rect over the icon; `kind` "" hides it.
 
 const GOLD := Color("#ffc15a")
 const INK := Color("#2a1606")
 
-## One of: dmg, heal, cd, cast, range, burn, frost, crit, swap ("" = no talent).
+## One of: dmg, heal, cd, cast, range, burn, frost, crit, swap, bounce, nth ("" = no talent).
 var kind := "":
 	set(v):
 		kind = v
@@ -77,6 +77,14 @@ func _glyph(c: Vector2, g: float) -> void:
 			for i in 10:
 				pts.append(c + Vector2.from_angle(-PI / 2.0 + i * PI / 5.0) * (g if i % 2 == 0 else g * 0.45))
 			draw_colored_polygon(pts, INK)
+		"bounce":  # a hop between two dots
+			draw_arc(c + Vector2(0, g * 0.35), g * 0.75, PI, TAU, 16, INK, w * 0.8, true)
+			draw_circle(c + Vector2(-g * 0.75, g * 0.4), g * 0.28, INK)
+			draw_circle(c + Vector2(g * 0.75, g * 0.4), g * 0.28, INK)
+		"nth":  # three dots, the last one big
+			draw_circle(c + Vector2(-g * 0.7, g * 0.1), g * 0.2, INK)
+			draw_circle(c + Vector2(-g * 0.05, g * 0.1), g * 0.2, INK)
+			draw_circle(c + Vector2(g * 0.62, g * 0.1), g * 0.36, INK)
 		"swap":  # two arrows
 			draw_line(c + Vector2(-g, -g * 0.4), c + Vector2(g, -g * 0.4), INK, w * 0.8, true)
 			draw_colored_polygon(PackedVector2Array([c + Vector2(g, -g * 0.85), c + Vector2(g, g * 0.05), c + Vector2(g * 1.35, -g * 0.4)]), INK)
