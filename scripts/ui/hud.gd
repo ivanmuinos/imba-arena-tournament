@@ -16,6 +16,7 @@ const TEAM_COL := {"red": Color("#ff4d4d"), "blue": Color("#4da3ff")}
 var my_team := "red"
 var my_cls := "mage"
 var my_spec := ""
+var my_talents: Array = []
 var my_id := -1
 ## Absolute local ms when each slot is ready (shared with the PlayerController).
 var ready_at: Array = []
@@ -351,7 +352,7 @@ func set_spectator(dead: bool, observed: String) -> void:
 
 func _show_ability_tip(index: int) -> void:
 	_tip_slot = index
-	_ability_tip.set_ability(GameData.abilities(my_cls, my_spec)[index], Keybinds.shared().slot_label(index))
+	_ability_tip.set_ability(_my_abilities()[index], Keybinds.shared().slot_label(index))
 	_ability_tip.modulate.a = 0.0
 	_ability_tip.show()
 	_place_ability_tip.call_deferred(index)
@@ -448,10 +449,16 @@ func show_focus(info: Dictionary) -> void:
 
 # ---------------------------------------------------------------- setup per match
 
-func setup(roster: Array, you: int, cls: String, team: String, spec := "") -> void:
+## Your kit with your talents (cooldown sweeps, tooltips and the bar show the real numbers).
+func _my_abilities() -> Array:
+	return Talents.kit(my_cls, my_spec, my_talents).abilities
+
+
+func setup(roster: Array, you: int, cls: String, team: String, spec := "", talents: Array = []) -> void:
 	my_id = you
 	my_cls = cls
 	my_spec = spec
+	my_talents = talents
 	my_team = team
 	_roster = roster
 	_dead.clear()
@@ -558,7 +565,7 @@ func _build_bar() -> void:
 	bar_scale = float(SettingsStore.shared().get_value("bar_scale"))
 	_bar_frame.clear()
 	_slots.clear()
-	var abilities: Array = GameData.abilities(my_cls, my_spec)
+	var abilities: Array = _my_abilities()
 	var dot := Image.create(60, 60, false, Image.FORMAT_RGBA8)
 	dot.fill(Color(0, 0, 0, 0.68))
 	var dim_tex := ImageTexture.create_from_image(dot)
@@ -799,7 +806,7 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 		f.auras.set_effects(bad + (Effects.buffs_of(u.buffs) + Effects.damp_effect(damp) if u.alive else []))
 
 	# Ability bar state.
-	var abilities: Array = GameData.abilities(my_cls, my_spec)
+	var abilities: Array = _my_abilities()
 	var cds: Array = s.you.cds
 	for i in cds.size():
 		if not abilities[i].get("ult", false):
@@ -880,7 +887,7 @@ func _cls_of(id: int) -> String:
 
 ## Smooth per-frame cooldown sweep + fading texts.
 func tick(now_ms: float, dt: float, cam: Camera3D) -> void:
-	var abilities: Array = GameData.abilities(my_cls, my_spec)
+	var abilities: Array = _my_abilities()
 	for i in _slots.size():
 		var a: Dictionary = abilities[i]
 		var sl: Dictionary = _slots[i]

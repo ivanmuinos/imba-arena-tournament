@@ -94,7 +94,9 @@ func _ready() -> void:
 	for id in GameData.playable_ids():
 		var tile := RosterTile.new(id)
 		tile.custom_minimum_size = Vector2(100, 112)
-		tile.pressed.connect(func(): settings.emit({"cls": id, "spec": str(SettingsStore.shared().get_value("specs").get(id, ""))}))
+		tile.pressed.connect(func():
+			var sid := str(SettingsStore.shared().get_value("specs").get(id, ""))
+			settings.emit({"cls": id, "spec": sid, "talents": ProgressStore.shared().talents(id, sid)}))
 		tr.add_child(tile)
 		_tiles[id] = tile
 	# connection info

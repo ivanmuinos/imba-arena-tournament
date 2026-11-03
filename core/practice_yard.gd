@@ -30,8 +30,8 @@ const DUMMIES := {
 
 
 ## Entries for ArenaMatch: the player first (peer 1... set by the caller via `peer`), then the dummies.
-static func entries(player_name: String, cls: String, spec := "", peer := 1) -> Array:
-	var out: Array = [{"name": player_name, "cls": cls, "spec": spec, "team": "red", "peer": peer}]
+static func entries(player_name: String, cls: String, spec := "", peer := 1, talents: Array = []) -> Array:
+	var out: Array = [{"name": player_name, "cls": cls, "spec": spec, "talents": talents, "team": "red", "peer": peer}]
 	for kind in DUMMIES:
 		var d: Array = DUMMIES[kind]
 		out.append({"name": d[0], "cls": d[1], "spec": d[2], "team": d[5], "peer": 0, "dummy": kind, "hp": HP, "x": d[3], "z": d[4]})

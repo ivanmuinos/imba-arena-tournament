@@ -69,6 +69,7 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 		u.name = e.name
 		u.cls = e.cls
 		u.spec_id = GameData.normalize_spec(u.cls, str(e.get("spec", "")))
+		u.talents = Talents.normalize(u.cls, u.spec_id, e.get("talents", []))
 		u.team = e.team
 		u.peer = e.get("peer", 0)
 		u.dummy = str(e.get("dummy", ""))
@@ -90,6 +91,8 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 func roster() -> Array:
 	return units.map(func(u):
 		var r := {"id": u.id, "name": u.name, "cls": u.cls, "spec": u.spec_id, "team": u.team, "bot": u.is_bot()}
+		if u.talents.any(func(v): return v >= 0):
+			r["talents"] = u.talents
 		if u.dummy != "":
 			r["dummy"] = u.dummy
 			r["hp"] = u.max_hp
@@ -1377,7 +1380,8 @@ func _step_traps(now: float) -> void:
 			keep.append(tr)
 			continue
 		fx.append({"k": "trap", "x": tr.x, "z": tr.z})
-		_cc(victim, "incap", GameData.find_ability("hunter", "trap").ccMs, now, "freeze")
+		var trap: Dictionary = tr.owner.ability_by_id("trap")  # the owner's kit: talents may change the freeze
+		_cc(victim, "incap", (trap if not trap.is_empty() else GameData.find_ability("hunter", "trap")).ccMs, now, "freeze")
 	traps = keep
 
 

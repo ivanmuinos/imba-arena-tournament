@@ -12,7 +12,7 @@ signal match_ended
 signal player_joined(name: String)
 signal player_left(name: String)
 
-const PROTO := 5
+const PROTO := 6
 
 
 ## Game version from project.godot (config/version): client and server must match exactly.
@@ -213,7 +213,7 @@ func _on_hello(from: int, msg: Dictionary) -> void:
 	if _route[from].has_method("steam_id_of"):
 		sid = _route[from].steam_id_of(from)  # players that arrive through Steam are identified by their SteamID
 	var mmr := Ranked.clamp_mmr(int(msg.get("mmr", Ranked.START))) if typeof(msg.get("mmr")) in [TYPE_INT, TYPE_FLOAT] else Ranked.START
-	players[from] = {"name": _unique_name(n.name), "cls": n.cls, "spec": n.spec, "pref": n.pref, "sid": str(sid) if sid != 0 else "", "mmr": mmr, "ready": false}
+	players[from] = {"name": _unique_name(n.name), "cls": n.cls, "spec": n.spec, "talents": n.talents, "pref": n.pref, "sid": str(sid) if sid != 0 else "", "mmr": mmr, "ready": false}
 	_clear_ready()
 	var is_host: bool = _hosts.has(_route[from])
 	if is_host:
@@ -251,9 +251,10 @@ func _on_set(from: int, msg: Dictionary) -> void:
 		return
 	var p: Dictionary = players[from]
 	var before := [p.duplicate(), cfg.duplicate()]
-	var n := MatchConfig.normalize({"cls": msg.get("cls", p.cls), "spec": msg.get("spec", p.get("spec", "")), "pref": msg.get("pref", p.pref)})
+	var n := MatchConfig.normalize({"cls": msg.get("cls", p.cls), "spec": msg.get("spec", p.get("spec", "")), "talents": msg.get("talents", p.get("talents", [])), "pref": msg.get("pref", p.pref)})
 	p.cls = n.cls
 	p.spec = n.spec
+	p.talents = n.talents
 	p.pref = n.pref
 	if from == host_peer and not bool(cfg.ranked):
 		var c := MatchConfig.normalize({"mode": msg.get("mode", cfg.mode), "diff": msg.get("diff", cfg.diff), "map": msg.get("map", cfg.map)})
@@ -309,7 +310,7 @@ func lobby_entries(rng: RandomNumberGenerator = null) -> Array:
 	var humans: Array = []
 	for peer in players:
 		var p: Dictionary = players[peer]
-		humans.append({"peer": peer, "name": p.name, "cls": p.cls, "spec": p.get("spec", ""), "pref": p.pref})
+		humans.append({"peer": peer, "name": p.name, "cls": p.cls, "spec": p.get("spec", ""), "talents": p.get("talents", []), "pref": p.pref})
 	return MatchConfig.build_entries(int(cfg.mode), humans, rng)
 
 
@@ -324,7 +325,7 @@ func _ranked_entries() -> Array:
 		for peer in players:
 			if side.get(peer, "blue") == team:
 				var p: Dictionary = players[peer]
-				entries.append({"name": p.name, "cls": p.cls, "spec": p.get("spec", ""), "team": team, "peer": peer, "mmr": p.get("mmr", Ranked.START)})
+				entries.append({"name": p.name, "cls": p.cls, "spec": p.get("spec", ""), "talents": p.get("talents", []), "team": team, "peer": peer, "mmr": p.get("mmr", Ranked.START)})
 	return entries
 
 
@@ -373,7 +374,7 @@ func start_match(skip_ready := false) -> bool:
 		resolved_map = map_id
 		var peer: int = players.keys()[0]
 		var p: Dictionary = players[peer]
-		game = ArenaMatch.new(2, PracticeYard.entries(p.name, p.cls, p.get("spec", ""), peer), sim_now, cfg.diff, map_id)
+		game = ArenaMatch.new(2, PracticeYard.entries(p.name, p.cls, p.get("spec", ""), peer, p.get("talents", [])), sim_now, cfg.diff, map_id)
 	else:
 		var entries := lobby_entries()
 		ranked_teams = team_ratings(entries) if bool(cfg.ranked) else {}

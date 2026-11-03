@@ -1,0 +1,86 @@
+{
+	"mage/fire": [
+		[
+			{"id": "fire_ember", "name": "Brasas", "effects": [{"op": "mul", "ability": "fireball", "field": "burnDps", "value": 1.5}]},
+			{"id": "fire_heat", "name": "Calor abrasador", "effects": [{"op": "mul", "ability": "fireball", "field": "dmg", "value": 1.12}]},
+			{"id": "fire_flow", "name": "Flujo ígneo", "effects": [{"op": "mul", "ability": "fireball", "field": "cd", "value": 0.8}]}
+		],
+		[
+			{"id": "pyro_quick", "name": "Ignición veloz", "effects": [{"op": "mul", "ability": "pyro", "field": "cast", "value": 0.75}]},
+			{"id": "pyro_big", "name": "Piroexplosión mayor", "effects": [{"op": "mul", "ability": "pyro", "field": "dmg", "value": 1.15}]},
+			{"id": "pyro_counter", "name": "Rompehechizos", "effects": [{"op": "swap", "ability": "pyro", "to": "counter"}]}
+		]
+	],
+	"mage/frost": [
+		[
+			{"id": "frost_chill", "name": "Frío penetrante", "effects": [{"op": "add", "ability": "frostbolt", "field": "slowPct", "value": 0.2}]},
+			{"id": "frost_quick", "name": "Escarcha veloz", "effects": [{"op": "mul", "ability": "frostbolt", "field": "cast", "value": 0.8}]},
+			{"id": "frost_bite", "name": "Mordida de hielo", "effects": [{"op": "mul", "ability": "frostbolt", "field": "dmg", "value": 1.12}]}
+		],
+		[
+			{"id": "lance_shatter", "name": "Astillado profundo", "effects": [{"op": "add", "ability": "icelance", "field": "shatter", "value": 0.5}]},
+			{"id": "lance_flurry", "name": "Ráfaga de lanzas", "effects": [{"op": "mul", "ability": "icelance", "field": "cd", "value": 0.6}]},
+			{"id": "lance_sharp", "name": "Lanza afilada", "effects": [{"op": "mul", "ability": "icelance", "field": "dmg", "value": 1.2}]}
+		]
+	],
+	"warlock": [
+		[
+			{"id": "bolt_dark", "name": "Sombras densas", "effects": [{"op": "mul", "ability": "shadowbolt", "field": "dmg", "value": 1.12}]},
+			{"id": "bolt_quick", "name": "Descarga veloz", "effects": [{"op": "mul", "ability": "shadowbolt", "field": "cast", "value": 0.85}]},
+			{"id": "bolt_reach", "name": "Alcance oscuro", "effects": [{"op": "add", "ability": "shadowbolt", "field": "range", "value": 4}]}
+		],
+		[
+			{"id": "corr_deep", "name": "Corrupción profunda", "effects": [{"op": "mul", "ability": "corruption", "field": "dotDps", "value": 1.3}]},
+			{"id": "drain_greed", "name": "Sed de vida", "effects": [{"op": "mul", "ability": "drainlife", "field": "dmg", "value": 1.25}]},
+			{"id": "drain_agony", "name": "Agonía", "effects": [{"op": "swap", "ability": "drainlife", "to": "agony"}]}
+		]
+	],
+	"hunter": [
+		[
+			{"id": "shot_heavy", "name": "Puntas pesadas", "effects": [{"op": "mul", "ability": "shot", "field": "dmg", "value": 1.2}]},
+			{"id": "shot_rapid", "name": "Tiro rápido", "effects": [{"op": "mul", "ability": "shot", "field": "cd", "value": 0.85}]},
+			{"id": "shot_long", "name": "Ojo de halcón", "effects": [{"op": "add", "ability": "shot", "field": "range", "value": 4}]}
+		],
+		[
+			{"id": "aimed_quick", "name": "Puntería veloz", "effects": [{"op": "mul", "ability": "aimed", "field": "cast", "value": 0.6}]},
+			{"id": "aimed_deadly", "name": "Disparo letal", "effects": [{"op": "mul", "ability": "aimed", "field": "dmg", "value": 1.15}]},
+			{"id": "aimed_silence", "name": "Silenciador", "effects": [{"op": "swap", "ability": "aimed", "to": "silence"}]}
+		]
+	],
+	"warrior": [
+		[
+			{"id": "strike_heavy", "name": "Golpe brutal", "effects": [{"op": "mul", "ability": "strike", "field": "dmg", "value": 1.2}]},
+			{"id": "strike_fast", "name": "Furia", "effects": [{"op": "mul", "ability": "strike", "field": "cd", "value": 0.85}]},
+			{"id": "strike_reach", "name": "Arma larga", "effects": [{"op": "add", "ability": "strike", "field": "range", "value": 0.6}]}
+		],
+		[
+			{"id": "mortal_deep", "name": "Herida profunda", "effects": [{"op": "mul", "ability": "mortal", "field": "dmg", "value": 1.25}]},
+			{"id": "mortal_fast", "name": "Golpes seguidos", "effects": [{"op": "mul", "ability": "mortal", "field": "cd", "value": 0.8}]},
+			{"id": "mortal_pummel", "name": "Zurrar", "effects": [{"op": "swap", "ability": "mortal", "to": "pummel"}]}
+		]
+	],
+	"priest": [
+		[
+			{"id": "smite_holy", "name": "Castigo sagrado", "effects": [{"op": "mul", "ability": "smite", "field": "dmg", "value": 1.2}]},
+			{"id": "smite_fast", "name": "Fervor", "effects": [{"op": "mul", "ability": "smite", "field": "cd", "value": 0.85}]},
+			{"id": "smite_reach", "name": "Luz lejana", "effects": [{"op": "add", "ability": "smite", "field": "range", "value": 4}]}
+		],
+		[
+			{"id": "heal_quick", "name": "Sanación veloz", "effects": [{"op": "mul", "ability": "heal", "field": "cast", "value": 0.75}]},
+			{"id": "heal_great", "name": "Sanación mayor", "effects": [{"op": "mul", "ability": "heal", "field": "heal", "value": 1.15}]},
+			{"id": "shield_renew", "name": "Renovar", "effects": [{"op": "swap", "ability": "pwshield", "to": "renew"}]}
+		]
+	],
+	"rogue": [
+		[
+			{"id": "stab_sharp", "name": "Hojas afiladas", "effects": [{"op": "mul", "ability": "stab", "field": "dmg", "value": 1.15}]},
+			{"id": "stab_fast", "name": "Manos rápidas", "effects": [{"op": "mul", "ability": "stab", "field": "cd", "value": 0.85}]},
+			{"id": "stab_crit", "name": "Puntos débiles", "icon": "stab", "effects": [{"op": "add", "field": "crit", "value": 0.05}]}
+		],
+		[
+			{"id": "evis_deep", "name": "Corte profundo", "effects": [{"op": "mul", "ability": "eviscerate", "field": "dmg", "value": 1.2}]},
+			{"id": "evis_fast", "name": "Remate", "effects": [{"op": "mul", "ability": "eviscerate", "field": "cd", "value": 0.8}]},
+			{"id": "evis_kick", "name": "Patada", "effects": [{"op": "swap", "ability": "eviscerate", "to": "kick"}]}
+		]
+	]
+}

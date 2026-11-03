@@ -20,10 +20,10 @@ static func _tables() -> void:
 	GameData.ensure_loaded()
 	var ids := {}
 	for cls in GameData.classes:
-		for a in GameData.classes[cls].abilities:
+		for a in GameData.classes[cls].abilities + GameData.reserve(cls):  # the reserve too: talents can swap one in
 			ids[a.id] = true
 		for sid in GameData.spec_ids(cls):
-			for a in GameData.abilities(cls, sid):
+			for a in GameData.abilities(cls, sid) + GameData.reserve(cls, sid):
 				ids[a.id] = true
 	_ability_ids = ids.keys()
 	_ability_ids.sort()

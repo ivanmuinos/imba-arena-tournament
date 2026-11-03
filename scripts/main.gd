@@ -154,6 +154,12 @@ func _ready() -> void:
 		_menu.debug_goto(str(args.menu))
 		if args.has("menu-tip"):
 			(_menu._views.champions as MChampions).debug_tip(int(args["menu-tip"]))
+		if args.has("menu-tab"):  # e.g. --menu=champions:priest --menu-tab=talents [--menu-level=12: that level in memory only, never saved]
+			var mc := _menu._views.champions as MChampions
+			if args.has("menu-level"):
+				ProgressStore.shared().champions[mc._cls] = {"level": int(args["menu-level"]), "xp": 120}
+				mc.select(mc._cls)
+			mc._tabs.select(str(args["menu-tab"]))
 	var cfg := _cfg_from_args()
 	if args.has("end-demo"):  # visual check of the end screen
 		_show("end")
@@ -260,7 +266,7 @@ func _start_steam_host(cfg: Dictionary, friends_only: bool) -> void:
 	var link := LoopbackTransport.pair()
 	server.attach(link[0], true)
 	client = _new_client(cfg)
-	client.attach(link[1], {"name": _steam_name(cfg), "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": cfg.pref})
+	client.attach(link[1], {"name": _steam_name(cfg), "cls": cfg.cls, "spec": cfg.get("spec", ""), "talents": _my_talents(cfg), "pref": cfg.pref})
 	steam_lobbies.host(friends_only, {"mode": cfg.mode, "map": cfg.map, "name": _steam_name(cfg)})
 	_menu.set_status("Creando la sala de Steam…")
 
@@ -321,7 +327,7 @@ func _on_steam_joined(lobby_id: int, owner: int) -> void:
 	offline = false
 	_via_steam = true
 	client = _new_client(cfg)
-	client.attach(SteamTransport.join(steam, lobby_id, owner), {"name": _steam_name(cfg), "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": cfg.pref})
+	client.attach(SteamTransport.join(steam, lobby_id, owner), {"name": _steam_name(cfg), "cls": cfg.cls, "spec": cfg.get("spec", ""), "talents": _my_talents(cfg), "pref": cfg.pref})
 	_menu.set_status("Conectando con el anfitrión por Steam…")
 
 
@@ -414,7 +420,7 @@ func _start_offline(cfg: Dictionary) -> void:
 	var link := LoopbackTransport.pair()
 	server.attach(link[0], true)
 	client = _new_client(cfg)
-	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": cfg.pref})
+	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "talents": _my_talents(cfg), "pref": cfg.pref})
 	_show("none")
 
 
@@ -430,7 +436,7 @@ func _start_practice(cfg: Dictionary, tutorial := false) -> void:
 	var link := LoopbackTransport.pair()
 	server.attach(link[0], true)
 	client = _new_client(cfg)
-	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": "red"})
+	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "talents": _my_talents(cfg), "pref": "red"})
 	_show("none")
 
 
@@ -467,7 +473,7 @@ func _start_host(cfg: Dictionary, port: int) -> void:
 	var link := LoopbackTransport.pair()
 	server.attach(link[0], true)
 	client = _new_client(cfg)
-	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": cfg.pref})
+	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "talents": _my_talents(cfg), "pref": cfg.pref})
 	_lobby_port = port
 	_show("none")
 
@@ -484,7 +490,7 @@ func _start_join(cfg: Dictionary, address: String, port: int) -> void:
 		_menu.set_status("No se pudo conectar a %s:%d" % [address, port])
 		return
 	client = _new_client(cfg)
-	client.attach(net, {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "pref": cfg.pref})
+	client.attach(net, {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "talents": _my_talents(cfg), "pref": cfg.pref})
 	_menu.set_status("Conectando a %s:%d…" % [address, port])
 
 
@@ -568,6 +574,11 @@ func _on_match_finished(end: Dictionary, rows: Array) -> void:
 	_set_preview(last_cfg.get("map", "random"))
 	_end.show_result(end.winner == mine, end.score, rows, "JUGAR OTRA" if offline else "VOLVER A LA SALA")
 	_end.show_progress(_award_progress(end, mine, my_cls))
+
+
+## Your talent picks for the champion in `cfg` (ProgressStore), sent in the hello.
+func _my_talents(cfg: Dictionary) -> Array:
+	return ProgressStore.shared().talents(str(cfg.cls), str(cfg.get("spec", "")))
 
 
 ## XP for your champion (Progress). Offline matches are against bots only: half XP.

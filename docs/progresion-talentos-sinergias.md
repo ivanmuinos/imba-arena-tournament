@@ -125,5 +125,7 @@ Se programa en cuatro etapas, cada una con su PR y sus tests. No se empieza hast
 
 1. **Progresión:** `ProgressStore` (XP, nivel y rangos por campeón, en `user://progress.json` o en Steam según lo que decida Ivan) y XP en la pantalla de fin de partida.
 2. **Talentos:** `data/talents.json`, que se aplica al armar el kit (`GameData.kit` más modificadores, y `equip()` para los cambios por habilidades de la reserva). La red lleva los talentos, el servidor los valida y los bots los eligen. También la pestaña de talentos en Campeones.
+   - **Versión 1 (hecha):** 2 filas por kit (nivel 5: ataque básico; nivel 10: poder de daño). Cada talento es solo un dato: multiplica o suma un número de una habilidad (o la probabilidad de crítico del kit), o cambia un poder por uno de la reserva (`core/talents.gd`). Donde la tabla de arriba pide una mecánica nueva (rebotes, "cada 3.er golpe", condiciones), la versión 1 usa un equivalente numérico. Las mecánicas quedan para las filas 3 y 4.
+   - El servidor valida que los talentos existan y que haya uno por fila, pero **no puede comprobar el nivel**, porque la progresión sigue en `user://progress.json`. Esto depende de la decisión pendiente sobre Steam.
 3. **Sinergias:** bonus de equipo y combos en `ArenaMatch`, y su indicador en la selección de campeones.
 4. **Balance y matchmaking:** simulación extendida, ajuste de números y búsqueda por banda de nivel en partidas normales.

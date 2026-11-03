@@ -33,11 +33,14 @@ var last_range_warn := -1e9
 var _cast_warned := false
 ## Abilities equipped over the kit on this client (slot -> ability), see equip(); setup() clears them.
 var _equipped := {}
+## Talent picks (Talents), applied to the kit.
+var talents: Array = []
 
 
-func setup(p_cls: String, p_team: String, p_spec := "") -> void:
+func setup(p_cls: String, p_team: String, p_spec := "", p_talents: Array = []) -> void:
 	cls = p_cls
 	spec_id = GameData.normalize_spec(p_cls, p_spec)
+	talents = p_talents
 	team = p_team
 	_equipped = {}
 	target = -1
@@ -51,7 +54,7 @@ func setup(p_cls: String, p_team: String, p_spec := "") -> void:
 
 
 func ability(slot: int) -> Dictionary:
-	return _equipped[slot] if _equipped.has(slot) else GameData.ability(cls, slot, spec_id)
+	return _equipped[slot] if _equipped.has(slot) else Talents.kit(cls, spec_id, talents).abilities[slot]
 
 
 ## Same as ArenaUnit.equip on the client side: one of the class's abilities (kit or reserve) on `slot`.

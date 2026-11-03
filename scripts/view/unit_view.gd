@@ -480,7 +480,7 @@ func update(dt: float, now_s: float) -> void:
 	var casting_now: bool = s.cast != null and s.alive
 	_cast_orb.visible = casting_now and live_params
 	if casting_now:
-		var abil: Array = GameData.abilities(entry.cls, str(entry.get("spec", "")))
+		var abil: Array = Talents.kit(entry.cls, str(entry.get("spec", "")), entry.get("talents", [])).abilities
 		var slot := int(s.cast.slot)
 		var school := SpellSchools.school_of(str(abil[slot].id)) if slot >= 0 and slot < abil.size() else "arcane"
 		if school != _cast_school:

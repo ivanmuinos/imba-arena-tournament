@@ -28,6 +28,7 @@ var my_id := -1
 var my_team := "red"
 var my_cls := "mage"
 var my_spec := ""
+var my_talents: Array = []
 var me: Dictionary = {}
 var last_state: Dictionary = {}
 var controller := PlayerController.new()
@@ -109,6 +110,7 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	my_team = mine.team
 	my_cls = mine.cls
 	my_spec = str(mine.get("spec", ""))
+	my_talents = mine.get("talents", [])
 	world = ArenaWorld.new()
 	add_child(world)
 	world.setup(GameMap.create(msg.map))
@@ -130,7 +132,7 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 			fx.dash(pos.x, pos.z))
 	hud = Hud.new()
 	add_child(hud)
-	hud.setup(_roster, my_id, my_cls, my_team, my_spec)
+	hud.setup(_roster, my_id, my_cls, my_team, my_spec, my_talents)
 	hud.frame_clicked.connect(_on_frame_clicked)
 	hud.macro_pressed.connect(run_macro)
 	practice = str(msg.map) == GameMap.PRACTICE_ID
@@ -138,7 +140,7 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	if practice and not tutorial:
 		_build_practice_panel()
 	_build_game_menu()
-	controller.setup(my_cls, my_team, my_spec)
+	controller.setup(my_cls, my_team, my_spec, my_talents)
 	controller.ready_at = hud.ready_at
 	predictor.place(mine_spawn().x, mine_spawn().y)
 	_face_enemy()
@@ -304,7 +306,7 @@ func _on_state(s: Dictionary) -> void:
 		var casting: bool = u.cast != null
 		if v != null and casting and not _prev_casting.get(u.id, false):
 			audio.play("castStart", Vector2(u.x, u.z))
-			var spec: Dictionary = GameData.ability(v.entry.cls, int(u.cast.slot), str(v.entry.get("spec", "")))
+			var spec: Dictionary = Talents.kit(v.entry.cls, str(v.entry.get("spec", "")), v.entry.get("talents", [])).abilities[int(u.cast.slot)]
 			hud.float_text(Vector3(u.x, world.h(u.x, u.z) + 3.2 * UnitView.VS, u.z), spec.name, Color("#ffe08a"), true)
 		_prev_casting[u.id] = casting
 	if prev_phase != "fight" and s.phase == "fight":
@@ -1259,7 +1261,7 @@ func _aim_and_target(_focus: Vector2, now: float) -> void:
 		var hv: UnitView = views[_hover]
 		rel = "friend" if _team_of(_hover) == my_team else "enemy"
 		dist = Vector2(hv.position.x - predictor.m.x, hv.position.z - predictor.m.z).length()
-		var basic := GameData.ability(my_cls, 0, my_spec)
+		var basic := controller.ability(0)
 		reach = float(basic.range) + 1.0 if rel == "enemy" else 25.0
 	CursorKit.refit(Vector2(get_window().size))
 	CursorKit.set_kind(CursorKit.kind_for(rel, dist, reach, controller.pending_ground >= 0))
@@ -1342,7 +1344,7 @@ func _target_frame(local: Vector2) -> void:
 		return
 	var s: Dictionary = v.snap
 	var spec: Dictionary = GameData.classes[v.entry.cls]
-	var basic := GameData.ability(my_cls, 0, my_spec)
+	var basic := controller.ability(0)
 	var d := Vector2(v.position.x - local.x, v.position.z - local.y).length()
 	var in_sight := Rules.has_los(world.map, {"x": local.x, "z": local.y}, {"x": v.position.x, "z": v.position.z})
 	var status := ""
@@ -1358,7 +1360,7 @@ func _target_frame(local: Vector2) -> void:
 			status = "Sin línea de visión"
 			kind = "warn"
 		else:
-			status = ("Atacando con %s" % basic.name) if basic.get("auto", false) and bool(last_state.get("you", {}).get("auto", false)) else ("A tiro: clic derecho o tecla 1 para atacar" if basic.get("auto", false) else "A tiro: usá tus hechizos (%s)" % GameData.ability(my_cls, 0, my_spec).name)
+			status = ("Atacando con %s" % basic.name) if basic.get("auto", false) and bool(last_state.get("you", {}).get("auto", false)) else ("A tiro: clic derecho o tecla 1 para atacar" if basic.get("auto", false) else "A tiro: usá tus hechizos (%s)" % controller.ability(0).name)
 			kind = "good"
 	var friend: bool = v.entry.team == my_team
 	if friend:
