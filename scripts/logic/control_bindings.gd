@@ -6,7 +6,7 @@ const ACTIONS := {
 	"forward": "Avanzar", "back": "Retroceder", "left": "Girar izquierda", "right": "Girar derecha",
 	"strafe_left": "Paso lateral izquierdo", "strafe_right": "Paso lateral derecho",
 	"jump": "Saltar / confirmar área (mando)", "target": "Siguiente objetivo", "ally": "Siguiente aliado",
-	"ally_0": "Aliado 1", "ally_1": "Aliado 2", "ally_2": "Aliado 3",
+	"ally_0": "Seleccionarte a vos", "ally_1": "Aliado 1", "ally_2": "Aliado 2",
 	"cancel": "Cancelar / soltar objetivo", "face": "Mirar al objetivo", "mute": "Silenciar",
 	"orbit": "Seleccionar / orbitar cámara", "look": "Autoataque / mirar con cámara",
 	"slot_0": "Habilidad 1", "slot_1": "Habilidad 2", "slot_2": "Habilidad 3", "slot_3": "Habilidad 4",

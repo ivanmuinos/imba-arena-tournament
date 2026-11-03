@@ -207,6 +207,7 @@ func _build_keys(page: VBoxContainer) -> void:
 	for i in int(GameData.C.SLOT_COUNT):
 		actions.append("slot_%d" % i)
 	actions.append("trinket")
+	actions.append_array(["self", "ally_1", "ally_2"])  # who your heals and shields go to
 	for a in actions:
 		var l := UiKit.label("", 15, UiKit.INK)
 		l.custom_minimum_size = Vector2(250, 30)
