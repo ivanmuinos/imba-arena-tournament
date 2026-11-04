@@ -752,3 +752,64 @@ Pasiva de la especialización (`barrier` en `data/classes.json`, `ArenaMatch._st
 | **35, vuelve a los 20 s** (elegido) | **44,5%** | 71,2% | 75,0% | 1,2% | 20,0% |
 
 Contra el brujo sigue perdiendo casi siempre, y no es por falta de vida: hay que mirar ese cruce por separado.
+
+## 2v2 en difícil: la referencia del balance (2026-11-03)
+
+El balance que importa es el 2v2; el 1v1 sólo se empareja. Se mide con `--modes=2 --diff=hard`. En normal, los bots tiran los proyectiles sin fijar objetivo, apuntando adonde creen que va a estar el enemigo, y fallan mucho: el Fuego acierta 55% de las Bolas de fuego y 29% de las Piroexplosiones, y el Brujo 19% de sus Descargas. Un jugador con objetivo seleccionado nunca falla así, porque sus proyectiles lo persiguen. Eso es lo que hacen los bots en difícil. Con los mismos números, en normal el Fuego daba 33% y en difícil 64%.
+
+**Bot:** el auto-ataque ahora siempre persigue al objetivo, también en normal, igual que el de un jugador. Antes el Cazador erraba la mitad de sus disparos, y en 2v2 normal pasó de 22% a 41%.
+
+**Cambios** (2 semillas × 400 partidas, en difícil; el ruido es de unos ±5 puntos para cada especialización del Mago):
+
+| Cambio | Por qué |
+|---|---|
+| Ventisca: 18 → 12 por tick | Hacía más daño que todo el resto del kit de Escarcha (5.500 contra 4.900 de la Descarga en 4 partidas contra Brujos) |
+| Descarga de escarcha: 49 → 38; astillado ×3 → ×2,5; escudo de escarcha 35 → 25 | Escarcha daba 84% |
+| Disparo del Cazador: 12 → 13; Puñalada del Asesino: 18 → 17 | |
+| Rompehechizos: silencio del Contrahechizo ×0,6 (2,5 → 1,5 s) | Daba +8 puntos en 2v2; ahora +1,5 |
+
+| Clase (2v2, difícil) | Antes | Después |
+|---|---|---|
+| Escarcha | 84,2% | 63,8% |
+| Fuego | 64,3% | 52,7% |
+| Guerrero | 43,9% | 55,4% |
+| Brujo | 49,4% | 55,0% |
+| Asesino | 50,0% | 46,2% |
+| Cazador | 42,3% | 44,4% |
+| Sacerdote | 40,0% | 40,7% |
+
+**Pendiente:** Escarcha y Sacerdote siguen fuera de 45–55%. El rebalanceo completo se hace después de sumar dos sanadores más: el Druida reactivado y un Paladín nuevo. Con un solo sanador, todo 2v2 de un daño más un sanador lleva al Sacerdote.
+
+## Tres sanadores y rebalanceo en 2v2 difícil (2026-11-03)
+
+Se suman dos sanadores: el **Druida** vuelve (estaba en `DISABLED_CLASSES`) y entra el **Paladín**, una clase nueva que cura con Luz sagrada. Hay 5 clases de daño (Cazador, Mago, Brujo, Asesino, Guerrero) y 3 sanadores (Sacerdote, Druida, Paladín). Los sanadores tienen algo de daño, pero su fuerte es curar y sostener al equipo.
+
+**Arreglo:** Recrecimiento del Druida usaba su propio código y no aplicaba la curación en el tiempo (`hotHps`), así que el talento Brote no hacía nada. Ahora comparte el código de Sanación.
+
+**Cómo se mide:** se usan 2 semillas × 400 partidas de 2v2 en difícil. Los equipos son al azar, así que salen equipos de dos sanadores: pierden casi siempre (11–15%) porque no tienen daño, y eso hunde la media de los sanadores en la tabla general. Por eso cada clase se mide en equipos con **un sanador como máximo**. En esa tabla el promedio ronda 56%, porque los rivales de dos sanadores quedan adentro.
+
+| Cambio | Por qué |
+|---|---|
+| Recrecimiento: cura 38 → 70 y deja 6 por segundo durante 6 s; Brote: 5 → 10 por segundo | El Druida daba 22,5% (32% sin equipos de dos sanadores) |
+| Luz sagrada: 115 → 100; Bendición de protección: 4 → 3 s; Imposición de manos: 260 → 200 | El Paladín salió con 71% |
+| Descarga de escarcha: 38 → 35; enraizar 15% → 10% | Escarcha daba 68% |
+| Corrupción: 10 → 9 por segundo | Brujo 59% |
+| Guerrero: vida 620 → 600, Golpe mortal 18 → 16, Golpe 10 → 9 | Guerrero 59–62%. Bajarle más la vida rompe su identidad de tanque (`test_classes`) |
+| Cazador: Disparo 13 → 14, Disparo apuntado 54 → 60 | Cazador 46% |
+
+**Resultado** (semillas 7 y 8, que no se usaron para ajustar):
+
+| Clase (equipos con 0–1 sanador) | Victorias |
+|---|---|
+| Sacerdote | 60,1% |
+| Paladín | 58,9% |
+| Mago (las dos especializaciones) | 58,8% |
+| Guerrero | 55,5% |
+| Druida | 55,1% |
+| Asesino | 54,0% |
+| Brujo | 52,6% |
+| Cazador | 52,4% |
+
+Todas quedan a menos de 5 puntos del promedio. Los equipos con un sanador ganan 58,1% y los de dos de daño 52,8%: daño + sanador es la composición base, sin que dos de daño queden fuera de juego.
+
+**Golpe de cruzado sagrado:** en duelos el Paladín perdía el 100%. Su daño era físico y el Guerrero se lo comía con armadura y bloqueo (52 bloqueos en 2 duelos). Ahora el Golpe de cruzado es daño sagrado, y la descripción lo explica. Probé también velocidad 6,4 → 6,8 y Martillo con alcance 12 → 16, pero no le alcanzaban para llegar a los rivales a distancia y en 2v2 lo subían a 64%, así que se descartaron. Con el daño sagrado en 12, en 2v2 (semillas 7 y 8) queda: Mago 60,4%, Paladín 58,9%, Sacerdote 56,5%, Asesino 55,5%, Brujo 54,8%, Druida 54,3%, Guerrero 52,9%, Cazador 49,1%.

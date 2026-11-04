@@ -1,6 +1,7 @@
 extends SceneTree
 ## Headless bot-vs-bot balance simulation.
 ##   godot --headless --path . --script res://tools/balance_sim.gd -- --n=200 --modes=2,3 --maps=bridge,pillars,tomb,living,spire --seed=1 [--out=user://balance.json]
+##   --diff=hard is the balance reference (bots lock their projectiles like a player with a target); --talent=<kit>:<row>:<i> gives that talent to every copy of the kit.
 ## Each match draws two random teams (classes with repetition) and plays out with bots on a map. Per class we count
 ## appearances and wins (a class on a team of 3 counts once per copy). Teams are randomised red/blue so spawn side is neutral.
 ## Output: JSON on stdout (last line) with overall, per-mode, per-map and 2v2 pairing tables.
@@ -55,6 +56,13 @@ func _init() -> void:
 					entries.append({"name": "r%d" % k, "cls": red[k], "spec": rspec[k], "team": "red"})
 				for k in mode:
 					entries.append({"name": "b%d" % k, "cls": blue[k], "spec": bspec[k], "team": "blue"})
+				if args.has("talent"):  # --talent=<kit>:<row>:<i> (e.g. mage/fire:1:2): every copy of that kit takes it
+					var tk := str(args.talent).split(":")
+					for e in entries:
+						if Talents.key(e.cls, e.spec) == tk[0]:
+							var p := [-1, -1]
+							p[int(tk[1])] = int(tk[2])
+							e["talents"] = p
 				var now := 1_000_000.0
 				var m := ArenaMatch.new(mode, entries, now, str(args.diff), map_id)
 				var limit := now + 12 * 60_000

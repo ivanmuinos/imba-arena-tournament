@@ -8,7 +8,7 @@
 		[
 			{"id": "pyro_streak", "name": "Racha caliente", "effects": [{"op": "set", "ability": "pyro", "field": "instantAfterCrits", "value": 2}]},
 			{"id": "pyro_focus", "name": "Concentración ígnea", "effects": [{"op": "set", "ability": "pyro", "field": "noPushback", "value": 1}]},
-			{"id": "pyro_counter", "name": "Rompehechizos", "effects": [{"op": "swap", "ability": "pyro", "to": "counter"}, {"op": "mul", "ability": "counter", "field": "cd", "value": 2.2}]}
+			{"id": "pyro_counter", "name": "Rompehechizos", "effects": [{"op": "swap", "ability": "pyro", "to": "counter"}, {"op": "mul", "ability": "counter", "field": "cd", "value": 2.2}, {"op": "mul", "ability": "counter", "field": "ccMs", "value": 0.6}]}
 		]
 	],
 	"mage/frost": [
@@ -81,6 +81,30 @@
 			{"id": "evis_reset", "name": "Oportunista", "effects": [{"op": "set", "ability": "eviscerate", "field": "killReset", "value": "cheapshot"}]},
 			{"id": "evis_back", "name": "Por la espalda", "effects": [{"op": "set", "ability": "eviscerate", "field": "behind", "value": 0.3}]},
 			{"id": "evis_kick", "name": "Patada", "effects": [{"op": "swap", "ability": "blind", "to": "kick"}]}
+		]
+	],
+	"druid": [
+		[
+			{"id": "wrath_atone", "name": "Cólera sanadora", "effects": [{"op": "set", "ability": "wrath", "field": "allyHeal", "value": 0.25}]},
+			{"id": "wrath_roots", "name": "Raíces enredadoras", "effects": [{"op": "set", "ability": "wrath", "field": "slowStack", "value": 0.1, "also": {"slowStacks": 3, "slowMs": 3000}}]},
+			{"id": "wrath_bark", "name": "Corteza viva", "effects": [{"op": "set", "ability": "wrath", "field": "cdOf", "value": ["ironbark"], "also": {"cdBy": 1000}}]}
+		],
+		[
+			{"id": "regrowth_bloom", "name": "Brote", "effects": [{"op": "set", "ability": "regrowth", "field": "hotHps", "value": 10, "also": {"hotMs": 6000}}]},
+			{"id": "regrowth_quick", "name": "Crecimiento veloz", "effects": [{"op": "add", "ability": "regrowth", "field": "cast", "value": -500}]},
+			{"id": "bark_rejuv", "name": "Rejuvenecimiento", "effects": [{"op": "swap", "ability": "ironbark", "to": "rejuv"}]}
+		]
+	],
+	"paladin": [
+		[
+			{"id": "crusader_heal", "name": "Golpe sanador", "effects": [{"op": "set", "ability": "crusader", "field": "allyHeal", "value": 0.4}]},
+			{"id": "crusader_hammer", "name": "Mano de la justicia", "effects": [{"op": "set", "ability": "crusader", "field": "cdOf", "value": ["hammer"], "also": {"cdBy": 1000}}]},
+			{"id": "crusader_fourth", "name": "Cruzada", "effects": [{"op": "set", "ability": "crusader", "field": "nth", "value": 4, "also": {"nthEffect": "crit"}}]}
+		],
+		[
+			{"id": "light_echo", "name": "Luz persistente", "effects": [{"op": "set", "ability": "holylight", "field": "hotHps", "value": 5, "also": {"hotMs": 6000}}]},
+			{"id": "light_quick", "name": "Luz veloz", "effects": [{"op": "add", "ability": "holylight", "field": "cast", "value": -500}]},
+			{"id": "blessing_cleanse", "name": "Purificar", "effects": [{"op": "swap", "ability": "blessing", "to": "cleanse"}]}
 		]
 	]
 }

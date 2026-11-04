@@ -81,3 +81,17 @@ static func circle_mask() -> ShaderMaterial:
 		_mask = ShaderMaterial.new()
 		_mask.shader = load("res://assets/shaders/circle_mask.gdshader")
 	return _mask
+
+
+## Round mask for the square painted ability icons: the picture is shrunk a little so the circle does not cut its
+## corners and the subject does not fill the whole button.
+static var _icon_mask: ShaderMaterial = null
+const ICON_ZOOM := 0.86
+
+
+static func icon_mask() -> ShaderMaterial:
+	if _icon_mask == null:
+		_icon_mask = ShaderMaterial.new()
+		_icon_mask.shader = load("res://assets/shaders/circle_mask.gdshader")
+		_icon_mask.set_shader_parameter("zoom", ICON_ZOOM)
+	return _icon_mask

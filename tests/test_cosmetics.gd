@@ -43,7 +43,7 @@ func test_every_recolor_item_has_a_valid_tint() -> void:
 		var t := Cosmetics.tint(str(it.id))
 		check(t.has_all(["hue", "sat", "val"]), "tinte completo: " + str(it.id))
 		check(absf(float(t.hue)) <= 1.0 and absf(float(t.sat)) <= 1.0 and absf(float(t.val)) <= 1.0, "valores acotados: " + str(it.id))
-	eq(n, 12, "12 recoloreados")
+	eq(n, 14, "14 recoloreados")
 	eq(Cosmetics.tint("nope"), {}, "desconocido: sin tinte")
 
 

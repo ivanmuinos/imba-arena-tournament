@@ -1,8 +1,8 @@
 extends TestBase
 ## Talents (data/talents.json, core/talents.gd): data, kit changes, match entries, saving.
 
-const KITS := ["mage/fire", "mage/frost", "warlock", "hunter", "warrior", "priest", "rogue"]
-const FIELDS := ["dmg", "heal", "cd", "cast", "range", "burnDps", "dotDps", "slowPct", "shatter"]
+const KITS := ["mage/fire", "mage/frost", "warlock", "hunter", "warrior", "priest", "rogue", "druid", "paladin"]
+const FIELDS := ["dmg", "heal", "cd", "cast", "range", "burnDps", "dotDps", "slowPct", "shatter", "ccMs"]
 const STEP := 1000.0 / 60.0
 ## Fields a "set" talent can give an ability (what ArenaMatch reads).
 const MECHANICS := ["bounce", "nth", "instantAfterCrits", "noPushback", "curseHaste", "castMove", "leech", "allyHeal",
@@ -105,7 +105,7 @@ func test_normalize_drops_anything_invalid() -> void:
 	eq(Talents.normalize("priest", "", ["x", null]), [-1, -1], "tipos raros")
 	eq(Talents.normalize("priest", "", "hola"), [-1, -1], "no es una lista")
 	eq(Talents.normalize("priest", "", [1, 2], 1), [1, -1], "fila bloqueada por nivel")
-	eq(Talents.normalize("druid", "", [1, 1]), [-1, -1], "clase sin talentos")
+	eq(Talents.normalize("ct", "", [1, 1]), [-1, -1], "clase sin talentos")
 
 
 # ---------------------------------------------------------------- match

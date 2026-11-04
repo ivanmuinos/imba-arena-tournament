@@ -1,0 +1,111 @@
+{
+  "style_reference": "estilo_polimorfia.jpeg",
+  "style_notes": "Escena cartoon dentro de un círculo rúnico violeta brillante, fondo negro",
+  "class": {
+    "id": "paladin",
+    "name": "Paladín",
+    "desc": "Cura con Luz sagrada y no se va de la pelea.",
+    "icon": "class_paladin",
+    "icon_path": "assets/icons/class_paladin.svg",
+    "icon_exists": true
+  },
+  "abilities": [
+    {
+      "icon": "crusader",
+      "id": "crusader",
+      "name": "Golpe de cruzado",
+      "desc": "Auto-ataque cuerpo a cuerpo con el arma bendita: daño sagrado, no lo frenan la armadura ni el bloqueo (clic derecho sobre el enemigo o tecla 1).",
+      "icon_path": "assets/icons/crusader.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "paladin",
+          "class_name": "Paladín",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "holylight",
+      "id": "holylight",
+      "name": "Luz sagrada",
+      "desc": "Lanzamiento de 2 s: cura 100 a quien elijas (F1 vos, F2-F3 aliados) o a vos. Lenta pero grande.",
+      "icon_path": "assets/icons/holylight.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "paladin",
+          "class_name": "Paladín",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "hammer",
+      "id": "hammer",
+      "name": "Martillo de la justicia",
+      "desc": "Arroja un martillo que aturde al enemigo 3 s. Alcance corto.",
+      "icon_path": "assets/icons/hammer.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "paladin",
+          "class_name": "Paladín",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "blessing",
+      "id": "blessing",
+      "name": "Bendición de protección",
+      "desc": "Un aliado (o vos) no recibe daño durante 3 s.",
+      "icon_path": "assets/icons/blessing.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "paladin",
+          "class_name": "Paladín",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "layhands",
+      "id": "layhands",
+      "name": "Imposición de manos",
+      "desc": "DEFINITIVA: cura 200 al instante a un aliado (o a vos).",
+      "icon_path": "assets/icons/layhands.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "paladin",
+          "class_name": "Paladín",
+          "spec": null
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "icon": "cleanse",
+      "id": "cleanse",
+      "name": "Purificar",
+      "desc": "Quita maldiciones, quemaduras, aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
+      "icon_path": "assets/icons/cleanse.svg",
+      "icon_exists": true,
+      "used_by": [
+        {
+          "class": "paladin",
+          "class_name": "Paladín",
+          "spec": null
+        }
+      ],
+      "disabled": false,
+      "reserve": true
+    }
+  ]
+}

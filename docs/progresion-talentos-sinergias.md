@@ -117,7 +117,7 @@ La decisión más importante es dónde se guarda la progresión: hoy todo vive e
 | Red | El lobby y las entradas de la partida no llevan talentos ni rangos | Sumar `talents` y `ranks` a la entrada del jugador; el servidor rechaza lo que no corresponde al nivel | A definir |
 | UI | No hay dónde elegir talentos ni ver la XP | Pestaña de talentos en Campeones, XP y nivel en la pantalla de fin de partida, sinergias en la selección | A definir |
 | Alcance | 7 kits × 12 talentos = 84 talentos más 8 bonus y 5 combos | Primera versión con 2 filas por clase (niveles 5 y 10) y 3 bonus de equipo; el resto en una segunda etapa | A definir |
-| Clases desactivadas | Druida, antiterrorista, ronin y el resto no tienen talentos | Quedan sin talentos hasta que se reactiven | A definir |
+| Clases desactivadas | Antiterrorista, ronin y el resto no tienen talentos (el Druida y el Paladín ya tienen) | Quedan sin talentos hasta que se reactiven | A definir |
 
 ## Fases de implementación
 

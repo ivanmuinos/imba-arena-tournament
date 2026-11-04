@@ -178,6 +178,58 @@
    }
   },
   {
+   "id": "title_druid",
+   "kind": "title",
+   "name": "Guardián del bosque",
+   "source": "challenge"
+  },
+  {
+   "id": "ring_druid",
+   "kind": "ring",
+   "name": "Anillo de Druida",
+   "value": "#6fbf4a",
+   "source": "challenge"
+  },
+  {
+   "id": "recolor_druid",
+   "kind": "recolor",
+   "name": "Druida: Otoño",
+   "cls": "druid",
+   "palette": "Otoño",
+   "source": "challenge",
+   "tint": {
+    "hue": -0.2,
+    "sat": 0.3,
+    "val": 0.0
+   }
+  },
+  {
+   "id": "title_paladin",
+   "kind": "title",
+   "name": "Mano de la Luz",
+   "source": "challenge"
+  },
+  {
+   "id": "ring_paladin",
+   "kind": "ring",
+   "name": "Anillo de Paladín",
+   "value": "#ffcf4a",
+   "source": "challenge"
+  },
+  {
+   "id": "recolor_paladin",
+   "kind": "recolor",
+   "name": "Paladín: Plata bendita",
+   "cls": "paladin",
+   "palette": "Plata bendita",
+   "source": "challenge",
+   "tint": {
+    "hue": 0.0,
+    "sat": -0.6,
+    "val": 0.2
+   }
+  },
+  {
    "id": "title_lv2",
    "kind": "title",
    "name": "Recluta",

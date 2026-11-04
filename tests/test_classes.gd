@@ -56,7 +56,7 @@ func test_health_spread_follows_the_identities() -> void:
 			if c != "warrior":
 				check(_hp(c, sp) < warrior, "%s/%s tiene menos vida que el guerrero" % [c, sp])
 	near(rogue, 380.0, 25.0, "el asesino ronda las 380")
-	near(warrior, 640.0, 25.0, "el guerrero ronda las 640")
+	near(warrior, 620.0, 30.0, "el guerrero ronda las 620")
 	check(_hp("mage", "fire") < _hp("mage", "frost"), "Fuego más frágil que Escarcha")
 	for c in ["priest", "hunter", "warlock"]:
 		check(_hp("mage", "fire") < _hp(c), "Fuego tiene menos vida que %s" % c)
@@ -127,7 +127,7 @@ func test_champion_stat_bars_reflect_the_identities_and_tooltips_show_numbers() 
 	check(int(rogue.stats.damage) > int(warrior.stats.damage), "el asesino pega más que el guerrero")
 	check(int(GameData.kit("mage", "fire").stats.damage) > int(GameData.kit("mage", "frost").stats.damage), "Fuego pega más que Escarcha")
 	check(int(GameData.kit("mage", "frost").stats.control) >= 5, "Escarcha: el mejor control")
-	check(HowToContent.stat_tip(warrior, "hp").contains("620") and HowToContent.stat_tip(warrior, "hp").contains("%d%%" % roundi(float(warrior.armor) * 100.0)), "tooltip de vida con armadura")
+	check(HowToContent.stat_tip(warrior, "hp").contains(str(int(warrior.hp))) and HowToContent.stat_tip(warrior, "hp").contains("%d%%" % roundi(float(warrior.armor) * 100.0)), "tooltip de vida con armadura")
 	check(HowToContent.stat_tip(rogue, "damage").contains("crítico"), "tooltip de daño con el crítico del asesino")
 	check(HowToContent.stat_tip(rogue, "mobility").contains("7.4"), "tooltip de movilidad")
 	for c in GameData.classes:

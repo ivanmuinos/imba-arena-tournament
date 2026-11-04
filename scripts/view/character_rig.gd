@@ -27,6 +27,8 @@ const KAYKIT := {
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Raise", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
+	"paladin": {"file": "Knight", "show": ["1H_Sword", "Rectangle_Shield"], "scale": 0.84, "recolor": {"hue": 0.0, "sat": 0.0, "val": 0.0, "plate": 0.5},
+		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"warrior": {"file": "Knight", "show": ["1H_Sword", "Round_Shield"], "scale": 0.84,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Block", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"rogue": {"file": "Rogue", "show": ["Knife", "Knife_Offhand"], "scale": 0.86, "recolor": {"hue": 0.42, "sat": -0.15, "val": -0.45},
@@ -44,6 +46,7 @@ const ATTACKS := {
 	"mage": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"priest": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"druid": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
+	"paladin": {"light": [["1H_Melee_Attack_Slice_Diagonal", 0.40]], "heavy": [["Throw", 0.30]]},
 	"ct": {"light": [["2H_Ranged_Shoot", 0.10]], "heavy": [["2H_Ranged_Shoot", 0.10]]},
 	"ki": {"light": [["Unarmed_Melee_Attack_Punch_A", 0.25], ["Unarmed_Melee_Attack_Punch_B", 0.25]], "heavy": [["Unarmed_Melee_Attack_Kick", 0.30]]},
 	"wizard": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
@@ -86,7 +89,7 @@ static func available(cls: String) -> bool:
 
 ## Procedural fallback model: the warlock and the druid borrow the mage's.
 static func _glb(cls: String) -> String:
-	return "mage" if cls in ["warlock", "druid", "wizard"] else ("hunter" if cls == "ct" else ("warrior" if cls == "ronin" else ("rogue" if cls in ["crack", "ki"] else cls)))
+	return "mage" if cls in ["warlock", "druid", "wizard"] else ("hunter" if cls == "ct" else ("warrior" if cls in ["ronin", "paladin"] else ("rogue" if cls in ["crack", "ki"] else cls)))
 
 
 static func _kk_ok(cls: String) -> bool:
@@ -107,6 +110,13 @@ static func _recolored(tex: Texture2D, key: String, rc: Dictionary) -> Texture2D
 			var c := img.get_pixel(x, y)
 			if c.h < 0.14 and c.s < 0.75 and c.v > 0.45 and c.s > 0.08:
 				continue  # skin tones stay as they are
+			if rc.has("plate") and c.s < 0.22:  # plate armour: light greys turn white, dark greys gold (the paladin)
+				if c.v >= float(rc.plate):
+					c = Color.from_hsv(0.12, 0.07, minf(1.0, c.v * 1.08 + 0.06))
+				else:
+					c = Color.from_hsv(0.115, 0.62, minf(1.0, c.v * 1.25 + 0.12))
+				img.set_pixel(x, y, c)
+				continue
 			c.h = fposmod(c.h + float(rc.hue), 1.0)
 			c.s = clampf(c.s + float(rc.sat) * c.s, 0.0, 1.0)
 			c.v = clampf(c.v + float(rc.val) * (1.0 - c.v), 0.0, 1.0) if float(rc.val) >= 0.0 else clampf(c.v * (1.0 + float(rc.val)), 0.0, 1.0)
@@ -166,6 +176,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 		_warlock_extras(inner)
 	elif cls == "druid":
 		_druid_extras(inner)
+	elif cls == "paladin":
+		_paladin_extras(inner)
 	elif cls == "ct":
 		_ct_extras(inner)
 	elif cls == "ronin":
@@ -541,6 +553,20 @@ func _tube(parent: Node3D, points: Array, radii: Array, mat: Material) -> void:
 		mi.basis = Basis(x, y, x.cross(y))
 		if i > 0:
 			_add_mesh(parent, MeshBuilder.sphere(radii[i], 8, 5), mat, p0)
+
+
+## Crusader in white-and-gold plate (the recolor does the armour): a gold cross on the great helm and on the chest.
+func _paladin_extras(inner: Node3D) -> void:
+	var gold := _holy_mat(true)
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var head := sk.get_node_or_null("head") as Node3D
+	if head != null:
+		_add_mesh(head, MeshBuilder.box(Vector3(0.1, 0.4, 0.06)), gold, Vector3(0, 0.78, 0.66), Vector3(-8, 0, 0))
+		_add_mesh(head, MeshBuilder.box(Vector3(0.3, 0.09, 0.06)), gold, Vector3(0, 0.86, 0.65), Vector3(-8, 0, 0))
+	var chest := sk.get_node_or_null("chest") as Node3D
+	if chest != null:
+		_add_mesh(chest, MeshBuilder.box(Vector3(0.1, 0.34, 0.05)), gold, Vector3(0, 0.02, 0.42))
+		_add_mesh(chest, MeshBuilder.box(Vector3(0.26, 0.09, 0.05)), gold, Vector3(0, 0.08, 0.42))
 
 
 func _holy_mat(gold: bool) -> StandardMaterial3D:
