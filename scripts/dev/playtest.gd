@@ -33,8 +33,19 @@ func _wait(sec: float) -> void:
 
 # ---------------------------------------------------------------- raw input helpers
 
+## Marks the mouse events this script injects. The real cursor keeps sending motion while a run is on: one landing between a
+## synthetic press and release takes the pointer off the button and cancels the click, so `_input` drops the real mouse.
+const SYNTHETIC_DEVICE := 77
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouse and event.device != SYNTHETIC_DEVICE:
+		get_viewport().set_input_as_handled()
+
+
 func _motion(pos: Vector2, rel := Vector2.ZERO) -> void:
 	var e := InputEventMouseMotion.new()
+	e.device = SYNTHETIC_DEVICE
 	e.position = pos
 	e.global_position = pos
 	e.relative = rel
@@ -58,6 +69,7 @@ func _button(b: int, down: bool, pos := Vector2(-1, -1)) -> void:
 		_mouse = pos
 	_buttons[b] = down
 	var e := InputEventMouseButton.new()
+	e.device = SYNTHETIC_DEVICE
 	e.button_index = b
 	e.pressed = down
 	e.position = _mouse

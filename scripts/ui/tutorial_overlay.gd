@@ -6,6 +6,9 @@ extends Node
 
 signal finished(action: String)  # "arena" | "bots" | "menu"
 
+const ARROW_LEN := 26.0
+const ARROW_HALF_W := 15.0
+
 var flow: StepFlow
 var mv: MatchView
 
@@ -139,6 +142,12 @@ func _dummy_view(kind: String) -> UnitView:
 	return null
 
 
+## A downward arrow (tip at `pos`, body above it) moved beside the card when it would be drawn on it.
+static func clear_of(pos: Vector2, card: Rect2) -> Vector2:
+	var keep_out := card.grow_individual(ARROW_HALF_W, ARROW_LEN, ARROW_HALF_W, ARROW_LEN)
+	return Vector2(keep_out.end.x + ARROW_HALF_W, pos.y) if keep_out.has_point(pos) else pos
+
+
 ## Where the current step points: a HUD rectangle ("bar", "target_panel", ...) or a dummy in the world ("dummy:caster").
 func arrow_anchor() -> Dictionary:
 	var key := str(flow.current().get("arrow", ""))
@@ -154,12 +163,13 @@ func arrow_anchor() -> Dictionary:
 			return {}
 		var screen := mv.get_viewport().get_visible_rect().size
 		var pos := mv.cam.unproject_position(at + Vector3(0, 1.2, 0))
-		return {"pos": pos.clamp(Vector2(60, 60), screen - Vector2(60, 60)), "dir": Vector2.DOWN}  # off screen it stays at the edge, on that side
+		var edge := pos.clamp(Vector2(60, 60), screen - Vector2(60, 60))  # off screen it stays at the edge, on that side
+		return {"pos": clear_of(edge, _card.get_global_rect()), "dir": Vector2.DOWN}
 	if key.begins_with("dummy:"):
 		var v := _dummy_view(key.substr(6))
 		if v == null or not v.shown or mv.cam.is_position_behind(v.position + Vector3(0, 2.0, 0)):
 			return {}
-		return {"pos": mv.cam.unproject_position(v.position + Vector3(0, 3.1, 0)), "dir": Vector2.DOWN}
+		return {"pos": clear_of(mv.cam.unproject_position(v.position + Vector3(0, 3.1, 0)), _card.get_global_rect()), "dir": Vector2.DOWN}
 	var r := mv.hud.rect_of(key)
 	if r.size == Vector2.ZERO:
 		return {}
@@ -176,7 +186,7 @@ func _draw_arrow() -> void:
 	var dir: Vector2 = a.dir
 	var tip: Vector2 = a.pos - dir * (4.0 + bob) if dir == Vector2.DOWN else a.pos - dir * (4.0 + bob)
 	var side := Vector2(-dir.y, dir.x)
-	var base := tip - dir * 26.0
-	var pts := PackedVector2Array([tip, base + side * 15.0, base - side * 15.0])
+	var base := tip - dir * ARROW_LEN
+	var pts := PackedVector2Array([tip, base + side * ARROW_HALF_W, base - side * ARROW_HALF_W])
 	_arrows.draw_colored_polygon(pts, Color("#ffc15a"))
 	_arrows.draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]), Color("#1a0800"), 3.0)

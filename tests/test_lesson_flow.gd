@@ -194,3 +194,15 @@ func test_skipping_a_step_never_leaves_the_lesson_stuck() -> void:
 				_pump(server, client)
 		f.next()
 	check(server.game.map.door_open(0), "saltear igual abre la puerta")
+
+
+func test_the_arrow_never_sits_on_the_card() -> void:
+	var card := Rect2(20, 150, 340, 300)
+	var inside := TutorialOverlay.clear_of(Vector2(60, 300), card)
+	check(inside.x > card.end.x, "una flecha sobre la tarjeta se corre al costado (%s)" % str(inside))
+	eq(inside.y, 300.0, "a la misma altura")
+	var tip := TutorialOverlay.clear_of(Vector2(100, 460), card)
+	check(tip.x > card.end.x, "la punta abajo de la tarjeta también: el cuerpo de la flecha la pisaría")
+	eq(TutorialOverlay.clear_of(Vector2(800, 300), card), Vector2(800, 300), "lejos de la tarjeta no se mueve")
+	eq(TutorialOverlay.clear_of(Vector2(100, 600), card), Vector2(100, 600), "debajo, lejos, tampoco")
+
