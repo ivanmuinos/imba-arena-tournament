@@ -181,7 +181,7 @@ func _make_talent_button(row: int, i: int) -> Button:
 	var ic := Icons.rect("fireball", 30)
 	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	ic.custom_minimum_size = Vector2(30, 30)
-	ic.material = HudArt.circle_mask()
+	ic.material = HudArt.icon_mask()
 	v.add_child(ic)
 	var mark := TalentMark.new()
 	mark.seal = 0.5
@@ -267,7 +267,7 @@ func _make_slot(i: int) -> Button:
 	var ic := Icons.rect("fireball", 46)
 	ic.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	ic.offset_bottom = 46
-	ic.material = HudArt.circle_mask()  # the painted icons are round: shown in a circle, ringed below
+	ic.material = HudArt.icon_mask()  # the painted icons are round: shown in a circle, ringed below
 	b.add_child(ic)
 	b.set_meta("icon", ic)
 	var mark := TalentMark.new()
