@@ -1,7 +1,7 @@
 class_name LessonOverlay
 extends TutorialOverlay
 ## A guided step card over an Academia lesson. On top of the tutorial's overlay: objectives also tick from the server's journal, each
-## step can tell the scenario to set up its part (`cue`), and the clock of the medals runs here. finished: "retry" | "menu".
+## step can tell the scenario to set up its part (`cue`), and the clock of the medals runs here. finished: "retry" | "next" | "menu".
 
 
 var last_hp_pct := -1.0
@@ -27,8 +27,11 @@ func _step_entered(s: Dictionary) -> void:
 
 func _final_card(_s: Dictionary) -> void:
 	_card.set_text(_record_run())
-	_card.add_button("Repetir", "primary", func(): finished.emit("retry"))
-	_card.add_button("Menú", "ghost", func(): finished.emit("menu"))
+	var has_next := AcademyCatalog.after((flow as LessonFlow).id) != ""
+	if has_next:
+		_card.add_button("Siguiente", "primary", func(): finished.emit("next"))
+	_card.add_button("Repetir", "secondary" if has_next else "primary", func(): finished.emit("retry"))
+	_card.add_button("Academia", "ghost", func(): finished.emit("menu"))
 
 
 ## Grades the run and keeps it. Saved here, not on the button: closing the game on the last card must not lose the medal.

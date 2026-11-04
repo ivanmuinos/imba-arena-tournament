@@ -71,7 +71,7 @@ func run(p_main: Node, cls: String, prefix: String, p_spec := "") -> void:
 	_check(_step_id() == "done", "cruzar y saltar termina la lección (%s en %s)" % [_step_id(), str(_me_pos())])
 	await _shot("done")
 	var labels: Array = ov._buttons.get_children().map(func(b): return (b as Button).text)
-	_check(labels.has("Repetir") and labels.has("Menú"), "el final ofrece repetir o volver: %s" % str(labels))
+	_check(labels.has("Repetir") and labels.has("Academia"), "el final ofrece repetir o volver: %s" % str(labels))
 	_check((ov.flow as LessonFlow).skipped == 0, "no se salteó nada")
 	_check((ov.flow as LessonFlow).active_ms > 0.0, "el reloj corrió")
 	_check(AcademyStore.shared().medal("moverse") >= AcademyMedals.BRONZE, "queda guardada una medalla (%d)" % AcademyStore.shared().medal("moverse"))
@@ -87,6 +87,18 @@ func run(p_main: Node, cls: String, prefix: String, p_spec := "") -> void:
 	await _click_button_named("Salir")
 	await _wait(0.8)
 	_check(main._state == "menu", "Salir vuelve al menú")
+	_check(main._menu.nav.current == "academy", "a la Academia (%s)" % main._menu.nav.current)
+	var academy: MAcademy = main._menu._views.academy
+	_check(academy.medal_shown("moverse") >= AcademyMedals.BRONZE, "con la medalla que ganaste")
+	var before: int = AcademyStore.shared().plays("moverse")
+	await _click_control(academy.play_button("moverse"))
+	await _wait(0.5)
+	ov = null
+	await _find_overlay()
+	_check(ov != null and _step_id() == "intro", "desde la Academia se vuelve a jugar con un clic")
+	await _click_button_named("Salir")
+	await _wait(0.8)
+	_check(AcademyStore.shared().plays("moverse") == before, "salir a mitad no cuenta como intento")
 	finish()
 
 

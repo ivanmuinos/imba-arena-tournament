@@ -211,7 +211,7 @@ func _maybe_offer() -> void:
 		c.add_theme_constant_override("separation", 8)
 		_offer.add_child(c)
 		c.add_child(UiKit.heading("¿Primera vez en la arena?", 22, UiKit.GOLD, 700, 1))
-		var t := UiKit.label("Hacé el tutorial: unos minutos, jugando de verdad. Después lo encontrás en \"Cómo jugar\".", 14, UiKit.MUTED)
+		var t := UiKit.label("Hacé el tutorial: unos minutos, jugando de verdad. Después lo encontrás en \"Academia\".", 14, UiKit.MUTED)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		t.custom_minimum_size = Vector2(390, 0)
 		c.add_child(t)

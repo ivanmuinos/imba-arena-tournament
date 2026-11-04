@@ -141,3 +141,95 @@ func test_every_lesson_has_a_reachable_gold() -> void:
 	f.active_ms = 10000000.0
 	eq(AcademyMedals.grade(f.medal_rule, f.stats(1.0)), AcademyMedals.BRONZE, "una muy lenta se queda en bronce")
 
+
+func test_the_catalog_only_lists_lessons_that_exist() -> void:
+	var total := 0
+	for c in AcademyCatalog.chapters():
+		check(str(c.title) != "", "%s tiene título" % c.id)
+		check(not (c.lessons as Array).is_empty(), "%s no se muestra vacío" % c.id)
+		for l in c.lessons:
+			total += 1
+			var flow := AcademyCatalog.lesson(str(l.id), "mage", "fire")
+			check(flow != null, "%s se puede jugar" % l.id)
+			eq(str(l.title), flow.title, "%s se llama igual en la lista y en la lección" % l.id)
+	check(total > 0, "hay lecciones")
+
+
+func test_the_guide_order_is_free_but_suggests_what_is_next() -> void:
+	var a := _fresh()
+	var ids := AcademyCatalog.lesson_ids()
+	eq(AcademyCatalog.next_lesson(a), ids[0], "sin jugar: la primera")
+	a.record(str(ids[0]), AcademyMedals.NONE, 1.0)
+	eq(AcademyCatalog.next_lesson(a), ids[0], "salteada no cuenta como hecha")
+	for id in ids:
+		a.record(str(id), AcademyMedals.BRONZE, 1.0)
+	eq(AcademyCatalog.next_lesson(a), "", "todo hecho: nada que sugerir")
+	eq(AcademyCatalog.after(str(ids[-1])), "", "la última no tiene siguiente")
+	eq(AcademyCatalog.after("no_existe"), "", "una desconocida tampoco")
+
+
+func test_a_chapter_counts_what_you_earned() -> void:
+	var a := _fresh()
+	var c: Dictionary = AcademyCatalog.chapters()[0]
+	eq(AcademyCatalog.progress(c, a), {"done": 0, "total": (c.lessons as Array).size(), "gold": 0}, "sin jugar")
+	a.record(str(c.lessons[0].id), AcademyMedals.GOLD, 1.0)
+	var p := AcademyCatalog.progress(c, a)
+	eq(p.done, 1, "cuenta la hecha")
+	eq(p.gold, 1, "y el oro")
+
+
+func _menu_with(store: AcademyStore) -> MenuScreen:
+	AcademyStore._shared = store
+	SettingsStore.path = "user://test_academy_settings.cfg"
+	SettingsStore.clear_shared()
+	var m := MenuScreen.new()
+	m.offer_tutorial = false
+	m.visible = false
+	TestBase.tree.root.add_child(m)
+	m.visible = true
+	return m
+
+
+func _drop_menu(m: MenuScreen, before: AcademyStore) -> void:
+	TestBase.tree.root.remove_child(m)
+	m.free()
+	AcademyStore._shared = before
+	SettingsStore.path = SettingsStore.PATH
+	SettingsStore.clear_shared()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_academy_settings.cfg"))
+
+
+func test_the_academy_screen_shows_medals_and_replays_any_lesson() -> void:
+	var before := AcademyStore._shared
+	var store := _fresh()
+	var m := _menu_with(store)
+	m.nav.go("academy")
+	var v: MAcademy = m._views.academy
+	v.menu_enter()
+	var first := str(AcademyCatalog.lesson_ids()[0])
+	eq(v.medal_shown(first), AcademyMedals.NONE, "sin medalla")
+	check(v.is_suggested(first), "resalta la que sigue")
+	eq(v.first_focus(), v.play_button(first), "el foco arranca en la sugerida")
+	store.record(first, AcademyMedals.SILVER, 65000.0)
+	v.menu_enter()
+	eq(v.medal_shown(first), AcademyMedals.SILVER, "muestra la medalla")
+	check(v.detail_text(first).contains("1:05"), "y el mejor tiempo: %s" % v.detail_text(first))
+	check(not v.is_suggested(first), "una hecha ya no es la sugerida")
+	var launched := [""]
+	m.start_lesson.connect(func(_cfg, id): launched[0] = id)
+	v.play_button(first).pressed.emit()
+	eq(launched[0], first, "cualquiera se puede volver a jugar")
+	_drop_menu(m, before)
+
+
+func test_the_reference_page_stays_inside_the_academy() -> void:
+	var before := AcademyStore._shared
+	var m := _menu_with(_fresh())
+	m.nav.go("academy")
+	var v: MAcademy = m._views.academy
+	v.reference_button.pressed.emit()
+	eq(m.nav.current, "howto", "la consulta se abre desde acá")
+	m.back()
+	eq(m.nav.current, "academy", "y vuelve a la Academia")
+	_drop_menu(m, before)
+

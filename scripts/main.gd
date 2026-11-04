@@ -141,6 +141,7 @@ func _ready() -> void:
 	_menu.play_offline.connect(_start_offline)
 	_menu.play_practice.connect(func(cfg): _start_practice(cfg))
 	_menu.start_tutorial.connect(func(cfg): _start_practice(cfg, true))
+	_menu.start_lesson.connect(_start_lesson)
 	_menu.offer_tutorial = not (args.has("menu") or args.has("shot-times") or args.has("playtest") or args.has("menu-script") or args.has("offline") or args.has("tournament"))
 	_menu.host.connect(_start_host)
 	_menu.join.connect(_start_join)
@@ -640,7 +641,13 @@ func _start_lesson(cfg: Dictionary, id: String) -> void:
 func _on_lesson_finished(action: String) -> void:
 	match action:
 		"retry": _start_lesson.call_deferred(last_cfg, _lesson_id)
-		_: _to_menu.call_deferred()
+		"next": _start_lesson.call_deferred(last_cfg, AcademyCatalog.after(_lesson_id))
+		_: _back_to_academy.call_deferred()
+
+
+func _back_to_academy() -> void:
+	_to_menu()
+	_menu.open_academy()
 
 
 ## Starts a new cup (or resumes the run in progress when it is the same mode and tier). `force` skips the lock check
