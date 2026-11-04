@@ -74,6 +74,9 @@ func run(p_main: Node, cls: String, prefix: String, p_spec := "") -> void:
 	_check(labels.has("Repetir") and labels.has("Menú"), "el final ofrece repetir o volver: %s" % str(labels))
 	_check((ov.flow as LessonFlow).skipped == 0, "no se salteó nada")
 	_check((ov.flow as LessonFlow).active_ms > 0.0, "el reloj corrió")
+	_check(AcademyStore.shared().medal("moverse") >= AcademyMedals.BRONZE, "queda guardada una medalla (%d)" % AcademyStore.shared().medal("moverse"))
+	_check(absf((ov as LessonOverlay).last_hp_pct - 1.0) < 0.01, "sin recibir daño terminás con toda la vida (%.2f)" % (ov as LessonOverlay).last_hp_pct)
+	_check(ov._card._body.text.contains("Medalla de"), "el final dice qué medalla ganaste: %s" % ov._card._body.text)
 	await _click_button_named("Repetir")
 	await _wait(0.5)
 	ov = null

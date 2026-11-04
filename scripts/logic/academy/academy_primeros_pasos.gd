@@ -9,6 +9,7 @@ const CHAPTER := "primeros_pasos"
 ## was skipped, so skipping can never leave the player stuck.
 static func moverse(_cls: String, _spec := "") -> LessonFlow:
 	var f := LessonFlow.new("moverse", "Moverse", CHAPTER, "move_1")
+	f.medal_rule = {"silver": {"max_time_ms": 90000.0}, "gold": {"max_time_ms": 50000.0}}
 	var jump := Keybinds.shared().label("jump")
 	f.add_step("intro", "Moverse", "Acá nada te puede matar y podés repetir todo las veces que quieras. Las placas brillantes del piso marcan a dónde ir.", [])
 	f.add_step("walk", "Caminar", "[key]W[/key] avanza y [key]S[/key] retrocede. [key]A[/key] y [key]D[/key] giran a tu campeón.",

@@ -180,6 +180,8 @@ func _ready() -> void:
 	_set_preview(_menu.selected_map())
 	if args.has("playtest"):  # real-input automated playtest (see scripts/dev/playtest.gd, tools/playtest.sh)
 		BarLayout._shared = BarLayout.new("user://playtest_bar_layouts_unused.json")  # real-input runs press the default keys
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://playtest_academy.json"))
+		AcademyStore._shared = AcademyStore.new("user://playtest_academy.json")  # never the player's real medals
 		var pt: Playtest = LessonPlaytest.new() if args.has("lesson-test") else (PracticePlaytest.new() if args.has("practice-test") else (TutorialPlaytest.new() if args.has("tutorial-test") else Playtest.new()))
 		add_child(pt)
 		pt.run.call_deferred(self, str(args.get("cls", "mage")), str(args.get("shot", "/tmp/playtest")), str(args.get("spec", "")))

@@ -11,13 +11,15 @@ func _init() -> void:
 	# Never the player's real arrangement: suites press keys and read labels assuming the canonical bar.
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_shared_bar_layouts.json"))
 	BarLayout._shared = BarLayout.new("user://test_shared_bar_layouts.json")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_shared_academy.json"))
+	AcademyStore._shared = AcademyStore.new("user://test_shared_academy.json")
 	var total := 0
 	var failed: Array[String] = []
 	# Optional filter: ./run_tests.sh logic net  -> only suites whose path contains one of the words.
 	var only: Array = Array(OS.get_cmdline_user_args())
 	var verbose := only.has("-v")  # print each test name as it starts (finds hangs)
 	only.erase("-v")
-	for path in SUITES + ["res://tests/test_warlock.gd", "res://tests/test_druid.gd", "res://tests/test_ct.gd", "res://tests/test_ronin.gd", "res://tests/test_crack.gd", "res://tests/test_wizard.gd", "res://tests/test_ki.gd", "res://tests/test_practice.gd", "res://tests/test_tutorial.gd", "res://tests/test_classes.gd", "res://tests/test_priest_bot.gd", "res://tests/test_bar_layout.gd", "res://tests/test_lesson_journal.gd", "res://tests/test_academy_map.gd", "res://tests/test_lesson_stage.gd", "res://tests/test_lesson_actor.gd", "res://tests/test_step_flow.gd", "res://tests/test_lesson_flow.gd"]:
+	for path in SUITES + ["res://tests/test_warlock.gd", "res://tests/test_druid.gd", "res://tests/test_ct.gd", "res://tests/test_ronin.gd", "res://tests/test_crack.gd", "res://tests/test_wizard.gd", "res://tests/test_ki.gd", "res://tests/test_practice.gd", "res://tests/test_tutorial.gd", "res://tests/test_classes.gd", "res://tests/test_priest_bot.gd", "res://tests/test_bar_layout.gd", "res://tests/test_academy.gd", "res://tests/test_lesson_journal.gd", "res://tests/test_academy_map.gd", "res://tests/test_lesson_stage.gd", "res://tests/test_lesson_actor.gd", "res://tests/test_step_flow.gd", "res://tests/test_lesson_flow.gd"]:
 		if not only.is_empty() and not only.any(func(w): return path.contains(w)):
 			continue
 		var script = load(path)
