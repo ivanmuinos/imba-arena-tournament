@@ -1018,6 +1018,109 @@
       }
     ]
   },
+  "paladin": {
+    "id": "paladin",
+    "name": "Paladín",
+    "role": "Sanador y protector",
+    "icon": "class_paladin",
+    "hp": 560,
+    "speed": 6.4,
+    "armor": 0.15,
+    "tags": [
+      "Sanador",
+      "Cuerpo a cuerpo"
+    ],
+    "stats": {
+      "hp": 4,
+      "mobility": 2,
+      "damage": 2,
+      "control": 3,
+      "difficulty": 2
+    },
+    "tagline": "Cura con Luz sagrada y no se va de la pelea.",
+    "identity": "Sanador con armadura de placas (pasiva: 15% menos de daño físico): aguanta al lado de sus aliados, los cura con Luz sagrada, aturde con el Martillo y salva a uno con la Bendición de protección. Cura más lento que el sacerdote pero cuesta mucho más bajarlo.",
+    "companion": {
+      "name": "Espíritu de luz",
+      "kind": "fairy",
+      "fly": 1.4,
+      "glow": "#ffd36a",
+      "bond": "#ffe08a"
+    },
+    "abilities": [
+      {
+        "id": "crusader",
+        "name": "Golpe de cruzado",
+        "icon": "crusader",
+        "desc": "Auto-ataque cuerpo a cuerpo con el arma bendita (clic derecho sobre el enemigo o tecla 1).",
+        "cd": 900,
+        "cast": 0,
+        "range": 3.2,
+        "dmg": 12,
+        "melee": true,
+        "physical": true,
+        "auto": true
+      },
+      {
+        "id": "holylight",
+        "name": "Luz sagrada",
+        "icon": "holylight",
+        "desc": "Lanzamiento de 2 s: cura 115 a quien elijas (F1 vos, F2-F3 aliados) o a vos. Lenta pero grande.",
+        "cd": 1000,
+        "cast": 2000,
+        "range": 24,
+        "heal": 115,
+        "friendly": true
+      },
+      {
+        "id": "hammer",
+        "name": "Martillo de la justicia",
+        "icon": "hammer",
+        "desc": "Arroja un martillo que aturde al enemigo 3 s. Alcance corto.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 12,
+        "dmg": 6,
+        "ccMs": 3000,
+        "projSpeed": 40,
+        "projR": 0.3
+      },
+      {
+        "id": "blessing",
+        "name": "Bendición de protección",
+        "icon": "blessing",
+        "desc": "Un aliado (o vos) no recibe daño durante 4 s.",
+        "cd": 40000,
+        "cast": 0,
+        "range": 24,
+        "durationMs": 4000,
+        "friendly": true
+      },
+      {
+        "id": "layhands",
+        "name": "Imposición de manos",
+        "icon": "layhands",
+        "desc": "DEFINITIVA: cura 260 al instante a un aliado (o a vos).",
+        "cd": 0,
+        "cast": 0,
+        "range": 24,
+        "heal": 260,
+        "friendly": true,
+        "ult": true
+      }
+    ],
+    "reserve": [
+      {
+        "id": "cleanse",
+        "name": "Purificar",
+        "icon": "cleanse",
+        "desc": "Quita maldiciones, quemaduras, aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 24,
+        "friendly": true
+      }
+    ]
+  },
   "ct": {
     "id": "ct",
     "name": "Antiterrorista",

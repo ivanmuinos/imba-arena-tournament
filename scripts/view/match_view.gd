@@ -397,6 +397,7 @@ const CAST_SOUND := {
 	"slash": "slash", "tempest": "tempest", "windwall": "windwall", "sweep": "sweep", "flow": "flow", "upcut": "interrupt", "lastbreath": "lastbreath",
 	"rifle": "rifle", "headshot": "headshot", "flashbang": "flashbang", "kevlar": "kevlar", "knife": "knife", "bash": "interrupt", "awp": "awp",
 	"wrath": "wrath", "regrowth": "regrowth", "ironbark": "ironbark", "cyclone": "cyclone", "rejuv": "renew", "naturescure": "dispel", "tranquility": "tranquility",
+	"crusader": "swing", "holylight": "heal", "hammer": "stunbolt", "blessing": "shieldUp", "layhands": "hymn", "cleanse": "dispel",
 }
 
 

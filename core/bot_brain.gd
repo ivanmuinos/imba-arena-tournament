@@ -3,9 +3,9 @@ extends RefCounted
 ## Bot AI per class (port of server/bot.ts).
 
 const SKILL := {"easy": [0.1, 0.3], "normal": [0.35, 0.55], "hard": [0.75, 0.95]}
-const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "ct": 16.0, "ronin": 1.8, "crack": 11.0, "wizard": 14.0, "ki": 1.8, "warrior": 1.6, "rogue": 1.6}
+const PREF_RANGE := {"mage": 12.0, "warlock": 14.0, "hunter": 15.0, "priest": 14.0, "druid": 14.0, "paladin": 2.0, "ct": 16.0, "ronin": 1.8, "crack": 11.0, "wizard": 14.0, "ki": 1.8, "warrior": 1.6, "rogue": 1.6}
 ## Classes that play as the team healer (slots laid out alike: 1 cast heal, 2 protect, 4 heal over time, 5 dispel, 6 ult).
-const HEALERS := ["priest", "druid"]
+const HEALERS := ["priest", "druid", "paladin"]
 ## Heal thresholds (fraction of health) for shield, renew, flash heal, and flash heal with a melee on top. A healer with no
 ## living ally is only healing itself, and every heal costs the 1.5 s global cooldown a smite would use: it defends later.
 const HEAL_AT := [0.6, 0.85, 0.7, 0.45]
@@ -22,6 +22,7 @@ const LEGACY_KITS := {
 	"priest": ["smite", "heal", "pwshield", "scream", "renew", "dispel", "hymn"],
 	"rogue": ["stab", "eviscerate", "cheapshot", "blind", "vanish", "kick", "deathmark"],
 	"druid": ["wrath", "regrowth", "ironbark", "cyclone", "rejuv", "naturescure", "tranquility"],
+	"paladin": ["crusader", "holylight", "blessing", "hammer", "", "cleanse", "layhands"],
 	"ct": ["rifle", "headshot", "flashbang", "kevlar", "knife", "bash", "awp"],
 	"ronin": ["slash", "tempest", "windwall", "sweep", "flow", "upcut", "lastbreath"],
 	"crack": ["pass", "chip", "nutmeg", "dribble", "onetwo", "tackle", "golazo"],
@@ -101,7 +102,7 @@ func _priest_heal(m: ArenaMatch, u: ArenaUnit, now: float, ab: Array, ready: Cal
 	if u.cls == "priest" and dn < 5 and ready.call(o.call(3)) and chance.call(0.8) and try_cast.call(o.call(3), u): return "instant"  # psychic scream
 	if lowest == null:
 		return ""
-	var guarded := lowest.absorb > 0 if u.cls == "priest" else now < lowest.wall_until  # shield / ironbark already on
+	var guarded: bool = lowest.absorb > 0 if u.cls == "priest" else (now < lowest.shield_until if u.cls == "paladin" else now < lowest.wall_until)  # shield / blessing / ironbark already on
 	if pct.call(lowest) < at[0] and ready.call(o.call(2)) and not guarded and try_cast.call(o.call(2), lowest, lowest): return "instant"
 	if pct.call(lowest) < at[1] and now >= lowest.hot_until and ready.call(o.call(4)) and try_cast.call(o.call(4), lowest, lowest): return "instant"
 	# Flash Heal: avoid hard-casting with a melee on you, unless someone is about to die.
@@ -294,7 +295,7 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 			if dist.call(e) < dist.call(nearest):
 				nearest = e
 		var dn: float = dist.call(nearest)
-		var melee := u.cls in ["warrior", "rogue", "ronin", "ki"]
+		var melee := u.cls in ["warrior", "rogue", "ronin", "ki", "paladin"]
 		var pref: float = PREF_RANGE[u.cls]
 		u.aim_x = target.x
 		u.aim_z = target.z
@@ -316,7 +317,7 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 			else:
 				var hurt_near := m.units.any(func(a): return a.alive and a.team == u.team and a.hp / a.max_hp < 0.85 and dist.call(a) < ab[1].range)
 				var post := _priest_post(m, u, enemies, now)
-				if not hurt_near and post != Vector2.INF:
+				if not hurt_near and post != Vector2.INF and u.cls != "paladin":
 					mv = m.map.waypoint(Vector2(u.x, u.z), post) - Vector2(u.x, u.z)
 
 		var reaction := 1300 - skill * 1000
@@ -494,15 +495,20 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 					if not ccd.call(target) and ready.call(o.call(2)) and chance.call(0.7) and try_cast.call(o.call(2), target, target): pass
 					elif ready.call(o.call(1)) and try_cast.call(o.call(1), target, target): pass
 					elif ready.call(0) and randf() < 0.35 + skill * 0.65: try_cast.call(0, target, target)
-			"priest", "druid":
+			"priest", "druid", "paladin":
 				# druid: cyclone a second enemy (not the one being focused) when the team is not in trouble
 				if u.cls == "druid" and off != null and ready.call(o.call(3)) and in_reach.call(off, o.call(3)) and u.hp / u.max_hp > 0.5 and chance.call(0.35):
 					stop = try_cast.call(o.call(3), off, off)
+				# paladin: hammer a caster or whoever is on top of it
+				if u.cls == "paladin" and not stop and ready.call(o.call(3)):
+					var stun_on: ArenaUnit = caster if caster != null and in_reach.call(caster, o.call(3)) else (nearest if dn < 6.0 and not ccd.call(nearest) else null)
+					if stun_on != null and chance.call(0.7):
+						stop = try_cast.call(o.call(3), stun_on, stun_on)
 				var heal := "cast" if stop else _priest_heal(m, u, now, ab, ready, try_cast, chance, dn, o)
 				if heal == "cast":
 					stop = true
 				elif heal == "" and los and d <= ab[0].range and ready.call(0) and (u.cls == "priest" and not _has_living_ally(m, u) or randf() < 0.35 + skill * 0.65):
-					try_cast.call(0, lead.call(target, ab[0].projSpeed), target)
+					try_cast.call(0, lead.call(target, ab[0].projSpeed) if ab[0].has("projSpeed") else target, target)  # the paladin swings in melee
 		if stop or not u.cast.is_empty():
 			u.input = Vector2.ZERO
 			return

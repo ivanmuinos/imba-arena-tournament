@@ -122,6 +122,9 @@ G["star"] = poly(star(64, 66, 54, 22, 5))
 G["stat_hp"] = G["plus"]
 G["stat_speed"] = G["boot"]
 G["stat_dmg"] = G["sword"]
+G["hammer"] = poly([(54, 50), (74, 50), (74, 112), (54, 112)], "f") + '<rect class="a" x="26" y="18" width="76" height="40" rx="8"/>' + '<rect class="d" x="58" y="26" width="12" height="24" rx="3"/>'
+G["hands"] = poly(star(64, 34, 30, 14, 8), "a") + "".join(f'<rect class="f" x="{x}" y="{y}" width="13" height="{h}" rx="6.5"/>' for x, y, h in [(36, 52, 44), (50, 44, 50), (64, 46, 48), (78, 54, 40)]) + '<rect class="f" x="36" y="78" width="55" height="38" rx="12"/>' + '<rect class="f" x="84" y="74" width="13" height="30" rx="6.5" transform="rotate(-35 90 89)"/>'
+G["paladin"] = poly(star(64, 46, 40, 20, 12), "a") + G["hammer"]
 G["stat_cc"] = G["snowflake"]
 G["stat_diff"] = G["skull"]
 G["map_random"] = '<rect class="f" x="18" y="18" width="92" height="92" rx="16"/>' + "".join(circ(x, y, 8, "d") for x, y in [(44, 44), (84, 44), (64, 64), (44, 84), (84, 84)])
@@ -149,6 +152,8 @@ ABILITIES = {  # id -> (glyph, school)
     "corruption": ("spiral", "shadow"), "agony": ("claw", "shadow"),
     "fear": ("ghost", "shadow"), "darkpact": ("shieldwall", "shadow"),
     "drainlife": ("drop", "nature"), "soulrot": ("roots", "shadow"),
+    "class_paladin": ("paladin", "holy"), "crusader": ("sword", "holy"), "holylight": ("sun", "holy"), "hammer": ("hammer", "holy"),
+    "blessing": ("shieldwall", "holy"), "layhands": ("hands", "holy"), "cleanse": ("dove", "holy"),
 }
 UI = ["dot", "book", "target", "gear", "door", "play", "back", "user", "close", "check", "volume", "mouse", "keyboard", "monitor", "copy", "signal", "steam", "globe", "people", "edit", "star", "helm",
       "stat_hp", "stat_speed", "stat_dmg", "stat_cc", "stat_diff", "map_random", "sword", "skull", "plus", "boot"]

@@ -94,5 +94,17 @@
 			{"id": "regrowth_quick", "name": "Crecimiento veloz", "effects": [{"op": "add", "ability": "regrowth", "field": "cast", "value": -500}]},
 			{"id": "bark_rejuv", "name": "Rejuvenecimiento", "effects": [{"op": "swap", "ability": "ironbark", "to": "rejuv"}]}
 		]
+	],
+	"paladin": [
+		[
+			{"id": "crusader_heal", "name": "Golpe sanador", "effects": [{"op": "set", "ability": "crusader", "field": "allyHeal", "value": 0.4}]},
+			{"id": "crusader_hammer", "name": "Mano de la justicia", "effects": [{"op": "set", "ability": "crusader", "field": "cdOf", "value": ["hammer"], "also": {"cdBy": 1000}}]},
+			{"id": "crusader_fourth", "name": "Cruzada", "effects": [{"op": "set", "ability": "crusader", "field": "nth", "value": 4, "also": {"nthEffect": "crit"}}]}
+		],
+		[
+			{"id": "light_echo", "name": "Luz persistente", "effects": [{"op": "set", "ability": "holylight", "field": "hotHps", "value": 5, "also": {"hotMs": 6000}}]},
+			{"id": "light_quick", "name": "Luz veloz", "effects": [{"op": "add", "ability": "holylight", "field": "cast", "value": -500}]},
+			{"id": "blessing_cleanse", "name": "Purificar", "effects": [{"op": "swap", "ability": "blessing", "to": "cleanse"}]}
+		]
 	]
 }

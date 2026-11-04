@@ -219,6 +219,38 @@
    },
    "desc": "Ganá y curá 1000 en una sola partida con el Druida.",
    "reward": "recolor_druid"
+  },
+  {
+   "id": "paladin_1",
+   "cls": "paladin",
+   "name": "Primeros pasos con el Paladín",
+   "kind": "total",
+   "stat": "matches",
+   "goal": 3,
+   "desc": "Jugá 3 partidas con el Paladín.",
+   "reward": "title_paladin"
+  },
+  {
+   "id": "paladin_2",
+   "cls": "paladin",
+   "name": "Mano sanadora",
+   "kind": "total",
+   "stat": "heal",
+   "goal": 4000,
+   "desc": "Curá 4000 de vida en total con el Paladín.",
+   "reward": "ring_paladin"
+  },
+  {
+   "id": "paladin_3",
+   "cls": "paladin",
+   "name": "Bastión de luz",
+   "kind": "match",
+   "when": {
+    "win": true,
+    "heal_min": 1000
+   },
+   "desc": "Ganá y curá 1000 en una sola partida con el Paladín.",
+   "reward": "recolor_paladin"
   }
  ]
 }

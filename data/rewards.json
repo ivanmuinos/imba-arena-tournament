@@ -204,6 +204,32 @@
    }
   },
   {
+   "id": "title_paladin",
+   "kind": "title",
+   "name": "Mano de la Luz",
+   "source": "challenge"
+  },
+  {
+   "id": "ring_paladin",
+   "kind": "ring",
+   "name": "Anillo de Paladín",
+   "value": "#ffcf4a",
+   "source": "challenge"
+  },
+  {
+   "id": "recolor_paladin",
+   "kind": "recolor",
+   "name": "Paladín: Plata bendita",
+   "cls": "paladin",
+   "palette": "Plata bendita",
+   "source": "challenge",
+   "tint": {
+    "hue": 0.0,
+    "sat": -0.6,
+    "val": 0.2
+   }
+  },
+  {
    "id": "title_lv2",
    "kind": "title",
    "name": "Recluta",

@@ -27,6 +27,8 @@ const KAYKIT := {
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Raise", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
+	"paladin": {"file": "Knight", "show": ["1H_Sword", "Badge_Shield"], "scale": 0.84, "recolor": {"hue": 0.0, "sat": 0.0, "val": 0.05, "gild": 0.6},
+		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"warrior": {"file": "Knight", "show": ["1H_Sword", "Round_Shield"], "scale": 0.84,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Block", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"rogue": {"file": "Rogue", "show": ["Knife", "Knife_Offhand"], "scale": 0.86, "recolor": {"hue": 0.42, "sat": -0.15, "val": -0.45},
@@ -44,6 +46,7 @@ const ATTACKS := {
 	"mage": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"priest": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Shoot", 0.10]]},
 	"druid": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
+	"paladin": {"light": [["1H_Melee_Attack_Slice_Diagonal", 0.40]], "heavy": [["Throw", 0.30]]},
 	"ct": {"light": [["2H_Ranged_Shoot", 0.10]], "heavy": [["2H_Ranged_Shoot", 0.10]]},
 	"ki": {"light": [["Unarmed_Melee_Attack_Punch_A", 0.25], ["Unarmed_Melee_Attack_Punch_B", 0.25]], "heavy": [["Unarmed_Melee_Attack_Kick", 0.30]]},
 	"wizard": {"light": [["Spellcast_Shoot", 0.10]], "heavy": [["Spellcast_Raise", 0.10]]},
@@ -86,7 +89,7 @@ static func available(cls: String) -> bool:
 
 ## Procedural fallback model: the warlock and the druid borrow the mage's.
 static func _glb(cls: String) -> String:
-	return "mage" if cls in ["warlock", "druid", "wizard"] else ("hunter" if cls == "ct" else ("warrior" if cls == "ronin" else ("rogue" if cls in ["crack", "ki"] else cls)))
+	return "mage" if cls in ["warlock", "druid", "wizard"] else ("hunter" if cls == "ct" else ("warrior" if cls in ["ronin", "paladin"] else ("rogue" if cls in ["crack", "ki"] else cls)))
 
 
 static func _kk_ok(cls: String) -> bool:
@@ -109,6 +112,9 @@ static func _recolored(tex: Texture2D, key: String, rc: Dictionary) -> Texture2D
 				continue  # skin tones stay as they are
 			c.h = fposmod(c.h + float(rc.hue), 1.0)
 			c.s = clampf(c.s + float(rc.sat) * c.s, 0.0, 1.0)
+			if rc.has("gild"):  # greys have no hue to shift: gild them (the paladin's golden plate)
+				c.h = 0.12
+				c.s = maxf(c.s, float(rc.gild) * c.v)
 			c.v = clampf(c.v + float(rc.val) * (1.0 - c.v), 0.0, 1.0) if float(rc.val) >= 0.0 else clampf(c.v * (1.0 + float(rc.val)), 0.0, 1.0)
 			img.set_pixel(x, y, c)
 	img.generate_mipmaps()
