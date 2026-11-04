@@ -10,6 +10,11 @@ const DR_RESET_MS := 18000.0  # WoW: a category resets 18 s after its last CC en
 const DR_MULT := [1.0, 0.5, 0.25, 0.0]
 
 
+## Whether a match phase lets units walk. The server and the client prediction both ask here, so they cannot disagree.
+static func can_walk_in(phase: String) -> bool:
+	return phase == "fight" or phase == "prep"
+
+
 static func step_mover(m, dx: float, dz: float, dt: float, speed: float, can_move: bool, map: GameMap) -> void:
 	if m.dash_left > 0:
 		var t := minf(dt, m.dash_left)

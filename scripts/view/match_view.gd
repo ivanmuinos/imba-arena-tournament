@@ -1226,9 +1226,8 @@ func _process(delta: float) -> void:
 			input = _drive_step(now, t)
 		if not me.alive:
 			input = Vector2.ZERO
-		var fighting: bool = last_state.phase == "fight"
 		var age := minf(0.1, (now - _state_ms) / 1000.0)
-		predictor.step(dt, input, me, my_cls, fighting, world.map, age, now)
+		predictor.step(dt, input, me, my_cls, str(last_state.phase), world.map, age, now)
 		my_view.drive(predictor.m.x, predictor.m.z, predictor.m.vx, predictor.m.vz)
 		my_view.apply({"x": predictor.m.x, "z": predictor.m.z, "rot": _face, "unit": me})
 		my_view.facing_override = _face if (me.alive and not me.cc.has("stun") and not me.cc.has("incap")) else NAN

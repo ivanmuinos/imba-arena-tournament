@@ -1414,7 +1414,7 @@ func tick(now: float) -> void:
 			if u.brain == null and u.dummy == "": _auto_attack(u, now)
 		var frozen := now < u.stun_until or now < u.incap_until
 		var feared := now < u.fear_until
-		var can_move := (fighting or phase == "prep") and not frozen and now >= u.root_until and (u.cast.is_empty() or feared)
+		var can_move := Rules.can_walk_in(phase) and not frozen and now >= u.root_until and (u.cast.is_empty() or feared)
 		var movement := u.input
 		if feared:
 			# Panicked: run away from where the scream came from.
