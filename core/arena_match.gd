@@ -1274,7 +1274,7 @@ func _die(t: ArenaUnit, now: float) -> void:
 	t.dash_left = 0.0
 	if t.dummy == "crate":
 		t.dormant = true  # gone: no corpse
-		fx.append({"k": "crate_break", "x": t.x, "z": t.z})
+		fx.append({"k": "crate_break", "id": t.id, "x": t.x, "z": t.z})
 	else:
 		fx.append({"k": "death", "id": t.id})
 	_ev("death", now, {"t": t.id})

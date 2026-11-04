@@ -82,6 +82,7 @@ func test_a_crate_breaks_and_disappears() -> void:
 	var breaks := m.fx.filter(func(f): return f.k == "crate_break")
 	eq(breaks.size(), 1, "se ve romperse")
 	near(float(breaks[0].x), c.x, 0.001, "donde estaba")
+	eq(int(breaks[0].id), c.id, "dice cuál, para soltarla como objetivo")
 	check(not m.fx.any(func(f): return f.k == "death"), "no parece la muerte de un luchador")
 	check(FxFilter.for_team(m, "red", NOW).any(func(f): return f.k == "crate_break"), "el filtro de eventos lo deja pasar")
 
@@ -337,3 +338,43 @@ func test_practice_controls_do_nothing_in_a_lesson_but_still_work_in_the_yard() 
 	u.ult = 0.0
 	y.practice_command(u, "ult", true, NOW)
 	near(u.ult, 100.0, 0.001, "en el patio sigue andando")
+
+
+func test_a_broken_crate_stops_being_your_target() -> void:
+	var view := MatchView.new()
+	TestBase.tree.root.add_child(view)
+	view.controller.target = 7
+	view._target_gone(9)
+	eq(view.controller.target, 7, "otra caja no cambia nada")
+	view._target_gone(7)
+	eq(view.controller.target, -1, "la que tenías elegida se suelta")
+	view.free()
+
+
+func test_a_rival_off_stage_has_no_frame_until_it_appears() -> void:
+	var hud := Hud.new()
+	TestBase.tree.root.add_child(hud)
+	var roster := [{"id": 1, "team": "red", "cls": "mage", "spec": "fire", "name": "Yo", "bot": false}, {"id": 3, "team": "blue", "cls": "warrior", "spec": "", "name": "Rival", "bot": true}]
+	hud.setup(roster, 1, "mage", "red", "fire")
+	hud.hide_absent_frames = true
+	var unit := func(id: int) -> Dictionary: return {"id": id, "x": 0.0, "z": 0.0, "rot": 0.0, "hp": 100, "alive": true, "cast": null, "cc": {}, "buffs": {}, "dashing": false, "jump": -1}
+	var state := func(units: Array) -> Dictionary: return {"phase": "fight", "phaseLeft": 0.0, "round": 1, "score": {"red": 0, "blue": 0}, "damp": 0.0, "gates": true, "ft": 0.0, "units": units, "projs": [], "aoes": [], "traps": [], "powers": [], "you": {"cds": [0, 0, 0, 0, 0], "trinket": 0, "ult": 0, "auto": false, "inBush": false, "practice": true, "nocd": false, "meter": {}}}
+	hud.on_state(state.call([unit.call(1)]), unit.call(1), 0.0)
+	check(not hud._frames[3].root.visible, "fuera de escena no se ve su marco")
+	hud.on_state(state.call([unit.call(1), unit.call(3)]), unit.call(1), 16.0)
+	check(hud._frames[3].root.visible, "aparece con él")
+	hud.free()
+
+
+func test_a_crate_on_the_target_panel_has_no_champion_portrait() -> void:
+	var hud := Hud.new()
+	TestBase.tree.root.add_child(hud)
+	hud.setup([{"id": 1, "team": "red", "cls": "mage", "spec": "fire", "name": "Yo", "bot": false}], 1, "mage", "red", "fire")
+	var info := {"friend": false, "name": "Caja", "cls": "mage", "no_portrait": true, "hp": 20.0, "max_hp": 20.0, "dist": "6 m", "cast": null, "effects": [], "status": "", "status_kind": "", "lost": false}
+	hud.show_target(info)
+	eq(hud._tf.enemy.icon.texture, null, "una caja no es un mago")
+	info.no_portrait = false
+	hud.show_target(info)
+	check(hud._tf.enemy.icon.texture != null, "un rival sí muestra el suyo")
+	hud.free()
+

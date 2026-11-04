@@ -46,6 +46,8 @@ var score_blue: Label
 ## Practice arena: no score, rounds or countdown on screen.
 var practice := false
 var practice_title := "Arena de práctica"
+## Academia: a rival off stage has no frame until a trigger calls it (elsewhere, someone absent is just out of sight).
+var hide_absent_frames := false
 var damp := 0.0  # fraction of healing removed by Dampening, shown as a debuff on everyone
 var round_label: Label
 var ping_label: Label
@@ -838,6 +840,8 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 		var u = seen.get(id)
 		var dead: bool = (not u.alive) if u != null else _dead.has(id)
 		(f.root as Control).modulate.a = 0.45 if dead else (0.6 if u == null else 1.0)
+		if hide_absent_frames:
+			(f.root as Control).visible = u != null or id == my_id
 		var bad: Array = Effects.debuffs_of(u.cc) if (u != null and u.alive) else []
 		var loc = null
 		for d in bad:
@@ -1052,7 +1056,7 @@ func show_target(info: Dictionary) -> void:
 	var v: Dictionary = _tf.ally if friend else _tf.enemy
 	(_tf.ally.root as Control).visible = friend
 	(_tf.enemy.root as Control).visible = not friend
-	v.icon.texture = Icons.tex(GameData.classes[info.cls].icon)
+	v.icon.texture = null if info.get("no_portrait", false) else Icons.tex(GameData.classes[info.cls].icon)
 	v.name.text = info.name
 	v.dist.text = info.dist
 	v.hp.fill = HP_ALLY if friend else HP_ENEMY

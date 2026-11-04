@@ -145,6 +145,7 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	hud.practice = practice
 	if str(msg.map) == GameMap.ACADEMY_ID:
 		hud.practice_title = "Academia"
+		hud.hide_absent_frames = true
 		var at = msg.get("spawn")
 		if typeof(at) == TYPE_DICTIONARY and at.has("x") and at.has("z"):
 			_lesson_spawn = Vector2(float(at.x), float(at.z))
@@ -440,6 +441,12 @@ func _on_fx(list: Array) -> void:
 		_one_fx(f)
 
 
+## A broken crate leaves the arena for good: unlike someone out of sight, there is nothing to keep selected.
+func _target_gone(id: int) -> void:
+	if controller.target == id:
+		controller.target = -1
+
+
 func _one_fx(f: Dictionary) -> void:
 	var v: UnitView = views.get(int(f.id)) if f.has("id") else null
 	var pos := Vector3.ZERO
@@ -578,6 +585,7 @@ func _one_fx(f: Dictionary) -> void:
 				if v.shown:
 					fx.slash(pos.x, pos.z, float(v.snap.get("rot", 0.0)), f.heavy, 1.0 if (v.swing_count % 2 == 0) else -1.0)
 		"crate_break":
+			_target_gone(int(f.id))
 			fx.burst(Vector3(f.x, world.h(f.x, f.z) + 0.7, f.z), 22, 5.0, Color("#b98a55"), 0.55, 0.22, 9.0)
 			audio.play("death", Vector2(f.x, f.z))
 		"death":
@@ -1433,7 +1441,7 @@ func _target_frame(local: Vector2) -> void:
 		status = ""
 		kind = ""
 	hud.show_target({
-		"friend": friend, "name": v.entry.name, "cls": v.entry.cls, "hp": float(s.hp), "max_hp": GameData.entry_max_hp(v.entry), "cast": s.cast,
+		"friend": friend, "name": v.entry.name, "cls": v.entry.cls, "no_portrait": str(v.entry.get("dummy", "")) == "crate", "hp": float(s.hp), "max_hp": GameData.entry_max_hp(v.entry), "cast": s.cast,
 		"effects": Effects.debuffs_of(s.cc) + Effects.buffs_of(s.buffs), "dist": ("%d m" % roundi(d)) if v.shown else "fuera de vista",
 		"status": status, "status_kind": kind, "lost": not v.shown,
 	})
