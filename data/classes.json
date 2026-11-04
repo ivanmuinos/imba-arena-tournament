@@ -205,17 +205,17 @@
             "id": "frostbolt",
             "name": "Descarga de escarcha",
             "icon": "frostbolt",
-            "desc": "Lanzamiento de 1,3 s, sin recarga ni tiempo global: la podés encadenar siempre. Daño moderado y ralentiza al objetivo un 40% durante 3 s. A veces (15%) también lo enraíza 1,5 s.",
+            "desc": "Lanzamiento de 1,3 s, sin recarga ni tiempo global: la podés encadenar siempre. Daño moderado y ralentiza al objetivo un 40% durante 3 s. A veces (10%) también lo enraíza 1,5 s.",
             "cd": 0,
             "offGcd": true,
             "cast": 1300,
             "range": 20,
-            "dmg": 38,
+            "dmg": 35,
             "projSpeed": 30,
             "projR": 0.4,
             "slowPct": 0.4,
             "ccMs": 3000,
-            "rootChance": 0.15,
+            "rootChance": 0.1,
             "rootMs": 1500
           },
           "1": {
@@ -381,7 +381,7 @@
         "cast": 0,
         "range": 20,
         "targeted": true,
-        "dotDps": 10,
+        "dotDps": 9,
         "durationMs": 8000
       },
       {
@@ -465,7 +465,7 @@
         "cd": 450,
         "cast": 0,
         "range": 22,
-        "dmg": 13,
+        "dmg": 14,
         "projSpeed": 50,
         "projR": 0.22,
         "physical": true,
@@ -479,7 +479,7 @@
         "cd": 7000,
         "cast": 1100,
         "range": 26,
-        "dmg": 54,
+        "dmg": 60,
         "projSpeed": 66,
         "projR": 0.26
       },
@@ -566,7 +566,7 @@
     "name": "Guerrero",
     "role": "Cuerpo a cuerpo resistente",
     "icon": "class_warrior",
-    "hp": 620,
+    "hp": 600,
     "speed": 6.8,
     "abilities": [
       {
@@ -577,7 +577,7 @@
         "cd": 900,
         "cast": 0,
         "range": 3.2,
-        "dmg": 10,
+        "dmg": 9,
         "melee": true,
         "physical": true,
         "auto": true
@@ -590,7 +590,7 @@
         "cd": 6000,
         "cast": 0,
         "range": 3.2,
-        "dmg": 18,
+        "dmg": 16,
         "melee": true,
         "physical": true
       },
@@ -920,11 +920,13 @@
         "id": "regrowth",
         "name": "Recrecimiento",
         "icon": "regrowth",
-        "desc": "Lanzamiento de 1,5 s: cura 38 a quien elijas (F1 vos, F2-F3 aliados) o a vos.",
+        "desc": "Lanzamiento de 1,5 s: cura 70 a quien elijas (F1 vos, F2-F3 aliados) o a vos, y le deja 6 de curación por segundo durante 6 s.",
         "cd": 1000,
         "cast": 1500,
         "range": 24,
-        "heal": 38,
+        "heal": 70,
+        "hotHps": 6,
+        "hotMs": 6000,
         "friendly": true
       },
       {
@@ -1064,11 +1066,11 @@
         "id": "holylight",
         "name": "Luz sagrada",
         "icon": "holylight",
-        "desc": "Lanzamiento de 2 s: cura 115 a quien elijas (F1 vos, F2-F3 aliados) o a vos. Lenta pero grande.",
+        "desc": "Lanzamiento de 2 s: cura 100 a quien elijas (F1 vos, F2-F3 aliados) o a vos. Lenta pero grande.",
         "cd": 1000,
         "cast": 2000,
         "range": 24,
-        "heal": 115,
+        "heal": 100,
         "friendly": true
       },
       {
@@ -1088,22 +1090,22 @@
         "id": "blessing",
         "name": "Bendición de protección",
         "icon": "blessing",
-        "desc": "Un aliado (o vos) no recibe daño durante 4 s.",
+        "desc": "Un aliado (o vos) no recibe daño durante 3 s.",
         "cd": 40000,
         "cast": 0,
         "range": 24,
-        "durationMs": 4000,
+        "durationMs": 3000,
         "friendly": true
       },
       {
         "id": "layhands",
         "name": "Imposición de manos",
         "icon": "layhands",
-        "desc": "DEFINITIVA: cura 260 al instante a un aliado (o a vos).",
+        "desc": "DEFINITIVA: cura 200 al instante a un aliado (o a vos).",
         "cd": 0,
         "cast": 0,
         "range": 24,
-        "heal": 260,
+        "heal": 200,
         "friendly": true,
         "ult": true
       }

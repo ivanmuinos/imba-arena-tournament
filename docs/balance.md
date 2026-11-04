@@ -779,3 +779,35 @@ El balance que importa es el 2v2; el 1v1 sólo se empareja. Se mide con `--modes
 | Sacerdote | 40,0% | 40,7% |
 
 **Pendiente:** Escarcha y Sacerdote siguen fuera de 45–55%. El rebalanceo completo se hace después de sumar dos sanadores más: el Druida reactivado y un Paladín nuevo. Con un solo sanador, todo 2v2 de un daño más un sanador lleva al Sacerdote.
+
+## Tres sanadores y rebalanceo en 2v2 difícil (2026-11-03)
+
+Se suman dos sanadores: el **Druida** vuelve (estaba en `DISABLED_CLASSES`) y entra el **Paladín**, una clase nueva que cura con Luz sagrada. Hay 5 clases de daño (Cazador, Mago, Brujo, Asesino, Guerrero) y 3 sanadores (Sacerdote, Druida, Paladín). Los sanadores tienen algo de daño, pero su fuerte es curar y sostener al equipo.
+
+**Arreglo:** Recrecimiento del Druida usaba su propio código y no aplicaba la curación en el tiempo (`hotHps`), así que el talento Brote no hacía nada. Ahora comparte el código de Sanación.
+
+**Cómo se mide:** se usan 2 semillas × 400 partidas de 2v2 en difícil. Los equipos son al azar, así que salen equipos de dos sanadores: pierden casi siempre (11–15%) porque no tienen daño, y eso hunde la media de los sanadores en la tabla general. Por eso cada clase se mide en equipos con **un sanador como máximo**. En esa tabla el promedio ronda 56%, porque los rivales de dos sanadores quedan adentro.
+
+| Cambio | Por qué |
+|---|---|
+| Recrecimiento: cura 38 → 70 y deja 6 por segundo durante 6 s; Brote: 5 → 10 por segundo | El Druida daba 22,5% (32% sin equipos de dos sanadores) |
+| Luz sagrada: 115 → 100; Bendición de protección: 4 → 3 s; Imposición de manos: 260 → 200 | El Paladín salió con 71% |
+| Descarga de escarcha: 38 → 35; enraizar 15% → 10% | Escarcha daba 68% |
+| Corrupción: 10 → 9 por segundo | Brujo 59% |
+| Guerrero: vida 620 → 600, Golpe mortal 18 → 16, Golpe 10 → 9 | Guerrero 59–62%. Bajarle más la vida rompe su identidad de tanque (`test_classes`) |
+| Cazador: Disparo 13 → 14, Disparo apuntado 54 → 60 | Cazador 46% |
+
+**Resultado** (semillas 7 y 8, que no se usaron para ajustar):
+
+| Clase (equipos con 0–1 sanador) | Victorias |
+|---|---|
+| Sacerdote | 60,1% |
+| Paladín | 58,9% |
+| Mago (las dos especializaciones) | 58,8% |
+| Guerrero | 55,5% |
+| Druida | 55,1% |
+| Asesino | 54,0% |
+| Brujo | 52,6% |
+| Cazador | 52,4% |
+
+Todas quedan a menos de 5 puntos del promedio. Los equipos con un sanador ganan 58,1% y los de dos de daño 52,8%: daño + sanador es la composición base, sin que dos de daño queden fuera de juego.

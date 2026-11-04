@@ -819,7 +819,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			u.slow_until = 0.0
 			_label(u, "FILOTORMENTA", "#ffd166")
 		# ---- priest
-		"heal", "holylight", "layhands":
+		"heal", "holylight", "layhands", "regrowth":
 			if target != null:
 				fx.append({"k": "healspell", "id": target.id, "ability": spec.id})  # always shown, even at full health
 				_heal(target, spec.heal, u, now)
@@ -860,10 +860,6 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				if a.alive and a.team == u.team and _dist(a, u) <= spec.aoe:
 					_heal(a, spec.heal, u, now)
 		# ---- druid
-		"regrowth":
-			if target != null:
-				fx.append({"k": "healspell", "id": target.id, "ability": spec.id})
-				_heal(target, spec.heal, u, now)
 		"rejuv":
 			if target != null:
 				target.hot_until = now + float(spec.durationMs)

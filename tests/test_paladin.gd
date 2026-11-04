@@ -63,7 +63,8 @@ func test_holy_light_heals_and_lay_on_hands_heals_big() -> void:
 	ally.hp = 50.0
 	p.ult = 100.0
 	check(m.cast_ability(p, _slot("layhands"), ally.x, ally.z, 4000, ally.id), "Imposición de manos")
-	check(ally.hp >= 50.0 + 250.0 or ally.hp >= ally.max_hp - 1.0, "cura mucho (%.0f)" % ally.hp)
+	var big := float(GameData.ability("paladin", _slot("layhands")).heal)
+	near(ally.hp, minf(50.0 + big, ally.max_hp), 1.0, "cura mucho de una (%.0f)" % ally.hp)
 
 
 func test_hammer_stuns_and_blessing_blocks_all_damage() -> void:
@@ -78,8 +79,9 @@ func test_hammer_stuns_and_blessing_blocks_all_damage() -> void:
 	var hp := ally.hp
 	m._damage(ally, 200.0, t, 2100, "stab")
 	eq(ally.hp, hp, "no recibe daño")
-	m._damage(ally, 50.0, t, 2000 + 4100, "stab")
-	check(ally.hp < hp, "a los 4 s se termina")
+	var lasts := float(GameData.ability("paladin", _slot("blessing")).durationMs)
+	m._damage(ally, 50.0, t, 2000 + lasts + 100, "stab")
+	check(ally.hp < hp, "a los %d s se termina" % int(lasts / 1000))
 
 
 func test_plate_armor_cuts_physical_damage() -> void:
