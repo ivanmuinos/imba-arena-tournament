@@ -240,7 +240,8 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 		if slot < 0:
 			return false
 		var a: Dictionary = ab[slot]
-		var named: bool = diff == "hard" or a.get("melee", false) or a.get("friendly", false) or a.get("targeted", false)
+		# an auto-attack always follows its target, for a player too: only aimed abilities are skill shots on normal
+		var named: bool = diff == "hard" or a.get("melee", false) or a.get("friendly", false) or a.get("targeted", false) or a.get("auto", false)
 		return m.cast_ability(u, slot, p.x, p.z if p is ArenaUnit else p.y, now, lock_on.id if named and lock_on != null else -1)
 
 	var enemies := m.units.filter(func(e): return e.alive and e.team != u.team and m.team_can_see(u.team, e, now))

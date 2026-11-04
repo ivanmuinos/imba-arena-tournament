@@ -752,3 +752,30 @@ Pasiva de la especialización (`barrier` en `data/classes.json`, `ArenaMatch._st
 | **35, vuelve a los 20 s** (elegido) | **44,5%** | 71,2% | 75,0% | 1,2% | 20,0% |
 
 Contra el brujo sigue perdiendo casi siempre, y no es por falta de vida: hay que mirar ese cruce por separado.
+
+## 2v2 en difícil: la referencia del balance (2026-11-03)
+
+El balance que importa es el 2v2; el 1v1 sólo se empareja. Se mide con `--modes=2 --diff=hard`. En normal, los bots tiran los proyectiles sin fijar objetivo, apuntando adonde creen que va a estar el enemigo, y fallan mucho: el Fuego acierta 55% de las Bolas de fuego y 29% de las Piroexplosiones, y el Brujo 19% de sus Descargas. Un jugador con objetivo seleccionado nunca falla así, porque sus proyectiles lo persiguen. Eso es lo que hacen los bots en difícil. Con los mismos números, en normal el Fuego daba 33% y en difícil 64%.
+
+**Bot:** el auto-ataque ahora siempre persigue al objetivo, también en normal, igual que el de un jugador. Antes el Cazador erraba la mitad de sus disparos, y en 2v2 normal pasó de 22% a 41%.
+
+**Cambios** (2 semillas × 400 partidas, en difícil; el ruido es de unos ±5 puntos para cada especialización del Mago):
+
+| Cambio | Por qué |
+|---|---|
+| Ventisca: 18 → 12 por tick | Hacía más daño que todo el resto del kit de Escarcha (5.500 contra 4.900 de la Descarga en 4 partidas contra Brujos) |
+| Descarga de escarcha: 49 → 38; astillado ×3 → ×2,5; escudo de escarcha 35 → 25 | Escarcha daba 84% |
+| Disparo del Cazador: 12 → 13; Puñalada del Asesino: 18 → 17 | |
+| Rompehechizos: silencio del Contrahechizo ×0,6 (2,5 → 1,5 s) | Daba +8 puntos en 2v2; ahora +1,5 |
+
+| Clase (2v2, difícil) | Antes | Después |
+|---|---|---|
+| Escarcha | 84,2% | 63,8% |
+| Fuego | 64,3% | 52,7% |
+| Guerrero | 43,9% | 55,4% |
+| Brujo | 49,4% | 55,0% |
+| Asesino | 50,0% | 46,2% |
+| Cazador | 42,3% | 44,4% |
+| Sacerdote | 40,0% | 40,7% |
+
+**Pendiente:** Escarcha y Sacerdote siguen fuera de 45–55%. El rebalanceo completo se hace después de sumar dos sanadores más: el Druida reactivado y un Paladín nuevo. Con un solo sanador, todo 2v2 de un daño más un sanador lleva al Sacerdote.

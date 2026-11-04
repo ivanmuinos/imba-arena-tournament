@@ -2,7 +2,7 @@ extends TestBase
 ## Talents (data/talents.json, core/talents.gd): data, kit changes, match entries, saving.
 
 const KITS := ["mage/fire", "mage/frost", "warlock", "hunter", "warrior", "priest", "rogue"]
-const FIELDS := ["dmg", "heal", "cd", "cast", "range", "burnDps", "dotDps", "slowPct", "shatter"]
+const FIELDS := ["dmg", "heal", "cd", "cast", "range", "burnDps", "dotDps", "slowPct", "shatter", "ccMs"]
 const STEP := 1000.0 / 60.0
 ## Fields a "set" talent can give an ability (what ArenaMatch reads).
 const MECHANICS := ["bounce", "nth", "instantAfterCrits", "noPushback", "curseHaste", "castMove", "leech", "allyHeal",

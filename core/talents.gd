@@ -269,6 +269,7 @@ static func _field_name(f: String) -> String:
 		"slowPct": return "ralentización"
 		"range": return "alcance"
 		"shatter": return "astillado"
+		"ccMs": return "duración del control"
 		"crit": return "Probabilidad de crítico"
 		"block": return "Probabilidad de bloqueo"
 	return f
