@@ -187,6 +187,38 @@
    },
    "desc": "Ganá curá 1000 en una sola partida con el Sacerdote.",
    "reward": "recolor_priest"
+  },
+  {
+   "id": "druid_1",
+   "cls": "druid",
+   "name": "Primeros pasos con el Druida",
+   "kind": "total",
+   "stat": "matches",
+   "goal": 3,
+   "desc": "Jugá 3 partidas con el Druida.",
+   "reward": "title_druid"
+  },
+  {
+   "id": "druid_2",
+   "cls": "druid",
+   "name": "Savia",
+   "kind": "total",
+   "stat": "heal",
+   "goal": 4000,
+   "desc": "Curá 4000 de vida en total con el Druida.",
+   "reward": "ring_druid"
+  },
+  {
+   "id": "druid_3",
+   "cls": "druid",
+   "name": "Equilibrio natural",
+   "kind": "match",
+   "when": {
+    "win": true,
+    "heal_min": 1000
+   },
+   "desc": "Ganá y curá 1000 en una sola partida con el Druida.",
+   "reward": "recolor_druid"
   }
  ]
 }

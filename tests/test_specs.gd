@@ -177,6 +177,7 @@ func test_frostbolt_slows_and_ice_lance_shatters_rooted_targets() -> void:
 	# ice lance: normal vs frozen
 	var lance := a.ability(old(a, 1))
 	b.slow_until = 0.0
+	b.root_until = 0.0   # the bolt may have rooted it (rootChance): the first lance must hit a free target
 	var hp0 := b.hp
 	_face(m, a, b)
 	check(m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "lanza de hielo")

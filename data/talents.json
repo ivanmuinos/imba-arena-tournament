@@ -82,5 +82,17 @@
 			{"id": "evis_back", "name": "Por la espalda", "effects": [{"op": "set", "ability": "eviscerate", "field": "behind", "value": 0.3}]},
 			{"id": "evis_kick", "name": "Patada", "effects": [{"op": "swap", "ability": "blind", "to": "kick"}]}
 		]
+	],
+	"druid": [
+		[
+			{"id": "wrath_atone", "name": "Cólera sanadora", "effects": [{"op": "set", "ability": "wrath", "field": "allyHeal", "value": 0.25}]},
+			{"id": "wrath_roots", "name": "Raíces enredadoras", "effects": [{"op": "set", "ability": "wrath", "field": "slowStack", "value": 0.1, "also": {"slowStacks": 3, "slowMs": 3000}}]},
+			{"id": "wrath_bark", "name": "Corteza viva", "effects": [{"op": "set", "ability": "wrath", "field": "cdOf", "value": ["ironbark"], "also": {"cdBy": 1000}}]}
+		],
+		[
+			{"id": "regrowth_bloom", "name": "Brote", "effects": [{"op": "set", "ability": "regrowth", "field": "hotHps", "value": 5, "also": {"hotMs": 6000}}]},
+			{"id": "regrowth_quick", "name": "Crecimiento veloz", "effects": [{"op": "add", "ability": "regrowth", "field": "cast", "value": -500}]},
+			{"id": "bark_rejuv", "name": "Rejuvenecimiento", "effects": [{"op": "swap", "ability": "ironbark", "to": "rejuv"}]}
+		]
 	]
 }
