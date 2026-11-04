@@ -8,7 +8,7 @@
 		[
 			{"id": "pyro_streak", "name": "Racha caliente", "effects": [{"op": "set", "ability": "pyro", "field": "instantAfterCrits", "value": 2}]},
 			{"id": "pyro_focus", "name": "Concentración ígnea", "effects": [{"op": "set", "ability": "pyro", "field": "noPushback", "value": 1}]},
-			{"id": "pyro_counter", "name": "Rompehechizos", "effects": [{"op": "swap", "ability": "pyro", "to": "counter"}, {"op": "mul", "ability": "counter", "field": "cd", "value": 2.2}]}
+			{"id": "pyro_counter", "name": "Rompehechizos", "effects": [{"op": "swap", "ability": "pyro", "to": "counter"}, {"op": "mul", "ability": "counter", "field": "cd", "value": 2.2}, {"op": "mul", "ability": "counter", "field": "ccMs", "value": 0.6}]}
 		]
 	],
 	"mage/frost": [
