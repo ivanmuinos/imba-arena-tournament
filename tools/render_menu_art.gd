@@ -60,16 +60,39 @@ func _portrait(cls: String) -> void:
 	var cam := Camera3D.new()
 	cam.fov = 30
 	vp.add_child(cam)
-	if cls in ["warlock", "priest", "druid", "ct", "ki"]:  # horns, antlers and the staff skull are taller than the other heads: pull back
-		cam.look_at_from_position(Vector3(0.15, 1.55, 5.4), Vector3(0, 1.2, 0))
-	else:
-		cam.look_at_from_position(Vector3(0.15, 1.45, 4.2), Vector3(0, 1.1, 0))
+	for i in 4:
+		await process_frame
+	_frame(cam, rig.root)
 	for i in 8:
 		await process_frame
 	await RenderingServer.frame_post_draw
 	vp.get_texture().get_image().save_png("res://assets/ui/portraits/%s.png" % cls)
 	print("retrato ", cls)
 	vp.queue_free()
+
+
+## Frames the whole character: height from the feet to the top of whatever it wears (hats, horns, antlers), centred
+## on its body and head. Skinned meshes report their rest-pose box (arms spread, weapons sideways), so the width is
+## not used for the fit.
+func _frame(cam: Camera3D, root: Node3D) -> void:
+	var top := 0.0
+	var core := AABB()
+	var has_core := false
+	for n in root.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if not mi.is_visible_in_tree() or mi.mesh == null:
+			continue
+		var b: AABB = mi.global_transform * mi.get_aabb()
+		top = maxf(top, b.end.y)
+		if mi.name.ends_with("_Body") or mi.name.ends_with("_Head"):
+			core = b if not has_core else core.merge(b)
+			has_core = true
+	var mid := core.get_center() if has_core else Vector3.ZERO
+	var center := Vector3(mid.x, top * 0.5, mid.z)
+	var half_h := top * 0.5 * 1.1
+	var dist := half_h / tan(deg_to_rad(cam.fov) * 0.5) + 0.6
+	var dir := Vector3(0.15, 0.3, 4.2).normalized()
+	cam.look_at_from_position(center + dir * dist, center)
 
 
 func _thumb(map_id: String) -> void:

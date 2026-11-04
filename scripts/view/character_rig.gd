@@ -27,7 +27,7 @@ const KAYKIT := {
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Shoot", "hit": "Hit_A", "death": "Death_A", "stun": "Sit_Floor_Idle"}},
 	"priest": {"file": "Mage", "show": ["Spellbook_open"], "hide": ["Mage_Hat"], "extras": "priest", "scale": 0.86, "recolor": {"hue": -0.12, "sat": -0.75, "val": 0.65},
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "Spellcast_Raise", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
-	"paladin": {"file": "Knight", "show": ["1H_Sword", "Badge_Shield"], "scale": 0.84, "recolor": {"hue": 0.0, "sat": 0.0, "val": 0.05, "gild": 0.6},
+	"paladin": {"file": "Knight", "show": ["1H_Sword", "Rectangle_Shield"], "scale": 0.84, "recolor": {"hue": 0.0, "sat": -0.3, "val": 0.18},
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Spellcasting", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
 	"warrior": {"file": "Knight", "show": ["1H_Sword", "Round_Shield"], "scale": 0.84,
 		"clips": {"idle": "Idle", "run": "Running_A", "cast": "Block", "attack": "1H_Melee_Attack_Slice_Diagonal", "hit": "Hit_A", "death": "Death_B", "stun": "Sit_Floor_Idle"}},
@@ -112,9 +112,6 @@ static func _recolored(tex: Texture2D, key: String, rc: Dictionary) -> Texture2D
 				continue  # skin tones stay as they are
 			c.h = fposmod(c.h + float(rc.hue), 1.0)
 			c.s = clampf(c.s + float(rc.sat) * c.s, 0.0, 1.0)
-			if rc.has("gild"):  # greys have no hue to shift: gild them (the paladin's golden plate)
-				c.h = 0.12
-				c.s = maxf(c.s, float(rc.gild) * c.v)
 			c.v = clampf(c.v + float(rc.val) * (1.0 - c.v), 0.0, 1.0) if float(rc.val) >= 0.0 else clampf(c.v * (1.0 + float(rc.val)), 0.0, 1.0)
 			img.set_pixel(x, y, c)
 	img.generate_mipmaps()
@@ -172,6 +169,8 @@ func _setup_kaykit(cls: String, team: Color) -> void:
 		_warlock_extras(inner)
 	elif cls == "druid":
 		_druid_extras(inner)
+	elif cls == "paladin":
+		_paladin_extras(inner)
 	elif cls == "ct":
 		_ct_extras(inner)
 	elif cls == "ronin":
@@ -547,6 +546,26 @@ func _tube(parent: Node3D, points: Array, radii: Array, mat: Material) -> void:
 		mi.basis = Basis(x, y, x.cross(y))
 		if i > 0:
 			_add_mesh(parent, MeshBuilder.sphere(radii[i], 8, 5), mat, p0)
+
+
+## Crusader: white surcoat with a red cross front and back, red cross on the shield, gold trim.
+func _paladin_extras(inner: Node3D) -> void:
+	var cloth := _holy_mat(false)
+	var gold := _holy_mat(true)
+	var red := StandardMaterial3D.new()
+	red.albedo_color = Color(0.72, 0.06, 0.08)
+	red.roughness = 0.6
+	var sk: Skeleton3D = inner.find_children("*", "Skeleton3D", true, false)[0]
+	var chest := sk.get_node_or_null("chest") as Node3D
+	if chest != null:
+		_add_mesh(chest, MeshBuilder.cylinder(0.5, 0.6, 0.66, 20), cloth, Vector3(0, -0.34, 0.0), Vector3.ZERO, Vector3(1.0, 1.0, 0.8))
+		_add_mesh(chest, MeshBuilder.torus(0.59, 0.025, 28, 6), gold, Vector3(0, -0.67, 0.0), Vector3.ZERO, Vector3(1.0, 1.0, 0.8))
+		for z in [0.42, -0.42]:
+			_add_mesh(chest, MeshBuilder.box(Vector3(0.13, 0.54, 0.04)), red, Vector3(0, -0.3, z))
+			_add_mesh(chest, MeshBuilder.box(Vector3(0.42, 0.13, 0.04)), red, Vector3(0, -0.2, z))
+	var head := sk.get_node_or_null("head") as Node3D
+	if head != null:  # a red crest on the great helm
+		_add_mesh(head, MeshBuilder.box(Vector3(0.09, 0.2, 0.85)), red, Vector3(0, 1.12, -0.08))
 
 
 func _holy_mat(gold: bool) -> StandardMaterial3D:
