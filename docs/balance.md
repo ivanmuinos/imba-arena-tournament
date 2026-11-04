@@ -811,3 +811,5 @@ Se suman dos sanadores: el **Druida** vuelve (estaba en `DISABLED_CLASSES`) y en
 | Cazador | 52,4% |
 
 Todas quedan a menos de 5 puntos del promedio. Los equipos con un sanador ganan 58,1% y los de dos de daño 52,8%: daño + sanador es la composición base, sin que dos de daño queden fuera de juego.
+
+**Golpe de cruzado sagrado:** en duelos el Paladín perdía el 100%. Su daño era físico y el Guerrero se lo comía con armadura y bloqueo (52 bloqueos en 2 duelos). Ahora el Golpe de cruzado es daño sagrado, y la descripción lo explica. Probé también velocidad 6,4 → 6,8 y Martillo con alcance 12 → 16, pero no le alcanzaban para llegar a los rivales a distancia y en 2v2 lo subían a 64%, así que se descartaron. Con el daño sagrado en 12, en 2v2 (semillas 7 y 8) queda: Mago 60,4%, Paladín 58,9%, Sacerdote 56,5%, Asesino 55,5%, Brujo 54,8%, Druida 54,3%, Guerrero 52,9%, Cazador 49,1%.

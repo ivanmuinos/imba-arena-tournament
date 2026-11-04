@@ -22,7 +22,7 @@ const OF := {
 	"spark": "arcane", "stunbolt": "fire", "disarm": "arcane", "wardshield": "arcane", "broom": "arcane", "confuse": "arcane", "guardian": "holy",
 	"punch": "physical", "kiblast": "arcane", "flashstep": "arcane", "kiguard": "arcane", "awaken": "holy", "palm": "arcane", "kiwave": "arcane",
 	"wrath": "nature", "regrowth": "nature", "ironbark": "nature", "cyclone": "nature", "rejuv": "nature", "naturescure": "nature", "tranquility": "nature",
-	"crusader": "physical", "holylight": "holy", "hammer": "holy", "blessing": "holy", "layhands": "holy", "cleanse": "holy",
+	"crusader": "holy", "holylight": "holy", "hammer": "holy", "blessing": "holy", "layhands": "holy", "cleanse": "holy",
 }
 
 const PALETTE := {

@@ -1053,13 +1053,12 @@
         "id": "crusader",
         "name": "Golpe de cruzado",
         "icon": "crusader",
-        "desc": "Auto-ataque cuerpo a cuerpo con el arma bendita (clic derecho sobre el enemigo o tecla 1).",
+        "desc": "Auto-ataque cuerpo a cuerpo con el arma bendita: daño sagrado, no lo frenan la armadura ni el bloqueo (clic derecho sobre el enemigo o tecla 1).",
         "cd": 900,
         "cast": 0,
         "range": 3.2,
         "dmg": 12,
         "melee": true,
-        "physical": true,
         "auto": true
       },
       {
