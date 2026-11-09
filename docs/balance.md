@@ -812,4 +812,6 @@ Se suman dos sanadores: el **Druida** vuelve (estaba en `DISABLED_CLASSES`) y en
 
 Todas quedan a menos de 5 puntos del promedio. Los equipos con un sanador ganan 58,1% y los de dos de daño 52,8%: daño + sanador es la composición base, sin que dos de daño queden fuera de juego.
 
+**Martillo de la justicia, 3 → 2 s (2026-11-09):** era el aturdimiento más largo sin sigilo, y el Paladín salía arriba en todas las mediciones. Con 2.400 partidas (semillas 51 a 56, equipos con 0–1 sanador) pasa de 60,9% a 59,7%, un cambio dentro del ruido (unos ±2,5 puntos). Queda a menos de 5 puntos del promedio, casi empatado con Mago (59,4%), Asesino (59,0%) y Sacerdote (58,5%).
+
 **Golpe de cruzado sagrado:** en duelos el Paladín perdía el 100%. Su daño era físico y el Guerrero se lo comía con armadura y bloqueo (52 bloqueos en 2 duelos). Ahora el Golpe de cruzado es daño sagrado, y la descripción lo explica. Probé también velocidad 6,4 → 6,8 y Martillo con alcance 12 → 16, pero no le alcanzaban para llegar a los rivales a distancia y en 2v2 lo subían a 64%, así que se descartaron. Con el daño sagrado en 12, en 2v2 (semillas 7 y 8) queda: Mago 60,4%, Paladín 58,9%, Sacerdote 56,5%, Asesino 55,5%, Brujo 54,8%, Druida 54,3%, Guerrero 52,9%, Cazador 49,1%.
