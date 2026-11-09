@@ -13,9 +13,10 @@ func _stats(dmg := 0, kills := 0, deaths := 0, heal := 0) -> Dictionary:
 	return {"id": 1, "dmg": dmg, "kills": kills, "deaths": deaths, "heal": heal}
 
 
-func test_data_has_18_challenges_3_per_playable_class_with_valid_rewards() -> void:
+func test_data_has_3_challenges_per_playable_class_with_valid_rewards() -> void:
 	var list := Challenges.all()
-	eq(list.size(), 18, "18 desafíos")
+	var n_cls := GameData.playable_ids().size()
+	eq(list.size(), 3 * n_cls, "3 desafíos por clase jugable")
 	var per := {}
 	var ids := {}
 	for c in list:
@@ -30,8 +31,8 @@ func test_data_has_18_challenges_3_per_playable_class_with_valid_rewards() -> vo
 		else:
 			for k in c.when:
 				check(["win", "deaths_max", "dmg_min", "kills_min", "heal_min"].has(k), "condición válida: " + k)
-	eq(ids.size(), 18, "ids únicos")
-	eq(per.size(), 6, "6 clases")
+	eq(ids.size(), 3 * n_cls, "ids únicos")
+	eq(per.size(), n_cls, "todas las clases jugables")
 	for cls in per:
 		eq(per[cls], 3, "3 desafíos de " + cls)
 

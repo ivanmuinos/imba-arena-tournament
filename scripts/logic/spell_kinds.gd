@@ -15,6 +15,7 @@ const TABLE := {
 	"strike": "auto", "mortal": "hostile", "charge": "hostile", "hamstring": "hostile", "shieldwall": "self", "pummel": "hostile", "bladestorm": "self",
 	"smite": "hostile", "heal": "friendly", "pwshield": "friendly", "scream": "self", "renew": "friendly", "dispel": "friendly", "hymn": "self",
 	"wrath": "hostile", "regrowth": "friendly", "ironbark": "friendly", "cyclone": "hostile", "rejuv": "friendly", "naturescure": "friendly", "tranquility": "self",
+	"crusader": "auto", "holylight": "friendly", "hammer": "hostile", "blessing": "friendly", "layhands": "friendly", "cleanse": "friendly",
 	"rifle": "auto", "headshot": "hostile", "flashbang": "ground", "kevlar": "self", "knife": "self", "bash": "hostile", "awp": "hostile",
 	"slash": "auto", "tempest": "hostile", "windwall": "direction", "sweep": "hostile", "flow": "self", "upcut": "hostile", "lastbreath": "hostile",
 	"pass": "auto", "chip": "hostile", "nutmeg": "hostile", "dribble": "direction", "onetwo": "friendly", "tackle": "hostile", "golazo": "hostile",

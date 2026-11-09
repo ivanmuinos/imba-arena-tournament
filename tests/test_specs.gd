@@ -177,6 +177,7 @@ func test_frostbolt_slows_and_ice_lance_shatters_rooted_targets() -> void:
 	# ice lance: normal vs frozen
 	var lance := a.ability(old(a, 1))
 	b.slow_until = 0.0
+	b.root_until = 0.0   # the bolt may have rooted it (rootChance): the first lance must hit a free target
 	var hp0 := b.hp
 	_face(m, a, b)
 	check(m.cast_ability(a, old(a, 1), b.x, b.z, now, b.id), "lanza de hielo")
@@ -392,7 +393,7 @@ func test_frost_barrier_absorbs_and_comes_back_after_breaking() -> void:
 	var b: Dictionary = a.spec().barrier
 	check(a.barrier_on and a.absorb >= float(b.absorb), "empieza la ronda con el escudo")
 	var hp := a.hp
-	m._damage(a, float(b.absorb) - 10.0, m.units[1], now, "")
+	m._damage(a, float(b.absorb) * 0.5, m.units[1], now, "")  # half: even a crit stays inside the shield
 	eq(a.hp, hp, "absorbe")
 	m._damage(a, 30.0, m.units[1], now, "")
 	check(a.hp < hp, "roto, el resto pega")

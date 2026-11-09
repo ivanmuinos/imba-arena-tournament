@@ -191,8 +191,8 @@
         "icon": "spec_frost",
         "color": "#5fc8ff",
         "role": "Control y desgaste",
-        "desc": "Pega un poco menos pero ralentiza y enraíza: combiná la nova con la lanza de hielo para astillar. Pasiva: un escudo de escarcha absorbe 35 de daño y vuelve 20 s después de romperse.",
-        "barrier": {"absorb": 35, "cdMs": 20000},
+        "desc": "Pega un poco menos pero ralentiza y enraíza: combiná la nova con la lanza de hielo para astillar. Pasiva: un escudo de escarcha absorbe 25 de daño y vuelve 20 s después de romperse.",
+        "barrier": {"absorb": 25, "cdMs": 20000},
         "stats": {
           "hp": 2,
           "mobility": 3,
@@ -205,31 +205,31 @@
             "id": "frostbolt",
             "name": "Descarga de escarcha",
             "icon": "frostbolt",
-            "desc": "Lanzamiento de 1,3 s, sin recarga ni tiempo global: la podés encadenar siempre. Daño moderado y ralentiza al objetivo un 40% durante 3 s. A veces (15%) también lo enraíza 1,5 s.",
+            "desc": "Lanzamiento de 1,3 s, sin recarga ni tiempo global: la podés encadenar siempre. Daño moderado y ralentiza al objetivo un 40% durante 3 s. A veces (10%) también lo enraíza 1,5 s.",
             "cd": 0,
             "offGcd": true,
             "cast": 1300,
             "range": 20,
-            "dmg": 49,
+            "dmg": 35,
             "projSpeed": 30,
             "projR": 0.4,
             "slowPct": 0.4,
             "ccMs": 3000,
-            "rootChance": 0.15,
+            "rootChance": 0.1,
             "rootMs": 1500
           },
           "1": {
             "id": "icelance",
             "name": "Lanza de hielo",
             "icon": "icelance",
-            "desc": "Proyectil instantáneo de poco daño. Contra un objetivo enraizado o congelado pega 3 veces más (astillado).",
+            "desc": "Proyectil instantáneo de poco daño. Contra un objetivo enraizado o congelado pega 2,5 veces más (astillado).",
             "cd": 2000,
             "cast": 0,
             "range": 20,
             "dmg": 25,
             "projSpeed": 55,
             "projR": 0.24,
-            "shatter": 3.0
+            "shatter": 2.5
           },
           "2": {
             "id": "frostblink",
@@ -265,7 +265,7 @@
             "cast": 0,
             "range": 16,
             "aoe": 5,
-            "dmg": 18,
+            "dmg": 12,
             "tickMs": 500,
             "durationMs": 5000,
             "slowPct": 0.6,
@@ -381,7 +381,7 @@
         "cast": 0,
         "range": 20,
         "targeted": true,
-        "dotDps": 10,
+        "dotDps": 9,
         "durationMs": 8000
       },
       {
@@ -465,7 +465,7 @@
         "cd": 450,
         "cast": 0,
         "range": 22,
-        "dmg": 12,
+        "dmg": 14,
         "projSpeed": 50,
         "projR": 0.22,
         "physical": true,
@@ -479,7 +479,7 @@
         "cd": 7000,
         "cast": 1100,
         "range": 26,
-        "dmg": 54,
+        "dmg": 60,
         "projSpeed": 66,
         "projR": 0.26
       },
@@ -566,7 +566,7 @@
     "name": "Guerrero",
     "role": "Cuerpo a cuerpo resistente",
     "icon": "class_warrior",
-    "hp": 620,
+    "hp": 600,
     "speed": 6.8,
     "abilities": [
       {
@@ -577,7 +577,7 @@
         "cd": 900,
         "cast": 0,
         "range": 3.2,
-        "dmg": 10,
+        "dmg": 9,
         "melee": true,
         "physical": true,
         "auto": true
@@ -590,7 +590,7 @@
         "cd": 6000,
         "cast": 0,
         "range": 3.2,
-        "dmg": 18,
+        "dmg": 16,
         "melee": true,
         "physical": true
       },
@@ -798,7 +798,7 @@
         "cd": 600,
         "cast": 0,
         "range": 3,
-        "dmg": 18,
+        "dmg": 17,
         "melee": true,
         "physical": true,
         "auto": true
@@ -920,11 +920,13 @@
         "id": "regrowth",
         "name": "Recrecimiento",
         "icon": "regrowth",
-        "desc": "Lanzamiento de 1,5 s: cura 38 a quien elijas (F1 vos, F2-F3 aliados) o a vos.",
+        "desc": "Lanzamiento de 1,5 s: cura 70 a quien elijas (F1 vos, F2-F3 aliados) o a vos, y le deja 6 de curación por segundo durante 6 s.",
         "cd": 1000,
         "cast": 1500,
         "range": 24,
-        "heal": 38,
+        "heal": 70,
+        "hotHps": 6,
+        "hotMs": 6000,
         "friendly": true
       },
       {
@@ -1010,6 +1012,108 @@
         "id": "naturescure",
         "name": "Curación natural",
         "icon": "naturescure",
+        "desc": "Quita maldiciones, quemaduras, aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
+        "cd": 12000,
+        "cast": 0,
+        "range": 24,
+        "friendly": true
+      }
+    ]
+  },
+  "paladin": {
+    "id": "paladin",
+    "name": "Paladín",
+    "role": "Sanador y protector",
+    "icon": "class_paladin",
+    "hp": 560,
+    "speed": 6.4,
+    "armor": 0.15,
+    "tags": [
+      "Sanador",
+      "Cuerpo a cuerpo"
+    ],
+    "stats": {
+      "hp": 4,
+      "mobility": 2,
+      "damage": 2,
+      "control": 3,
+      "difficulty": 2
+    },
+    "tagline": "Cura con Luz sagrada y no se va de la pelea.",
+    "identity": "Sanador con armadura de placas (pasiva: 15% menos de daño físico): aguanta al lado de sus aliados, los cura con Luz sagrada, aturde con el Martillo y salva a uno con la Bendición de protección. Cura más lento que el sacerdote pero cuesta mucho más bajarlo.",
+    "companion": {
+      "name": "Espíritu de luz",
+      "kind": "fairy",
+      "fly": 1.4,
+      "glow": "#ffd36a",
+      "bond": "#ffe08a"
+    },
+    "abilities": [
+      {
+        "id": "crusader",
+        "name": "Golpe de cruzado",
+        "icon": "crusader",
+        "desc": "Auto-ataque cuerpo a cuerpo con el arma bendita: daño sagrado, no lo frenan la armadura ni el bloqueo (clic derecho sobre el enemigo o tecla 1).",
+        "cd": 900,
+        "cast": 0,
+        "range": 3.2,
+        "dmg": 12,
+        "melee": true,
+        "auto": true
+      },
+      {
+        "id": "holylight",
+        "name": "Luz sagrada",
+        "icon": "holylight",
+        "desc": "Lanzamiento de 2 s: cura 100 a quien elijas (F1 vos, F2-F3 aliados) o a vos. Lenta pero grande.",
+        "cd": 1000,
+        "cast": 2000,
+        "range": 24,
+        "heal": 100,
+        "friendly": true
+      },
+      {
+        "id": "hammer",
+        "name": "Martillo de la justicia",
+        "icon": "hammer",
+        "desc": "Arroja un martillo que aturde al enemigo 3 s. Alcance corto.",
+        "cd": 20000,
+        "cast": 0,
+        "range": 12,
+        "dmg": 6,
+        "ccMs": 3000,
+        "projSpeed": 40,
+        "projR": 0.3
+      },
+      {
+        "id": "blessing",
+        "name": "Bendición de protección",
+        "icon": "blessing",
+        "desc": "Un aliado (o vos) no recibe daño durante 3 s.",
+        "cd": 40000,
+        "cast": 0,
+        "range": 24,
+        "durationMs": 3000,
+        "friendly": true
+      },
+      {
+        "id": "layhands",
+        "name": "Imposición de manos",
+        "icon": "layhands",
+        "desc": "DEFINITIVA: cura 200 al instante a un aliado (o a vos).",
+        "cd": 0,
+        "cast": 0,
+        "range": 24,
+        "heal": 200,
+        "friendly": true,
+        "ult": true
+      }
+    ],
+    "reserve": [
+      {
+        "id": "cleanse",
+        "name": "Purificar",
+        "icon": "cleanse",
         "desc": "Quita maldiciones, quemaduras, aturdimientos, miedos, silencios, raíces y ralentizaciones a un aliado.",
         "cd": 12000,
         "cast": 0,

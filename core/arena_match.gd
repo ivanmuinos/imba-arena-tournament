@@ -687,7 +687,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 	var id: String = spec.id
 
 	match id:
-		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath", "rifle", "headshot", "awp", "pass", "chip", "golazo", "spark", "stunbolt", "disarm", "kiblast":
+		"smite", "fireball", "pyro", "shot", "aimed", "conc", "silence", "frostbolt", "icelance", "shadowbolt", "wrath", "rifle", "headshot", "awp", "pass", "chip", "golazo", "spark", "stunbolt", "disarm", "kiblast", "hammer":
 			_spawn_proj(u, spec, dir, lock)
 		"corruption", "agony", "soulrot":
 			if target != null and target.alive:
@@ -783,7 +783,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				var off := 0.0 if i == 0 else 1.6
 				aoes.append({"id": _new_id(), "owner": u, "spec": spec, "kind": "meteor", "x": c.x + sin(a) * off, "z": c.y + cos(a) * off, "at": now + 900 + i * 350})
 		# ---- warrior
-		"strike", "stab":
+		"strike", "stab", "crusader":
 			if target != null: _damage(target, spec.dmg, u, now, id)
 		"eviscerate":
 			if target != null: _damage(target, spec.dmg * (1.3 if from_stealth else 1.0), u, now, id)
@@ -819,7 +819,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			u.slow_until = 0.0
 			_label(u, "FILOTORMENTA", "#ffd166")
 		# ---- priest
-		"heal":
+		"heal", "holylight", "layhands", "regrowth":
 			if target != null:
 				fx.append({"k": "healspell", "id": target.id, "ability": spec.id})  # always shown, even at full health
 				_heal(target, spec.heal, u, now)
@@ -827,6 +827,10 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 					target.hot_until = now + float(spec.get("hotMs", 6000.0))
 					target.hot_hps = float(spec.hotHps)
 					target.hot_by = u
+		"blessing":  # Blessing of Protection: no damage at all for a few seconds (the power-up bubble's shield_until)
+			if target != null:
+				target.shield_until = maxf(target.shield_until, now + float(spec.durationMs))
+				_label(target, "BENDICIÓN DE PROTECCIÓN", "#ffe08a")
 		"pwshield":
 			if target != null:
 				target.absorb = spec.heal
@@ -838,7 +842,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				target.hot_hps = spec.heal
 				target.hot_by = u
 				_label(target, "RENOVAR", "#5cff8a")
-		"dispel", "naturescure":
+		"dispel", "naturescure", "cleanse":
 			if target != null:
 				target.curses.clear()
 				for f in ["stun_until", "root_until", "silence_until", "incap_until", "fear_until", "slow_until", "mortal_until", "marked_until", "burn_until"]:
@@ -856,10 +860,6 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				if a.alive and a.team == u.team and _dist(a, u) <= spec.aoe:
 					_heal(a, spec.heal, u, now)
 		# ---- druid
-		"regrowth":
-			if target != null:
-				fx.append({"k": "healspell", "id": target.id, "ability": spec.id})
-				_heal(target, spec.heal, u, now)
 		"rejuv":
 			if target != null:
 				target.hot_until = now + float(spec.durationMs)
@@ -1597,7 +1597,7 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 		"silence", "disarm":
 			_interrupt(t, now)
 			_cc(t, "silence", spec.ccMs, now)
-		"stunbolt":
+		"stunbolt", "hammer":
 			_cc(t, "stun", spec.ccMs, now)
 		"conc":
 			t.slow_until = now + spec.ccMs

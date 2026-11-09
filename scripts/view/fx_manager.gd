@@ -44,6 +44,7 @@ const PROJ_STYLE := {
 	"spark": {"color": Color("#ffe9a0"), "size": 0.18, "arrow": false, "trail": 14},
 	"kiblast": {"color": Color("#8fd8ff"), "size": 0.4, "arrow": false, "trail": 20},
 	"stunbolt": {"color": Color("#ff3a3a"), "size": 0.26, "arrow": true, "trail": 22},
+	"hammer": {"color": Color("#ffd36a"), "size": 0.34, "arrow": false, "trail": 18},
 	"disarm": {"color": Color("#ff9a3a"), "size": 0.22, "arrow": true, "trail": 18},
 	"chip": {"color": Color("#ffffff"), "size": 0.3, "arrow": false, "trail": 18},
 	"golazo": {"color": Color("#fff2b0"), "size": 0.5, "arrow": false, "trail": 34},

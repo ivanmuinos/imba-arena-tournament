@@ -95,6 +95,14 @@
   "priest": [
    "warrior",
    "mage"
+  ],
+  "druid": [
+   "warrior",
+   "mage"
+  ],
+  "paladin": [
+   "warrior",
+   "mage"
   ]
  },
  "ally_names": [
