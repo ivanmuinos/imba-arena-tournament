@@ -204,3 +204,22 @@ func test_divine_shield_keeps_a_cast_from_being_pushed_back() -> void:
 	t.absorb = 0.0
 	m._damage(t, 50.0, m.units[1], 1000.0, "stab")
 	near(float(t.cast.ends_at), 3000.0 + float(m.C.PUSHBACK_MS), 0.01, "sin escudo sí")
+
+
+func _healed(m: ArenaMatch, healer: ArenaUnit, t: ArenaUnit) -> float:
+	t.hp = 1.0
+	m._heal(t, 100.0, healer, 1000.0)
+	return t.hp - 1.0
+
+
+func test_healer_pairs_heal_their_partner_more() -> void:
+	for pair in [["priest", "warlock"], ["paladin", "warrior"], ["druid", "hunter"]]:
+		var m := _match(pair)
+		near(_healed(m, m.units[0], m.units[1]), 110.0, 0.01, "%s cura 10%% más a %s" % pair)
+		near(_healed(m, m.units[0], m.units[0]), 100.0, 0.01, "%s no se cura más a sí mismo" % pair[0])
+		check(Synergies.banner(pair) != "", "%s tiene aviso" % str(pair))
+
+
+func test_healer_bonus_needs_the_exact_partner() -> void:
+	var m := _match(["priest", "warrior"])
+	near(_healed(m, m.units[0], m.units[1]), 100.0, 0.01, "el Sacerdote no tiene bonus con el Guerrero")
