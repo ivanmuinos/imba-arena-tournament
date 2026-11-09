@@ -100,6 +100,8 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 		u.cds.fill(0.0)
 		u.charges.clear()
 		units.append(u)
+	for u in units:
+		synergies[u.team] = Synergies.effects(units.filter(func(o): return o.team == u.team and o.dummy == "").map(func(o): return o.cls))
 	_reset_round(now)
 
 
@@ -544,6 +546,25 @@ func _talent_bonus(a: Dictionary, src: ArenaUnit, t: ArenaUnit, now: float) -> f
 	return m
 
 
+func _synergy(team: String, field: String) -> float:
+	return float(synergies.get(team, {}).get(field, 0.0))
+
+
+## Team-synergy multiplier for a physical hit.
+func _synergy_physical(src: ArenaUnit, t: ArenaUnit, now: float) -> float:
+	var m := 1.0
+	if now < t.root_until or (now < t.incap_until and t.incap_kind in ["poly", "freeze"]):
+		m *= 1.0 + _synergy(src.team, "physicalVsControlled")
+	if now < t.exposed_until:
+		m *= 1.0 + t.exposed_pct
+	return m
+
+
+## A mage has left this target burning or slowed with a Frostbolt.
+func _mage_softened(t: ArenaUnit, now: float) -> bool:
+	return now < t.chill_until or (now < t.burn_until and t.burn_by != null and t.burn_by.cls == "mage")
+
+
 func _hindered(t: ArenaUnit, now: float) -> bool:
 	return now < t.slow_until or now < t.root_until
 
@@ -808,7 +829,10 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 				u.dash_vx = (target.x - u.x) / maxf(d, 1e-3) * speed
 				u.dash_vz = (target.z - u.z) / maxf(d, 1e-3) * speed
 				fx.append({"k": "charge", "id": u.id, "x0": u.x, "z0": u.z, "x1": target.x, "z1": target.z})
-				_cc(target, "stun", spec.ccMs + u.dash_left * 1000, now)
+				var extra := _synergy(u.team, "chargeStunMs") if _mage_softened(target, now) else 0.0
+				if extra > 0.0:
+					_label(target, "¡SINERGIA!", "#ffd166")
+				_cc(target, "stun", spec.ccMs + u.dash_left * 1000 + extra, now)
 		"shieldwall":
 			u.wall_until = now + spec.ccMs
 			_label(u, "MURO DE ESCUDO", "#c9ced6")
@@ -845,7 +869,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 		"dispel", "naturescure", "cleanse":
 			if target != null:
 				target.curses.clear()
-				for f in ["stun_until", "root_until", "silence_until", "incap_until", "fear_until", "slow_until", "mortal_until", "marked_until", "burn_until"]:
+				for f in ["stun_until", "root_until", "silence_until", "incap_until", "fear_until", "slow_until", "mortal_until", "marked_until", "burn_until", "chill_until", "exposed_until"]:
 					target.set(f, 0.0)
 				_label(target, "DISIPADO", "#ffffff")
 		"scream":
@@ -1091,6 +1115,9 @@ func _enemies_within(u: ArenaUnit, x: float, z: float, r: float) -> Array[ArenaU
 
 ## True while a periodic effect (curse, burn) is dealing its tick: clients show the number but no flash, impact or sound.
 var _dot_tick := false
+## Ability combos that work for any team: Pyroblast crits a stunned target, a trap holds a feared target for a moment.
+var combos := true
+const COMBO_FREEZE_MS := 1000.0
 ## Warrior shield blocks: front hemisphere (including sides) 30%, rear 5%.
 ## Host-owned configuration; independent RNG so combat rolls cannot be supplied by clients.
 var block_front := 0.30
@@ -1098,6 +1125,8 @@ var block_rear := 0.05
 var block_rng := RandomNumberGenerator.new()
 ## Chance effects of abilities (Frostbolt's root).
 var proc_rng := RandomNumberGenerator.new()
+## Team -> effects of its class pairs (Synergies).
+var synergies := {}
 ## The cast being executed is an "every Nth" one (its projectiles carry it), and the hit being dealt comes from one.
 var _cast_emp := false
 var _hit_emp := false
@@ -1144,9 +1173,11 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 			amount *= _talent_bonus(a, src, t, now)
 		crit = now < src.crit_until or randf() < crit_chance(src)
 		if not a.is_empty() and not crit:
-			crit = (_hit_emp and str(a.get("nthEffect", "")) == "crit") or (a.get("critVsSlowed", false) and _hindered(t, now))
+			crit = (_hit_emp and str(a.get("nthEffect", "")) == "crit") or (a.get("critVsSlowed", false) and _hindered(t, now)) or (combos and ability == "pyro" and now < t.stun_until)
 		if crit: amount *= C.CRIT_MULT
 		if crit and not _dot_tick: src.crit_streak += 1
+		if not _dot_tick and t.team != src.team and SpellSchools.explicit(ability) and SpellSchools.school_of(ability) == "physical":
+			amount *= _synergy_physical(src, t, now)
 		var armor := float(t.spec().get("armor", 0.0))
 		if armor > 0.0 and SpellSchools.explicit(ability) and SpellSchools.school_of(ability) == "physical":
 			amount *= 1.0 - armor  # armor: physical hits only (not magic, not periodic effects)
@@ -1171,7 +1202,7 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 			t.fear_dmg += amount
 			if t.fear_dmg > 40: t.fear_until = 0.0  # fear breaks after enough damage
 	t.hp -= amount
-	if now < t.incap_until: t.incap_until = 0.0  # sheep / freeze / blind break on damage
+	if now < t.incap_until and now >= t.incap_solid_until: t.incap_until = 0.0  # sheep / freeze / blind break on damage
 	if not t.cast.is_empty() and int(t.cast.get("pushes", 0)) < int(C.PUSHBACK_MAX) and not t.ability(t.cast.slot).get("noPushback", false):
 		t.cast.ends_at += float(C.PUSHBACK_MS)  # WoW pushback: each hit delays the cast, at most twice
 		t.cast.pushes = int(t.cast.get("pushes", 0)) + 1
@@ -1602,10 +1633,15 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 		"conc":
 			t.slow_until = now + spec.ccMs
 			t.slow_pct = spec.slowPct
-			_label(t, "RALENTIZADO", "#4da3ff")
+			var exposed := _synergy(p.owner.team, "concExposed")
+			if exposed > 0.0:
+				t.exposed_until = t.slow_until
+				t.exposed_pct = exposed
+			_label(t, "EXPUESTO" if exposed > 0.0 else "RALENTIZADO", "#4da3ff")
 		"frostbolt":
 			t.slow_pct = maxf(t.slow_pct if now < t.slow_until else 0.0, float(spec.slowPct))
 			t.slow_until = maxf(t.slow_until, now + float(spec.ccMs))
+			t.chill_until = t.slow_until
 			if float(spec.get("rootChance", 0.0)) > 0.0 and proc_rng.randf() < float(spec.rootChance):
 				_cc(t, "root", float(spec.rootMs), now)  # labels ENRAIZADO itself (and sets up Ice Lance's shatter)
 			else:
@@ -1687,7 +1723,11 @@ func _step_traps(now: float) -> void:
 			continue
 		fx.append({"k": "trap", "x": tr.x, "z": tr.z})
 		var trap: Dictionary = tr.owner.ability_by_id("trap")  # the owner's kit: talents may change the freeze
+		var feared := combos and now < victim.fear_until
 		_cc(victim, "incap", (trap if not trap.is_empty() else GameData.find_ability("hunter", "trap")).ccMs, now, "freeze")
+		if feared and now < victim.incap_until:
+			victim.incap_solid_until = now + COMBO_FREEZE_MS
+			_label(victim, "¡COMBO!", "#ffd166")
 	traps = keep
 
 

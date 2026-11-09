@@ -29,6 +29,7 @@ var _lvl_label: Label
 var _xp_bar: Bar
 var _tal_rows: Array = []  # per row: {caption: Label, buttons: [Button]}
 var _tal_desc: Label
+var _syn_box: VBoxContainer
 
 
 func _ready() -> void:
@@ -67,7 +68,7 @@ func _ready() -> void:
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 6)
 	p.add_child(outer)
-	_tabs = Segmented.new().setup([["abilities", "Habilidades"], ["talents", "Talentos"]], "abilities").as_tabs()
+	_tabs = Segmented.new().setup([["abilities", "Habilidades"], ["talents", "Talentos"], ["synergies", "Sinergias"]], "abilities").as_tabs()
 	_tabs.add_theme_constant_override("separation", 8)
 	_tabs.changed.connect(show_tab)
 	outer.add_child(_tabs)
@@ -78,6 +79,11 @@ func _ready() -> void:
 	_pages["talents"] = _build_talents_page()
 	outer.add_child(_pages["talents"])
 	_pages["talents"].visible = false
+	_syn_box = VBoxContainer.new()
+	_syn_box.add_theme_constant_override("separation", 10)
+	_syn_box.visible = false
+	outer.add_child(_syn_box)
+	_pages["synergies"] = _syn_box
 	col.add_child(UiKit.caption("Estadísticas", UiKit.MUTED, 12))
 	for s in STATS:
 		var r := HBoxContainer.new()
@@ -329,6 +335,21 @@ func debug_tip(i: int) -> void:
 	_tip_for.call_deferred(i, true)
 
 
+## Synergies tab: the bonuses this champion turns on when it shares a team with the right partner.
+func _refresh_synergies(cls: String) -> void:
+	for c in _syn_box.get_children():
+		_syn_box.remove_child(c)
+		c.queue_free()
+	var pairs := Synergies.of_class(cls)
+	_syn_box.add_child(UiKit.caption("Se activan solas al compartir equipo" if not pairs.is_empty() else "Este campeón todavía no tiene sinergias de equipo", UiKit.MUTED, 12))
+	for p in pairs:
+		_syn_box.add_child(UiKit.heading("%s · con %s" % [str(p.name).to_upper(), GameData.classes[Synergies.partner(p, cls)].name], 15, UiKit.GOLD, 700, 1))
+		var d := UiKit.label(str(p.desc), 14, UiKit.INK)
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.custom_minimum_size = Vector2(364, 0)
+		_syn_box.add_child(d)
+
+
 func select(id: String, from_user := false) -> void:
 	if not GameData.playable(id):
 		return
@@ -340,6 +361,7 @@ func select(id: String, from_user := false) -> void:
 	var sid := GameData.normalize_spec(id, str(menu.st.get_value("spec")))
 	var spec: Dictionary = Talents.kit(id, sid, ProgressStore.shared().talents(id, sid))  # tooltips show the numbers with your talents
 	_refresh_talents(id, sid)
+	_refresh_synergies(id)
 	var tint: Color = Color(str(spec.spec_color)) if spec.has("spec_color") else UiKit.class_color(id)
 	_build_spec_cards(id, sid)
 	_name.text = str(spec.name).to_upper()

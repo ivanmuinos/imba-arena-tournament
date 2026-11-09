@@ -454,6 +454,9 @@ func _my_abilities() -> Array:
 	return Talents.kit(my_cls, my_spec, my_talents).abilities
 
 
+var _synergy_line := ""
+
+
 func setup(roster: Array, you: int, cls: String, team: String, spec := "", talents: Array = []) -> void:
 	my_id = you
 	my_cls = cls
@@ -461,6 +464,7 @@ func setup(roster: Array, you: int, cls: String, team: String, spec := "", talen
 	my_talents = talents
 	my_team = team
 	_roster = roster
+	_synergy_line = Synergies.banner(roster.filter(func(r): return r.team == team and not r.has("dummy")).map(func(r): return r.cls))
 	_dead.clear()
 	_last_phase = ""
 	_last_score = {"red": 0, "blue": 0}
@@ -767,7 +771,7 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 
 	if s.phase == "prep":
 		center_text.text = str(ceili(s.phaseLeft / 1000.0))
-		center_sub.text = "Ronda %d — preparate · Esc: menú y tamaño del HUD" % s.round
+		center_sub.text = ("Ronda %d — preparate · Esc: menú y tamaño del HUD" % s.round) + _synergy_line
 		center_text.remove_theme_color_override("font_color")
 	elif s.phase == "fight" and now_ms - _fight_at < 1200.0:
 		center_text.text = "¡PELEA!"
