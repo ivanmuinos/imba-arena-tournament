@@ -20,6 +20,27 @@
       "classes": ["hunter", "warrior"],
       "desc": "El Disparo de conmoción deja al objetivo expuesto: recibe 5% más de daño físico de tu equipo mientras dure.",
       "effects": {"concExposed": 0.05}
+    },
+    {
+      "id": "light_shadow",
+      "name": "Luz y sombra",
+      "classes": ["priest", "warlock"],
+      "desc": "Las curas del Sacerdote curan 10% más al Brujo.",
+      "effects": {"heal_priest_warlock": 0.1}
+    },
+    {
+      "id": "plate_brothers",
+      "name": "Hermandad de placas",
+      "classes": ["paladin", "warrior"],
+      "desc": "Las curas del Paladín curan 10% más al Guerrero.",
+      "effects": {"heal_paladin_warrior": 0.1}
+    },
+    {
+      "id": "wild_bond",
+      "name": "Vínculo salvaje",
+      "classes": ["druid", "hunter"],
+      "desc": "Las curas del Druida curan 10% más al Cazador.",
+      "effects": {"heal_druid_hunter": 0.1}
     }
   ]
 }

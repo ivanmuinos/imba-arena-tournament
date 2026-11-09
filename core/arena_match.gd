@@ -1252,6 +1252,7 @@ func _sheep_heal_number(u: ArenaUnit) -> void:
 func _heal(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, quiet := false) -> void:
 	if not t.alive or phase != "fight":
 		return
+	amount *= 1.0 + _synergy(t.team, "heal_%s_%s" % [src.cls, t.cls])
 	if now < t.mortal_until: amount *= 1.0 - t.mortal_pct  # Mortal Strike
 	amount *= 1.0 - _damp(now)
 	var real := minf(t.max_hp - t.hp, amount)
