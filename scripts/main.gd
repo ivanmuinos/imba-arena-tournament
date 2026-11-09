@@ -187,7 +187,7 @@ func _ready() -> void:
 		_menu.debug_goto(str(args.menu))
 		if args.has("menu-tip"):
 			(_menu._views.champions as MChampions).debug_tip(int(args["menu-tip"]))
-		if args.has("menu-tab"):  # e.g. --menu=champions:priest --menu-tab=talents [--menu-level=12: that level in memory only, never saved]
+		if args.has("menu-tab"):  # e.g. --menu=champions:priest --menu-tab=synergies [--menu-level=12: that level in memory only, never saved]
 			var mc := _menu._views.champions as MChampions
 			if args.has("menu-level"):
 				ProgressStore.shared().champions[mc._cls] = {"level": int(args["menu-level"]), "xp": 120}

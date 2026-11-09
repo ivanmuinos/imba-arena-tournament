@@ -2,6 +2,8 @@
 
 Propuesta de diseño · 3 de noviembre de 2026 · Estado: en revisión
 
+> **Talentos apagados (9 de noviembre de 2026).** Están desactivados en todas las clases hasta revisarlos: no cambian ningún kit, los bots no los eligen y el menú no los muestra. Los datos, el código y lo que cada jugador ya eligió se conservan; se vuelven a prender con `Talents.enabled` en `core/talents.gd`.
+
 Propuesta para sumar a las 6 clases (kits de 4 poderes) una progresión permanente de cuenta, ramas de talentos y sinergias entre clases, sin romper el ranked. Es un diseño para revisar con Ivan antes de programar.
 
 ## Progresión de cuenta

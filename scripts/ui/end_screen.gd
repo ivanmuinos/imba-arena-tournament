@@ -113,7 +113,7 @@ func show_progress(p: Dictionary) -> void:
 		parts.append("primera victoria del día ×2")
 	if p.get("vs_bots", false):
 		parts.append("contra bots: la mitad")
-	if Progress.talent_rows(int(p.level_after)) > Progress.talent_rows(int(p.level_before)):
+	if Talents.enabled and Progress.talent_rows(int(p.level_after)) > Progress.talent_rows(int(p.level_before)):
 		parts.append("¡nueva fila de talentos!")
 	_prog_gain.text = " · ".join(parts)
 
