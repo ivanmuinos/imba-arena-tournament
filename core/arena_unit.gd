@@ -63,6 +63,8 @@ var root_until := 0.0
 var silence_until := 0.0
 var incap_until := 0.0
 var incap_kind := "poly"
+## Damage does not break the incapacitate before this (Fear -> Freezing Trap combo).
+var incap_solid_until := 0.0
 var slow_until := 0.0
 var slow_pct := 0.0
 var fear_until := 0.0
@@ -85,6 +87,10 @@ var pact_until := 0.0
 var wall_until := 0.0
 var marked_until := 0.0
 var mortal_until := 0.0
+## Team synergies: slowed by a Frostbolt (Mage + Warrior), and taking more physical damage after a Concussive Shot (Hunter + Warrior).
+var chill_until := 0.0
+var exposed_until := 0.0
+var exposed_pct := 0.0
 ## Healing taken is cut by this much while Mortal Strike lasts (talents can raise it).
 var mortal_pct := 0.5
 ## Talent mechanics: "every Nth cast" counters (ability id -> casts so far), crits towards an instant Pyroblast,
@@ -175,6 +181,7 @@ func reset_effects() -> void:
 	root_until = 0.0
 	silence_until = 0.0
 	incap_until = 0.0
+	incap_solid_until = 0.0
 	slow_until = 0.0
 	fear_until = 0.0
 	fear_dmg = 0.0
@@ -192,6 +199,9 @@ func reset_effects() -> void:
 	wall_until = 0.0
 	marked_until = 0.0
 	mortal_until = 0.0
+	chill_until = 0.0
+	exposed_until = 0.0
+	exposed_pct = 0.0
 	hot_until = 0.0
 	hot_hps = 0.0
 	hot_by = null
