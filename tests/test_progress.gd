@@ -48,13 +48,13 @@ func test_store_saves_levels_per_champion_and_the_first_win_of_the_day() -> void
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
-func test_end_screen_shows_the_level_up_and_new_talent_row() -> void:
+func test_end_screen_shows_the_level_up() -> void:
 	var end := EndScreen.new()
 	TestBase.tree.root.add_child(end)
 	end.show_progress({"cls": "mage", "gain": 296, "level_before": 4, "level_after": 5, "xp": 120, "xp_next": 450, "first_win": true, "vs_bots": false})
 	check(end._prog.visible, "se ve el panel")
 	check(end._prog_title.text.contains("NIVEL 5") and end._prog_title.text.contains("SUBISTE"), "nivel nuevo")
-	check(end._prog_gain.text.contains("+296 XP") and end._prog_gain.text.contains("talentos"), "XP y nueva fila de talentos")
+	check(end._prog_gain.text.contains("+296 XP") and not end._prog_gain.text.contains("talentos"), "XP, sin hablar de talentos mientras estén apagados")
 	end.show_progress({})
 	check(not end._prog.visible, "sin datos, se oculta")
 	end.free()

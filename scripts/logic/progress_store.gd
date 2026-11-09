@@ -50,7 +50,7 @@ func load_file() -> void:
 			var cls := parts[0]
 			var spec := parts[1] if parts.size() > 1 else ""
 			if GameData.classes.has(cls) and Talents.key(cls, spec) == str(k):
-				picks[str(k)] = Talents.normalize(cls, spec, tp[k])
+				picks[str(k)] = Talents.sanitize(cls, spec, tp[k])
 
 
 func save() -> void:
@@ -84,7 +84,7 @@ func set_talent(cls: String, spec: String, row: int, i: int) -> bool:
 	if i >= 0 and Talents.talent(cls, spec, row, i).is_empty():
 		return false
 	var k := Talents.key(cls, spec)
-	var cur := Talents.normalize(cls, spec, picks.get(k, []))
+	var cur := Talents.sanitize(cls, spec, picks.get(k, []))
 	cur[row] = i
 	picks[k] = cur
 	save()

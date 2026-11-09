@@ -68,7 +68,11 @@ func _ready() -> void:
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 6)
 	p.add_child(outer)
-	_tabs = Segmented.new().setup([["abilities", "Habilidades"], ["talents", "Talentos"], ["synergies", "Sinergias"]], "abilities").as_tabs()
+	var tabs := [["abilities", "Habilidades"]]
+	if Talents.enabled:
+		tabs.append(["talents", "Talentos"])
+	tabs.append(["synergies", "Sinergias"])
+	_tabs = Segmented.new().setup(tabs, "abilities").as_tabs()
 	_tabs.add_theme_constant_override("separation", 8)
 	_tabs.changed.connect(show_tab)
 	outer.add_child(_tabs)
@@ -76,14 +80,20 @@ func _ready() -> void:
 	col.add_theme_constant_override("separation", 6)
 	outer.add_child(col)
 	_pages["abilities"] = col
-	_pages["talents"] = _build_talents_page()
-	outer.add_child(_pages["talents"])
-	_pages["talents"].visible = false
+	if Talents.enabled:
+		_pages["talents"] = _build_talents_page()
+		outer.add_child(_pages["talents"])
+		_pages["talents"].visible = false
 	_syn_box = VBoxContainer.new()
 	_syn_box.add_theme_constant_override("separation", 10)
 	_syn_box.visible = false
 	outer.add_child(_syn_box)
 	_pages["synergies"] = _syn_box
+	_lvl_label = UiKit.heading("", 16, UiKit.INK, 700, 2)
+	col.add_child(_lvl_label)
+	_xp_bar = Bar.new(10.0, UiKit.GOLD)
+	_xp_bar.custom_minimum_size = Vector2(0, 10)
+	col.add_child(_xp_bar)
 	col.add_child(UiKit.caption("Estadísticas", UiKit.MUTED, 12))
 	for s in STATS:
 		var r := HBoxContainer.new()
@@ -144,15 +154,10 @@ func show_tab(id: String) -> void:
 	_panel.reset_size()
 
 
-## Talents tab: champion level + XP, then one row of 3 choices per talent row (locked rows dimmed with their level).
+## Talents tab: one row of 3 choices per talent row (locked rows dimmed with their level).
 func _build_talents_page() -> VBoxContainer:
 	var page := VBoxContainer.new()
 	page.add_theme_constant_override("separation", 6)
-	_lvl_label = UiKit.heading("", 16, UiKit.INK, 700, 2)
-	page.add_child(_lvl_label)
-	_xp_bar = Bar.new(10.0, UiKit.GOLD)
-	_xp_bar.custom_minimum_size = Vector2(0, 10)
-	page.add_child(_xp_bar)
 	for row in Talents.ROWS:
 		var cap := UiKit.caption("", UiKit.MUTED, 12)
 		page.add_child(cap)
@@ -217,14 +222,18 @@ func _talent_style(b: Button, picked: bool, locked: bool) -> void:
 		b.add_theme_stylebox_override(st, UiKit.box(bg.lightened(0.08), UiKit.LINE_STRONG, 8, 2, 6))
 
 
-func _refresh_talents(cls: String, sid: String) -> void:
+func _refresh_level(cls: String) -> void:
 	var st := ProgressStore.shared()
 	var lvl := st.level(cls)
 	var ch := st.champion(cls)
 	var need := Progress.xp_to_next(lvl)
 	_lvl_label.text = "NIVEL %d" % lvl + ("" if need == 0 else "  ·  %d / %d XP" % [int(ch.xp), need])
 	_xp_bar.ratio = 1.0 if need == 0 else float(ch.xp) / float(need)
-	var open := Progress.talent_rows(lvl)
+
+
+func _refresh_talents(cls: String, sid: String) -> void:
+	var st := ProgressStore.shared()
+	var open := Progress.talent_rows(st.level(cls))
 	var picks := st.talents(cls, sid)
 	var rows := Talents.rows(cls, sid)
 	for row in _tal_rows.size():
@@ -360,7 +369,9 @@ func select(id: String, from_user := false) -> void:
 		_tiles[k].selected = k == id
 	var sid := GameData.normalize_spec(id, str(menu.st.get_value("spec")))
 	var spec: Dictionary = Talents.kit(id, sid, ProgressStore.shared().talents(id, sid))  # tooltips show the numbers with your talents
-	_refresh_talents(id, sid)
+	_refresh_level(id)
+	if Talents.enabled:
+		_refresh_talents(id, sid)
 	_refresh_synergies(id)
 	var tint: Color = Color(str(spec.spec_color)) if spec.has("spec_color") else UiKit.class_color(id)
 	_build_spec_cards(id, sid)

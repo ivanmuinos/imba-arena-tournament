@@ -29,6 +29,8 @@ func _init() -> void:
 	var limit_by_mode := {}   # "2"/"3" -> [rounds, limit rounds, limit rounds with a winner, percent-HP winner differs, percent tie]
 	var durations: Array = []   # fight time per match in seconds (prep and between-round pauses excluded)
 	var n := int(args.n)
+	if args.has("talent") or args.has("talent-eval"):
+		Talents.enabled = true  # off in the game, but these flags exist to measure them
 	if args.has("duel"):
 		_duels(args, rng)
 		return

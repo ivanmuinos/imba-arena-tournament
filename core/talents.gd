@@ -10,6 +10,9 @@ const PATH := "res://data/talents.json"
 ## Rows in this version (levels Progress.TALENT_ROWS[0..ROWS-1]).
 const ROWS := 2
 
+## Off for every class until the talents get reviewed: no kit changes, the bots take none and the menu hides them.
+## The data, the code and the picks already saved stay as they are, so turning this on brings it all back.
+static var enabled := false
 static var data: Dictionary = {}
 static var _cache := {}
 
@@ -42,8 +45,14 @@ static func talent(cls: String, spec: String, row: int, i: int) -> Dictionary:
 	return r[row][i]
 
 
-## Any value -> ROWS ints, each a valid choice of its row or -1. Rows past `max_rows` (locked by level) are -1.
+## The picks that count in a match: all -1 while the talents are off.
 static func normalize(cls: String, spec: String, picks, max_rows := ROWS) -> Array:
+	return sanitize(cls, spec, picks if enabled else [], max_rows)
+
+
+## Any value -> ROWS ints, each a valid choice of its row or -1. Rows past `max_rows` (locked by level) are -1.
+## Ignores `enabled`: ProgressStore uses it so that loading and saving never wipe the player's picks.
+static func sanitize(cls: String, spec: String, picks, max_rows := ROWS) -> Array:
 	var r := rows(cls, spec)
 	var out: Array = []
 	for row in ROWS:
@@ -58,6 +67,8 @@ static func normalize(cls: String, spec: String, picks, max_rows := ROWS) -> Arr
 
 ## Random choice on every row, for bots.
 static func random_picks(cls: String, spec: String, rng: RandomNumberGenerator) -> Array:
+	if not enabled:
+		return sanitize(cls, spec, [])
 	var r := rows(cls, spec)
 	var out: Array = []
 	for row in ROWS:

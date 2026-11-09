@@ -10,6 +10,16 @@ const MECHANICS := ["bounce", "nth", "instantAfterCrits", "noPushback", "curseHa
 	"ultGain", "healCut", "killReset", "cdOf", "charges"]
 
 
+## The talents are off in the game (Talents.enabled); this suite tests the system with them on.
+func _init() -> void:
+	Talents.enabled = true
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		Talents.enabled = false
+
+
 func _split(k: String) -> Array:
 	var p := k.split("/")
 	return [p[0], p[1] if p.size() > 1 else ""]
@@ -211,6 +221,33 @@ func test_store_locks_rows_by_level_and_saves() -> void:
 	eq(again.talents("priest"), [1, -1], "se guarda")
 	again.champions["priest"] = {"level": 1, "xp": 0}
 	eq(again.talents("priest"), [-1, -1], "por debajo del nivel no cuenta")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+func test_switched_off_nobody_gets_talents() -> void:
+	var base: float = GameData.find_ability("mage", "fireball", "fire").burnDps
+	Talents.enabled = false
+	eq(Talents.normalize("priest", "", [1, 2]), [-1, -1], "las elecciones no cuentan")
+	eq(float(Talents.kit("mage", "fire", [2, -1]).abilities[0].burnDps), base, "el kit queda base")
+	eq(Talents.random_picks("priest", "", RandomNumberGenerator.new()), [-1, -1], "los bots no eligen")
+	eq(MatchConfig.normalize({"cls": "priest", "talents": [2, 1]}).talents, [-1, -1], "la red no los deja pasar")
+	Talents.enabled = true
+
+
+func test_switched_off_keeps_the_saved_picks() -> void:
+	var path := "user://test_talents_off.json"
+	var st := _store(path)
+	st.champions["priest"] = {"level": 10, "xp": 0}
+	check(st.set_talent("priest", "", 0, 1), "elige con los talentos prendidos")
+	Talents.enabled = false
+	var off := ProgressStore.new(path)
+	off.champions["priest"] = {"level": 10, "xp": 0}
+	eq(off.talents("priest"), [-1, -1], "apagados no cuentan")
+	off.save()
+	Talents.enabled = true
+	var on := ProgressStore.new(path)
+	on.champions["priest"] = {"level": 10, "xp": 0}
+	eq(on.talents("priest"), [1, -1], "al prenderlos vuelve lo elegido")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
