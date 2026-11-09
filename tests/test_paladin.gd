@@ -7,6 +7,7 @@ func _match() -> ArenaMatch:
 		{"name": "A", "cls": "warrior", "team": "red", "peer": 4},
 		{"name": "R", "cls": "rogue", "team": "blue", "peer": 2},
 		{"name": "M", "cls": "mage", "team": "blue", "peer": 3}], 0, "hard", "test")
+	m.synergies = {}  # base numbers: the Paladin + Warrior bonus has its own test
 	m.phase = "fight"
 	m.map.apply_state(true, 0)
 	var p: ArenaUnit = m.units[0]

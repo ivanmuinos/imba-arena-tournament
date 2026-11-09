@@ -834,3 +834,15 @@ Mago + Guerrero queda por debajo de la meta, pero la pareja ya ganaba 63% sin el
 La misma configuración de Mago + Asesino con sinergia dio 56,0% en una corrida y 51,8% en otra, así que su +4,1 de arriba es incierto: el bonus real puede ser bastante menor.
 
 **2v2 difícil con todo activado** (semillas 7 y 8, 800 partidas, equipos con 0–1 sanador): Paladín 62,2%, Asesino 57,4%, Mago 56,1%, Cazador 54,9%, Brujo 54,6%, Sacerdote 53,6%, Guerrero 52,7%, Druida 50,9%. Los equipos de dos de daño ganan 54,8% y los de un sanador 55,6%. Una referencia de `main` sin sinergias, con 2.400 partidas, da 55,0% y 56,3%: las sinergias no cambian esa brecha de forma visible. Los 52,9% y 57,7% de antes salían de una corrida de 800 partidas. El Paladín da 58,9%, 61,4% y 62,2% en tres mediciones: es la clase más alta y queda para revisar.
+
+## Sinergias de sanadores (2026-11-09)
+
+El sanador cura 10% más a su compañero. Cada pareja, con y sin bonus (`--pair=a+b --no-synergies`, 800 partidas por caso, ruido de unos ±2,5 puntos):
+
+| Pareja | Sin | Con | Diferencia |
+|---|---|---|---|
+| Sacerdote + Brujo | 60,8% | 61,6% | +0,9 |
+| Paladín + Guerrero | 47,6% | 52,0% | +4,4 |
+| Druida + Cazador | 49,1% | 52,0% | +2,9 |
+
+2v2 difícil con todas las sinergias (semillas 51 a 56, 2.400 partidas, equipos con 0–1 sanador): Paladín 61,2%, Asesino 59,3%, Mago 58,4%, Sacerdote 56,4%, Druida 56,4%, Cazador 53,5%, Brujo 53,1%, Guerrero 52,6%. Los equipos con un sanador ganan 58,0% y los de dos de daño 53,8%. Sin ninguna sinergia y con el Martillo a 2 s, con las mismas semillas, daban 57,1% y 54,6%: la ventaja del sanador pasa de 2,5 a 4,2 puntos, un aumento que también puede ser ruido.
