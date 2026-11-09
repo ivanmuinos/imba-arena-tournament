@@ -1,0 +1,25 @@
+{
+  "pairs": [
+    {
+      "id": "ambush",
+      "name": "Emboscada arcana",
+      "classes": ["mage", "rogue"],
+      "desc": "Los enemigos enraizados, congelados o en Polimorfia reciben 10% más de daño físico de tu equipo.",
+      "effects": {"physicalVsControlled": 0.1}
+    },
+    {
+      "id": "onslaught",
+      "name": "Embestida elemental",
+      "classes": ["mage", "warrior"],
+      "desc": "La Carga sobre un enemigo que el mago dejó ardiendo o ralentizado con Descarga de escarcha aturde 0,5 s más.",
+      "effects": {"chargeStunMs": 500}
+    },
+    {
+      "id": "wounded_prey",
+      "name": "Presa herida",
+      "classes": ["hunter", "warrior"],
+      "desc": "El Disparo de conmoción deja al objetivo expuesto: recibe 5% más de daño físico de tu equipo mientras dure.",
+      "effects": {"concExposed": 0.05}
+    }
+  ]
+}

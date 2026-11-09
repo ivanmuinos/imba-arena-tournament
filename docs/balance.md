@@ -813,3 +813,22 @@ Se suman dos sanadores: el **Druida** vuelve (estaba en `DISABLED_CLASSES`) y en
 Todas quedan a menos de 5 puntos del promedio. Los equipos con un sanador ganan 58,1% y los de dos de daño 52,8%: daño + sanador es la composición base, sin que dos de daño queden fuera de juego.
 
 **Golpe de cruzado sagrado:** en duelos el Paladín perdía el 100%. Su daño era físico y el Guerrero se lo comía con armadura y bloqueo (52 bloqueos en 2 duelos). Ahora el Golpe de cruzado es daño sagrado, y la descripción lo explica. Probé también velocidad 6,4 → 6,8 y Martillo con alcance 12 → 16, pero no le alcanzaban para llegar a los rivales a distancia y en 2v2 lo subían a 64%, así que se descartaron. Con el daño sagrado en 12, en 2v2 (semillas 7 y 8) queda: Mago 60,4%, Paladín 58,9%, Sacerdote 56,5%, Asesino 55,5%, Brujo 54,8%, Druida 54,3%, Guerrero 52,9%, Cazador 49,1%.
+
+## Sinergias de equipo, versión 1 (2026-11-09)
+
+Tres parejas de daño (`data/synergies.json`), porque en 2v2 difícil los equipos de dos de daño ganan menos que los que llevan un sanador. Se midió cada pareja con y sin su bonus: `--pair=a+b --modes=2 --diff=hard --n=160` en los 5 mapas (800 partidas por caso), con `--no-synergies` como referencia. La pareja juega todas las partidas y alterna de lado. Meta del diseño: el bonus suma entre 2 y 5 puntos. El ruido de la diferencia es de unos ±2,5 puntos con 800 partidas.
+
+| Pareja | Bonus | Sin | Con | Diferencia |
+|---|---|---|---|---|
+| Mago + Asesino | +10% físico contra enraizados, congelados o en Polimorfia | 51,9% | 56,0% | +4,1 |
+| Mago + Guerrero | Carga +0,5 s si el mago lo dejó ardiendo o ralentizado | 63,1% | 64,1% | +1,0 |
+| Cazador + Guerrero | Conmoción: +10% físico recibido | 51,2% | 59,2% | +8,0 |
+| Cazador + Guerrero (final, 1.600 partidas) | Conmoción: +5% físico recibido | 52,7% | 55,8% | +3,1 |
+
+Mago + Guerrero queda por debajo de la meta, pero la pareja ya ganaba 63% sin el bonus, así que no se subió.
+
+**Combos** (`--no-combos` como referencia, 800 partidas por caso, con las sinergias activas): Mago + Guerrero 65,5% sin y 63,2% con; Mago + Asesino 51,8% sin y 50,8% con. No se distingue efecto del ruido. Miedo → Trampa no se midió aparte, porque los bots casi nunca lo encadenan.
+
+La misma configuración de Mago + Asesino con sinergia dio 56,0% en una corrida y 51,8% en otra, así que su +4,1 de arriba es incierto: el bonus real puede ser bastante menor.
+
+**2v2 difícil con todo activado** (semillas 7 y 8, 800 partidas, equipos con 0–1 sanador): Paladín 62,2%, Asesino 57,4%, Mago 56,1%, Cazador 54,9%, Brujo 54,6%, Sacerdote 53,6%, Guerrero 52,7%, Druida 50,9%. Los equipos de dos de daño ganan 54,8% (antes 52,9%) y los de un sanador 55,6% (antes 57,7%). El Paladín da 58,9%, 61,4% y 62,2% en tres mediciones: es la clase más alta y queda para revisar.

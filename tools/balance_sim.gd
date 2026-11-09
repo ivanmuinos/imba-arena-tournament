@@ -1,6 +1,7 @@
 extends SceneTree
 ## Headless bot-vs-bot balance simulation.
 ##   godot --headless --path . --script res://tools/balance_sim.gd -- --n=200 --modes=2,3 --maps=bridge,pillars,tomb,living,spire --seed=1 [--out=user://balance.json]
+##   --pair=mage+rogue (with --modes=2) makes that pair play every match; --no-synergies turns team bonuses off to compare.
 ##   --diff=hard is the balance reference (bots lock their projectiles like a player with a target); --talent=<kit>:<row>:<i> gives that talent to every copy of the kit.
 ## Each match draws two random teams (classes with repetition) and plays out with bots on a map. Per class we count
 ## appearances and wins (a class on a team of 3 counts once per copy). Teams are randomised red/blue so spawn side is neutral.
@@ -45,6 +46,11 @@ func _init() -> void:
 				for k in mode:
 					var rc: String = classes[rng.randi() % classes.size()]
 					var bc: String = classes[rng.randi() % classes.size()]
+					if args.has("pair"):  # --pair=a+b: that pair plays every match, alternating sides; "forced" counts its wins
+						if i % 2 == 0:
+							rc = str(args.pair).split("+")[k]
+						else:
+							bc = str(args.pair).split("+")[k]
 					red.append(rc)
 					blue.append(bc)
 					var rs := GameData.spec_ids(rc)
@@ -65,6 +71,10 @@ func _init() -> void:
 							e["talents"] = p
 				var now := 1_000_000.0
 				var m := ArenaMatch.new(mode, entries, now, str(args.diff), map_id)
+				if args.has("no-synergies"):
+					m.synergies = {}
+				if args.has("no-combos"):
+					m.combos = false
 				var limit := now + 12 * 60_000
 				while not m.done and now < limit:
 					now += STEP
@@ -93,6 +103,8 @@ func _init() -> void:
 							d.append("%s/%s%s hp=%d alive=%s pos=(%.0f,%.0f) stun=%s" % [u.cls, u.spec_id, "" if u.brain != null else "(h)", u.hp, str(u.alive), u.x, u.z, str(now < u.stun_until)])
 						print("STALL ", map_id, " round=", m.round_n, " score=", m.score, " ", d)
 					continue
+				if args.has("pair"):
+					_add(stats, "forced", winner == ("red" if i % 2 == 0 else "blue"))
 				for side in [["red", red], ["blue", blue]]:
 					var won: bool = winner == side[0]
 					var specs: Array = rspec if side[0] == "red" else bspec
