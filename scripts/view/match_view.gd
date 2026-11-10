@@ -1066,7 +1066,8 @@ func _toggle_focus() -> void:
 func _cast_on_focus(slot: int) -> bool:
 	if me.is_empty() or controller.focus < 0 or controller.focus_unit(_ctx()).is_empty():
 		return false
-	_cast_on(slot, controller.focus)
+	if _cast_on(slot, controller.focus):
+		gameplay_event.emit("focus_cast")
 	return true
 
 

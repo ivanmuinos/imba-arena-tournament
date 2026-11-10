@@ -269,6 +269,16 @@ Los kits viven en `data/classes.json` (`specs` de cada clase: nombre, ícono, co
 Sexta clase, sin mascota: Descarga de sombras, Corrupción y Agonía (maldiciones independientes que se refrescan sin acumular y se pueden disipar), Aterrorizar (huida real, comparte rendimientos decrecientes con el grito del sacerdote y se rompe con más de 40 de daño), Pacto oscuro (sacrifica 15% de vida actual por un escudo propio), Drenar vida (canalizado, cura sólo el daño realmente hecho) y Putrefacción del alma (definitiva). Modelo: KayKit Mage con capucha cornuda, ojos y báculo con calavera en llama vil, capa de sombra y grimorio (piezas propias, sin assets nuevos). Los efectos tienen ícono y descripción en los marcos de objetivo. El protocolo y el juego subieron a 0.5.0.
 
 
+## Academia
+
+- **Menú principal > Academia**: 13 lecciones cortas en 5 capítulos (Primeros pasos, Tus habilidades, Control, Estrategia y Prueba final), con medallas de bronce, plata y oro y el mejor tiempo de cada una (`user://academy.json`). Nada está bloqueado: la pantalla resalta la que sigue y cualquiera se puede repetir.
+- **Se adaptan a tu campeón**: las lecciones son código (`scripts/logic/academy/`), no datos. `AcademyKit` saca de tu kit la tecla real de cada poder, cuál controla y cuál corta un lanzamiento, así el texto siempre nombra lo que tenés en la barra.
+- **Tizón**, el coach, habla en cada tarjeta (`LessonCard`, `TizonFace`) y cierra la lección con la medalla, los números de la corrida y qué pide la medalla siguiente.
+- **Escenarios** (`core/lesson_scenarios.gd`, `LessonStage`): cajas, muñecos, aliados para curar, enemigos con guion y un rival con IA, todo en el mapa `academy` y solo en partidas locales.
+- **Primera vez**: el menú ofrece la Academia una sola vez; "Ya sé jugar" la descarta.
+- Línea de comandos: `--lesson=<id>` (por ejemplo `--lesson=control --cls=warrior`).
+- Tests: `./run_tests.sh academy lesson` juega cada lección hasta el final con los 10 kits. Con entradas reales: `tools/playtest.sh lesson objetivo`.
+
 ## Cómo jugar y tutorial (0.6.0)
 
 - **Menú principal > Cómo jugar**: referencia estática (Controles, Reglas, Campeones con vida, velocidad, armadura e identidad de cada clase, generada desde `data/classes.json` por `HowToContent`) y el botón **Empezar el tutorial**.

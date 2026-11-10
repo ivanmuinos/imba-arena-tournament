@@ -191,6 +191,7 @@ func _build_continue_card() -> void:
 
 
 ## First launch: a small skippable card offers the tutorial once (persisted in settings; "Cómo jugar" replays it any time).
+var offer_button: MButton
 var _offer: PanelContainer
 
 
@@ -199,33 +200,40 @@ func offer_visible() -> bool:
 
 
 func _maybe_offer() -> void:
-	if not menu.offer_tutorial or bool(menu.st.get_value("tutorial_seen")) or offer_visible():
+	if not menu.offer_tutorial or bool(menu.st.get_value("tutorial_seen")) or AcademyStore.shared().offered or offer_visible():
 		return
 	if _offer == null:
 		_offer = UiKit.glass(UiKit.LINE_STRONG, 14, 18, 3.0, 0.8)
 		# top right of the banner, over the champion splash (first launch only)
 		_offer.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-		_offer.position = Vector2(-TopBar.SIDE - PAD - 16 - 430, TopBar.HEIGHT + PAD + 16)
-		_offer.custom_minimum_size = Vector2(430, 0)
+		_offer.position = Vector2(-TopBar.SIDE - PAD - 16 - 470, TopBar.HEIGHT + PAD + 16)
+		_offer.custom_minimum_size = Vector2(470, 0)
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 14)
+		_offer.add_child(line)
+		var face := TizonFace.new(84.0, "contenta")
+		face.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		line.add_child(face)
 		var c := VBoxContainer.new()
 		c.add_theme_constant_override("separation", 8)
-		_offer.add_child(c)
+		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(c)
 		c.add_child(UiKit.heading("¿Primera vez en la arena?", 22, UiKit.GOLD, 700, 1))
-		var t := UiKit.label("Hacé el tutorial: unos minutos, jugando de verdad. Después lo encontrás en \"Academia\".", 14, UiKit.MUTED)
+		var t := UiKit.label("Soy Tizón. En la Academia te enseño a jugar de a poco, con tu campeón y jugando de verdad: %d lecciones cortas con medallas." % AcademyCatalog.total(), 14, UiKit.MUTED)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		t.custom_minimum_size = Vector2(390, 0)
+		t.custom_minimum_size = Vector2(330, 0)
 		c.add_child(t)
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		c.add_child(row)
-		var yes := MButton.new("Hacer el tutorial", "accent")
-		yes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		yes.pressed.connect(func():
+		offer_button = MButton.new("Empezar la Academia", "accent")
+		offer_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		offer_button.pressed.connect(func():
 			_offer.visible = false
-			menu.launch_tutorial())
-		var no := MButton.new("Ahora no", "ghost")
+			menu.launch_lesson(str(AcademyCatalog.lesson_ids()[0])))
+		var no := MButton.new("Ya sé jugar", "ghost")
 		no.pressed.connect(dismiss_offer)
-		row.add_child(yes)
+		row.add_child(offer_button)
 		row.add_child(no)
 		add_child(_offer)
 	_offer.visible = true
@@ -237,6 +245,8 @@ func dismiss_offer() -> void:
 		_offer.visible = false
 	menu.st.set_value("tutorial_seen", true)
 	menu.st.save()
+	AcademyStore.shared().mark_offered()
+	AcademyStore.shared().save()
 
 
 

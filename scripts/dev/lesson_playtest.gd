@@ -27,6 +27,9 @@ func run(p_main: Node, cls: String, prefix: String, p_spec := "") -> void:
 	spec = GameData.normalize_spec(cls, p_spec)
 	shot_prefix = prefix
 	print("PLAYTEST start lesson class=", cls)
+	if str(main.args.get("lesson", "moverse")) == "objetivo":
+		await _run_objetivo()
+		return
 	await _find_overlay()
 	_check(ov is LessonOverlay, "la lección está activa en su propia arena")
 	if ov == null:
@@ -72,6 +75,9 @@ func run(p_main: Node, cls: String, prefix: String, p_spec := "") -> void:
 	await _shot("done")
 	var labels: Array = ov._buttons.get_children().map(func(b): return (b as Button).text)
 	_check(labels.has("Repetir") and labels.has("Academia"), "el final ofrece repetir o volver: %s" % str(labels))
+	_check(labels.has("Siguiente lección"), "y seguir con la que viene: %s" % str(labels))
+	_check(ov._card.face != null, "Tizón está en la tarjeta")
+	_check(absf(ov._card.get_global_rect().get_center().x - 640.0) < 40.0, "la tarjeta del final va al centro (%s)" % str(ov._card.get_global_rect()))
 	_check((ov.flow as LessonFlow).skipped == 0, "no se salteó nada")
 	_check((ov.flow as LessonFlow).active_ms > 0.0, "el reloj corrió")
 	_check(AcademyStore.shared().medal("moverse") >= AcademyMedals.BRONZE, "queda guardada una medalla (%d)" % AcademyStore.shared().medal("moverse"))
@@ -99,6 +105,59 @@ func run(p_main: Node, cls: String, prefix: String, p_spec := "") -> void:
 	await _click_button_named("Salir")
 	await _wait(0.8)
 	_check(AcademyStore.shared().plays("moverse") == before, "salir a mitad no cuenta como intento")
+	finish()
+
+
+## The second lesson with a fight in it: real clicks on the crates, the real basic attack, and on to the next lesson.
+func _run_objetivo() -> void:
+	await _find_overlay()
+	_check(ov is LessonOverlay and (ov.flow as LessonFlow).id == "objetivo", "la lección de objetivo está activa")
+	if ov == null:
+		return finish()
+	mv.capture_mouse = true
+	await _wait(0.5)
+	_motion(Vector2(640, 380))
+	_check(await _click_button_named("Continuar"), "botón Continuar")
+	_check(_step_id() == "pick", "pasa a elegir objetivo")
+	var crates := _enemies()
+	_check(crates.size() == 3, "hay tres cajas a la vista (%d)" % crates.size())
+	if crates.is_empty():
+		return finish()
+	await _shot("crates")
+	await _bring_on_screen(crates[0])
+	await _click_unit(crates[0], MOUSE_BUTTON_LEFT)
+	_check(mv.controller.target >= 0, "un clic elige una caja")
+	await _tap(KEY_TAB)
+	await _wait(0.4)
+	_check(_step_id() == "hit", "clic y Tab completan el paso (%s)" % _step_id())
+	for n in 3:
+		var id := _nearest_enemy()
+		if id < 0:
+			break
+		await _bring_on_screen(id)
+		await _click_unit(id, MOUSE_BUTTON_LEFT)
+		for i in 30:
+			if not mv.views.has(id) or not (mv.views[id] as UnitView).is_alive() or not (mv.views[id] as UnitView).shown:
+				break
+			await _tap(KEY_1)
+			await _wait(0.3)
+	await _wait(0.6)
+	_check(_step_id() == "done", "romper las tres cajas termina la lección (%s)" % _step_id())
+	await _wait(1.2)
+	await _shot("result")
+	_check(AcademyStore.shared().medal("objetivo") >= AcademyMedals.BRONZE, "queda guardada una medalla")
+	_check(await _click_button_named("Siguiente lección"), "botón Siguiente lección")
+	await _wait(0.8)
+	ov = null
+	await _find_overlay()
+	_check(ov != null and (ov.flow as LessonFlow).id == AcademyCatalog.after("objetivo"), "Siguiente abre la lección que sigue")
+	await _wait(1.0)
+	await _shot("next")
+	await _click_button_named("Salir")
+	await _wait(0.8)
+	_check(main._menu.nav.current == "academy", "Salir vuelve a la Academia")
+	await _wait(0.6)
+	await _shot("academy")
 	finish()
 
 

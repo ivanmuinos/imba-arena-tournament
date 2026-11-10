@@ -126,10 +126,30 @@ func add_overlay(c: Control, top: float, margin := 12.0, from_right := true) -> 
 	_root.add_child(c)
 	_overlays.append(c)
 	var place := func():
+		if c.has_meta("centered"):  # see center_overlay
+			c.position = ((_root.size - c.size) / 2.0).floor()
+			return
 		c.position = Vector2(_root.size.x - c.size.x - margin if from_right else margin, top)
 	place.call()
 	_root.resized.connect(place)
 	c.resized.connect(place)
+
+
+## Moves an overlay to the middle of the screen and keeps it there (the closing card of a lesson), over a dark veil.
+func center_overlay(c: Control) -> void:
+	if c.has_meta("centered"):
+		return
+	c.set_meta("centered", true)
+	var veil := ColorRect.new()
+	veil.color = Color(0.02, 0.01, 0.01, 0.0)
+	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(veil)
+	_root.move_child(veil, c.get_index())
+	c.tree_exiting.connect(veil.queue_free)
+	veil.create_tween().tween_property(veil, "color:a", 0.55, 0.35)
+	c.position = ((_root.size - c.size) / 2.0).floor()
+	c.resized.emit()
 
 
 ## True when a screen position is over one of the interactive overlays (practice panel, tutorial card): the world ignores that click.

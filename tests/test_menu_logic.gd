@@ -360,6 +360,9 @@ func test_menu_tutorial_signal_and_first_launch_flag() -> void:
 
 
 func test_first_launch_offers_the_tutorial_once_and_it_can_be_skipped() -> void:
+	var before := AcademyStore._shared
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_offer_academy.json"))
+	AcademyStore._shared = AcademyStore.new("user://test_offer_academy.json")
 	var m := _menu()
 	m.st.set_value("tutorial_seen", false)
 	m._input(_key(KEY_SPACE))
@@ -370,7 +373,31 @@ func test_first_launch_offers_the_tutorial_once_and_it_can_be_skipped() -> void:
 	check(bool(m.st.get_value("tutorial_seen")), "y no vuelve a aparecer sola")
 	hub.menu_enter()
 	check(not hub.offer_visible(), "al volver al hub tampoco")
+	check(AcademyStore.shared().offered, "la Academia recuerda que ya se ofreció")
 	_drop(m)
+	AcademyStore._shared = AcademyStore.new("user://test_offer_academy.json")
+	check(AcademyStore.shared().offered, "y sobrevive a reiniciar")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_offer_academy.json"))
+	AcademyStore._shared = AcademyStore.new("user://test_offer_academy.json")
+	var m3 := _menu()
+	m3.st.set_value("tutorial_seen", false)
+	m3._input(_key(KEY_SPACE))
+	var hub3 := m3._views.hub as MHub
+	check(hub3.offer_visible(), "un jugador nuevo ve la oferta")
+	var launched := [""]
+	m3.start_lesson.connect(func(_cfg, id): launched[0] = id)
+	hub3.offer_button.pressed.emit()
+	eq(launched[0], str(AcademyCatalog.lesson_ids()[0]), "aceptarla abre la primera lección de la Academia")
+	check(not hub3.offer_visible(), "y la tarjeta se va")
+	check(not AcademyStore.shared().offered, "empezar no la da por ofrecida: eso pasa al terminar la lección")
+	_drop(m3)
+	AcademyStore._shared.mark_offered()
+	var m4 := _menu()
+	m4.st.set_value("tutorial_seen", false)
+	m4._input(_key(KEY_SPACE))
+	check(not (m4._views.hub as MHub).offer_visible(), "quien ya terminó una lección no la vuelve a ver")
+	_drop(m4)
+	AcademyStore._shared = before
 	var m2 := _menu()
 	m2.offer_tutorial = false
 	m2.st.set_value("tutorial_seen", false)

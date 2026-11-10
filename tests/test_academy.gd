@@ -135,6 +135,32 @@ func test_closing_words_say_what_you_earned() -> void:
 	check(AcademyMedals.result_text(AcademyMedals.NONE, 1000.0, false).contains("Salteaste"), "sin medalla explica por qué")
 
 
+func test_a_medal_says_what_it_asks_for() -> void:
+	var rule := {"silver": {"max_time_ms": 60000.0}, "gold": {"max_time_ms": 25000.0, "max_mistakes": 0}}
+	check(AcademyMedals.goal_text(rule, AcademyMedals.SILVER).contains("1:00"), "plata: su tiempo")
+	var gold := AcademyMedals.goal_text(rule, AcademyMedals.GOLD)
+	check(gold.contains("0:25") and not gold.contains("1:00"), "oro: el tiempo más exigente (%s)" % gold)
+	check(gold.contains("sin errores"), "y lo demás que pide")
+	check(AcademyMedals.goal_text(rule, AcademyMedals.BRONZE).contains("objetivos"), "bronce: terminar")
+	var mixed := AcademyMedals.goal_text({"silver": {"max_downs": 0}, "gold": {"min_hp_pct": 0.5}}, AcademyMedals.GOLD)
+	check(mixed.contains("sin caer") and mixed.contains("50%"), "oro suma lo de plata (%s)" % mixed)
+	check(AcademyMedals.goal_text({"gold": {"max_taken": 90.0}}, AcademyMedals.GOLD).contains("90"), "daño recibido")
+
+
+func test_the_card_shows_the_medal_still_in_reach() -> void:
+	var rule := {"silver": {"max_time_ms": 60000.0}, "gold": {"max_time_ms": 25000.0}}
+	eq(AcademyMedals.still_possible(rule, _run(10000.0)), AcademyMedals.GOLD, "a tiempo: oro")
+	eq(AcademyMedals.still_possible(rule, _run(30000.0)), AcademyMedals.SILVER, "pasado el oro: plata")
+	eq(AcademyMedals.still_possible(rule, _run(90000.0)), AcademyMedals.BRONZE, "pasado todo: bronce")
+	eq(AcademyMedals.still_possible(rule, _run(1.0, 0, 1)), AcademyMedals.NONE, "salteando: nada")
+	eq(AcademyMedals.still_possible({"gold": {"min_hp_pct": 0.5}}, {"hp_pct": 0.1}), AcademyMedals.GOLD, "la vida se sabe recién al final")
+	var live := AcademyMedals.live_text(rule, _run(12000.0))
+	check(live.contains("Oro") and live.contains("0:12") and live.contains("0:25"), "muestra medalla, tiempo y límite (%s)" % live)
+	check(AcademyMedals.live_text(rule, _run(30000.0)).contains("Plata"), "baja a plata cuando se pasa")
+	check(AcademyMedals.live_text({"gold": {"max_taken": 90.0}}, {"taken": 35.0}).contains("35 de 90"), "daño recibido")
+	check(AcademyMedals.live_text(rule, _run(1.0, 0, 1)).contains("Sin medalla"), "salteado")
+
+
 func test_every_lesson_has_a_reachable_gold() -> void:
 	var f := AcademyCatalog.lesson("moverse", "mage", "fire")
 	eq(AcademyMedals.grade(f.medal_rule, f.stats(1.0)), AcademyMedals.GOLD, "una corrida rápida y limpia llega al oro")
