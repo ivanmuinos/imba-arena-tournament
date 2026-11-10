@@ -6,16 +6,13 @@ extends Node
 
 signal finished(action: String)  # "arena" | "bots" | "menu"
 
-const CARD_W := 390.0
+const ARROW_LEN := 26.0
+const ARROW_HALF_W := 15.0
 
-var flow: TutorialFlow
+var flow: StepFlow
 var mv: MatchView
 
-var _card: PanelContainer
-var _step_label: Label
-var _title: Label
-var _body: RichTextLabel
-var _list: VBoxContainer
+var _card: LessonCard
 var _buttons: HBoxContainer
 var _layer: CanvasLayer
 var _arrows: Control
@@ -26,12 +23,7 @@ var _t := 0.0
 var _cc_seen := {}
 
 
-## BBCode of the step texts uses [key]..[/key] for key caps.
-static func bb(text: String) -> String:
-	return text.replace("[key]", "[bgcolor=#ffd27a][color=#1a0800] ").replace("[/key]", " [/color][/bgcolor]")
-
-
-func attach(p_mv: MatchView, p_flow: TutorialFlow) -> void:
+func attach(p_mv: MatchView, p_flow: StepFlow) -> void:
 	mv = p_mv
 	flow = p_flow
 	mv.add_child(self)
@@ -41,32 +33,8 @@ func attach(p_mv: MatchView, p_flow: TutorialFlow) -> void:
 
 
 func _build() -> void:
-	_card = PanelContainer.new()
-	_card.add_theme_stylebox_override("panel", UiKit.box(Color(0.045, 0.03, 0.026, 0.93), UiKit.LINE_STRONG, 12, 2, 14))
-	_card.custom_minimum_size = Vector2(CARD_W, 0)
-	_card.mouse_filter = Control.MOUSE_FILTER_STOP
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 8)
-	_card.add_child(col)
-	_step_label = UiKit.caption("", UiKit.LAVA, 12)
-	col.add_child(_step_label)
-	_title = UiKit.heading("", 26, UiKit.GOLD, 700, 1)
-	col.add_child(_title)
-	_body = RichTextLabel.new()
-	_body.bbcode_enabled = true
-	_body.fit_content = true
-	_body.scroll_active = false
-	_body.custom_minimum_size = Vector2(CARD_W - 30.0, 0)
-	_body.add_theme_font_size_override("normal_font_size", 15)
-	_body.add_theme_font_size_override("bold_font_size", 15)
-	_body.add_theme_color_override("default_color", Color("#e6dccf"))
-	col.add_child(_body)
-	_list = VBoxContainer.new()
-	_list.add_theme_constant_override("separation", 5)
-	col.add_child(_list)
-	_buttons = HBoxContainer.new()
-	_buttons.add_theme_constant_override("separation", 8)
-	col.add_child(_buttons)
+	_card = LessonCard.new()
+	_buttons = _card.buttons
 	mv.hud.add_overlay(_card, 142.0, 12.0, false)
 	_layer = CanvasLayer.new()
 	_layer.layer = 12
@@ -101,61 +69,34 @@ func _refresh() -> void:
 		_cc_seen.clear()
 		if s.on_enter in ["ult", "stun"] and mv.client != null:
 			mv.client.send_practice(s.on_enter)
-	_step_label.text = "Paso %d de %d" % [flow.index + 1, flow.steps.size()]
-	_title.text = str(s.title)
-	_body.text = bb(str(s.text))
-	for c in _list.get_children():
-		c.queue_free()
-	for o in s.objectives:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		var mark := Icons.rect("ui_check" if o.done else "ui_dot", 20)
-		mark.modulate = UiKit.GREEN if o.done else UiKit.DIM
-		mark.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		row.add_child(mark)
-		var t := RichTextLabel.new()
-		t.bbcode_enabled = true
-		t.fit_content = true
-		t.scroll_active = false
-		t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		t.custom_minimum_size = Vector2(CARD_W - 70.0, 0)
-		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		t.add_theme_font_size_override("normal_font_size", 14)
-		t.add_theme_font_size_override("bold_font_size", 14)
-		t.add_theme_color_override("default_color", UiKit.DIM if o.done else UiKit.INK)
-		t.text = bb(str(o.text))
-		row.add_child(t)
-		_list.add_child(row)
-	for c in _buttons.get_children():
-		c.queue_free()
-	_card.reset_size.call_deferred()  # the card shrinks back after a long step
+		_step_entered(s)
+	_card.show_step("Paso %d de %d" % [flow.index + 1, flow.steps.size()], str(s.title), str(s.text), s.objectives)
 	if s.get("final", false):
-		_add_button("Arena de práctica", "primary", func(): finished.emit("arena"))
-		_add_button("Contra bots", "secondary", func(): finished.emit("bots"))
-		_add_button("Menú", "ghost", func(): finished.emit("menu"))
-		_body.text = bb("¡Listo! Probá la [b]Arena de práctica[/b] para repetir rotaciones con medidor de daño, o jugá contra bots.")
-		_title.text = "¡Listo!"
+		_final_card(s)
 		return
 	if s.manual:
-		_add_button("Continuar", "primary", func():
+		_card.add_button("Continuar", "primary", func():
 			flow.next()
 			_after_change())
 	else:
-		_add_button("Saltar paso", "ghost", func():
+		_card.add_button("Saltar paso", "ghost", func():
 			flow.next()
 			_after_change())
-	_add_button("Salir", "ghost", func(): finished.emit("menu"))
+	_card.add_button("Salir", "ghost", func(): finished.emit("menu"))
 
 
-func _add_button(text: String, variant: String, cb: Callable) -> void:
-	var b := MButton.new(text, variant)
-	b.custom_minimum_size = Vector2(0, 38)
-	b.add_theme_font_size_override("font_size", 16)
-	b.focus_mode = Control.FOCUS_NONE
-	b.pressed.connect(cb)
-	if variant == "primary":
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_buttons.add_child(b)
+## A new step just became current.
+func _step_entered(_s: Dictionary) -> void:
+	pass
+
+
+## The buttons (and last words) of the final step.
+func _final_card(_s: Dictionary) -> void:
+	_card.add_button("Arena de práctica", "primary", func(): finished.emit("arena"))
+	_card.add_button("Contra bots", "secondary", func(): finished.emit("bots"))
+	_card.add_button("Menú", "ghost", func(): finished.emit("menu"))
+	_card.set_text("¡Listo! Probá la [b]Arena de práctica[/b] para repetir rotaciones con medidor de daño, o jugá contra bots.")
+	_card.set_title("¡Listo!")
 
 
 func _process(delta: float) -> void:
@@ -201,16 +142,34 @@ func _dummy_view(kind: String) -> UnitView:
 	return null
 
 
+## A downward arrow (tip at `pos`, body above it) moved beside the card when it would be drawn on it.
+static func clear_of(pos: Vector2, card: Rect2) -> Vector2:
+	var keep_out := card.grow_individual(ARROW_HALF_W, ARROW_LEN, ARROW_HALF_W, ARROW_LEN)
+	return Vector2(keep_out.end.x + ARROW_HALF_W, pos.y) if keep_out.has_point(pos) else pos
+
+
 ## Where the current step points: a HUD rectangle ("bar", "target_panel", ...) or a dummy in the world ("dummy:caster").
 func arrow_anchor() -> Dictionary:
 	var key := str(flow.current().get("arrow", ""))
 	if key == "":
 		return {}
+	if key.begins_with("plate:"):
+		var plates: Array = mv.world.map.plates
+		var n := int(key.substr(6))
+		if n < 0 or n >= plates.size():
+			return {}
+		var at := Vector3(plates[n].x, 0.0, plates[n].z)
+		if mv.cam.is_position_behind(at):
+			return {}
+		var screen := mv.get_viewport().get_visible_rect().size
+		var pos := mv.cam.unproject_position(at + Vector3(0, 1.2, 0))
+		var edge := pos.clamp(Vector2(60, 60), screen - Vector2(60, 60))  # off screen it stays at the edge, on that side
+		return {"pos": clear_of(edge, _card.get_global_rect()), "dir": Vector2.DOWN}
 	if key.begins_with("dummy:"):
 		var v := _dummy_view(key.substr(6))
 		if v == null or not v.shown or mv.cam.is_position_behind(v.position + Vector3(0, 2.0, 0)):
 			return {}
-		return {"pos": mv.cam.unproject_position(v.position + Vector3(0, 3.1, 0)), "dir": Vector2.DOWN}
+		return {"pos": clear_of(mv.cam.unproject_position(v.position + Vector3(0, 3.1, 0)), _card.get_global_rect()), "dir": Vector2.DOWN}
 	var r := mv.hud.rect_of(key)
 	if r.size == Vector2.ZERO:
 		return {}
@@ -227,7 +186,7 @@ func _draw_arrow() -> void:
 	var dir: Vector2 = a.dir
 	var tip: Vector2 = a.pos - dir * (4.0 + bob) if dir == Vector2.DOWN else a.pos - dir * (4.0 + bob)
 	var side := Vector2(-dir.y, dir.x)
-	var base := tip - dir * 26.0
-	var pts := PackedVector2Array([tip, base + side * 15.0, base - side * 15.0])
+	var base := tip - dir * ARROW_LEN
+	var pts := PackedVector2Array([tip, base + side * ARROW_HALF_W, base - side * ARROW_HALF_W])
 	_arrows.draw_colored_polygon(pts, Color("#ffc15a"))
 	_arrows.draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]), Color("#1a0800"), 3.0)

@@ -404,3 +404,40 @@ func test_disabled_classes_are_not_offered_and_fall_back_to_mage() -> void:
 	var st := SettingsStore.new()
 	eq(st.set_value("cls", "ki"), "mage", "un campeón guardado desactivado vuelve a mago")
 	check(MatchConfig.class_ids().has("warlock"), "los demás siguen")
+
+
+func test_champions_screen_arranges_the_bar() -> void:
+	var path := "user://test_champions_bar.json"
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var before := BarLayout._shared
+	BarLayout._shared = BarLayout.new(path)
+	var m := _menu()
+	var c: MChampions = m._views.champions
+	m.st.set_value("cls", "mage")
+	m.st.set_value("spec", "fire")
+	c.menu_enter()
+	var fire := GameData.abilities("mage", "fire")
+	var id_at := func(pos: int) -> String: return str((c._slots[pos] as Control).get_meta("ability").id)
+	eq(id_at.call(0), str(fire[0].id), "empieza en el orden normal")
+	check(not c._reset_bar.visible, "sin cambios no ofrece restablecer")
+	check(c.arrange_swap(0, 4), "intercambia dos botones")
+	eq(id_at.call(0), str(fire[4].id), "el botón 1 muestra la definitiva")
+	eq(((c._slots[0] as Control).get_meta("key") as Label).text, Keybinds.shared().slot_label(0), "la tecla sigue al botón")
+	check(c._reset_bar.visible, "ahora se puede restablecer")
+	eq(BarLayout.new(path).order("mage/fire"), [4, 1, 2, 3, 0], "queda guardado")
+	check(c._arrange_can_drop(Vector2.ZERO, {"bar_pos": 1}, 2), "acepta soltar un botón")
+	check(not c._arrange_can_drop(Vector2.ZERO, "otra cosa", 2), "rechaza otros arrastres")
+	c._arrange_drop(Vector2.ZERO, {"bar_pos": 1}, 2)
+	eq(id_at.call(2), str(fire[1].id), "arrastrar intercambia")
+	c.reset_bar()
+	eq(id_at.call(0), str(fire[0].id), "restablecer vuelve al orden normal")
+	c._arrange_press(1)
+	c._arrange_press(1)
+	eq(id_at.call(1), str(fire[1].id), "apretar dos veces el mismo botón no cambia nada")
+	c._arrange_press(1)
+	c._arrange_press(3)
+	eq(id_at.call(1), str(fire[3].id), "teclado y mando: un botón y después el otro")
+	eq(id_at.call(3), str(fire[1].id), "los dos cambian de lugar")
+	_drop(m)
+	BarLayout._shared = before
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

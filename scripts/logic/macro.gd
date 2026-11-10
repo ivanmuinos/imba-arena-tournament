@@ -79,7 +79,7 @@ static func slot_for(name: String, cls: String, spec := "") -> int:
 		return -1
 	for i in int(GameData.C.SLOT_COUNT):
 		if _fold(Keybinds.shared().slot_label(i)) == want or _fold(str(GameData.C.SLOT_KEYS[i])) == want:
-			return i
+			return BarLayout.shared().slot_at(Talents.key(cls, spec), i)  # a key presses a button, whatever is on it
 	var abilities: Array = GameData.abilities(cls, spec)
 	for i in abilities.size():
 		if _fold(str(abilities[i].name)) == want or _fold(str(abilities[i].id)) == want:

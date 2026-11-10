@@ -45,6 +45,9 @@ var score_red: Label
 var score_blue: Label
 ## Practice arena: no score, rounds or countdown on screen.
 var practice := false
+var practice_title := "Arena de práctica"
+## Academia: a rival off stage has no frame until a trigger calls it (elsewhere, someone absent is just out of sight).
+var hide_absent_frames := false
 var damp := 0.0  # fraction of healing removed by Dampening, shown as a debuff on everyone
 var round_label: Label
 var ping_label: Label
@@ -131,6 +134,8 @@ func add_overlay(c: Control, top: float, margin := 12.0, from_right := true) -> 
 
 ## True when a screen position is over one of the interactive overlays (practice panel, tutorial card): the world ignores that click.
 func blocks_mouse(pos: Vector2) -> bool:
+	if _binding_on and _bar_frame.get_global_rect().has_point(pos):
+		return true  # keybinding mode: a drag on the bar arranges it, it does not turn the camera
 	for c in _overlays:
 		if is_instance_valid(c) and c.is_visible_in_tree() and Rect2(c.global_position, c.size * ui_scale).has_point(pos):
 			return true
@@ -352,7 +357,7 @@ func set_spectator(dead: bool, observed: String) -> void:
 
 func _show_ability_tip(index: int) -> void:
 	_tip_slot = index
-	_ability_tip.set_ability(_my_abilities()[index], Keybinds.shared().slot_label(index))
+	_ability_tip.set_ability(_my_abilities()[index], Keybinds.shared().slot_label(_bar_pos(index)))
 	_ability_tip.modulate.a = 0.0
 	_ability_tip.show()
 	_place_ability_tip.call_deferred(index)
@@ -477,9 +482,10 @@ func setup(roster: Array, you: int, cls: String, team: String, spec := "", talen
 	_plates.clear()
 	_floats.clear()
 	for r in roster:
-		var f := _make_frame(r, r.id == you)
-		(_frames_ally if r.team == team else _frames_enemy).add_child(f.root)
-		_frames[r.id] = f
+		if str(r.get("dummy", "")) != "crate":  # a lesson can have many crates: they only get the bar over their head
+			var f := _make_frame(r, r.id == you)
+			(_frames_ally if r.team == team else _frames_enemy).add_child(f.root)
+			_frames[r.id] = f
 		var plate := Nameplate.new().setup(r.name, r.team == team, r.id == you, HP_ALLY if r.team == team else HP_ENEMY)
 		if r.id == you:
 			plate.set_title(Cosmetics.title())
@@ -567,6 +573,15 @@ func _fit_bar() -> void:
 	_bar_holder.custom_minimum_size = _bar_frame.size * bar_scale
 
 
+func _kit_key() -> String:
+	return Talents.key(my_cls, my_spec)
+
+
+## The button an ability sits on. `_slots` stays indexed by canonical slot, so cooldowns and charges never need this.
+func _bar_pos(slot: int) -> int:
+	return BarLayout.shared().pos_of(_kit_key(), slot)
+
+
 func _build_bar() -> void:
 	bar_scale = float(SettingsStore.shared().get_value("bar_scale"))
 	_bar_frame.clear()
@@ -584,7 +599,8 @@ func _build_bar() -> void:
 		slot.mouse_filter = Control.MOUSE_FILTER_PASS
 		slot.mouse_entered.connect(_show_ability_tip.bind(i))
 		slot.mouse_exited.connect(_ability_tip.hush)
-		_track_hover(slot, "slot_%d" % i)
+		_track_hover(slot, "slot_%d" % _bar_pos(i))
+		slot.set_drag_forwarding(_bar_drag.bind(i), _bar_can_drop.bind(i), _bar_drop.bind(i))
 		var charge := ColorRect.new()
 		charge.color = Color(1.0, 0.7, 0.2, 0.35)
 		charge.position = Vector2(2, 58)
@@ -625,16 +641,20 @@ func _build_bar() -> void:
 		slot.add_child(charges)
 		slot.add_child(key)
 		slot.add_child(cd)
-		_bar_frame.add_button(slot)
 		_slots.append({"root": slot, "sweep": sweep, "cd": cd, "charge": charge, "icon": icon, "ult": ult, "auto": a.get("auto", false), "key": key, "charges": charges})
+	for slot in BarLayout.shared().order(_kit_key()):
+		if slot < _slots.size():
+			_bar_frame.add_button(_slots[slot].root)
 	_build_trinket(dim_tex)
 	_build_macro_bar()
 	refresh_keys()
+	_tint_for_binding()
 	_fit_bar()
 
 
 ## Keybinding mode and the hovered button: every bar button reports its action while the mouse is over it.
 var _hovered := ""
+var _binding_on := false
 var _binding_banner: Label = null
 var _macro_buttons: Array = []  # [{root, key, index}]
 var _macro_bar: HBoxContainer
@@ -654,7 +674,7 @@ func refresh_keys() -> void:
 	var kb := Keybinds.shared()
 	for i in _slots.size():
 		var sl: Dictionary = _slots[i]
-		(sl.key as Label).text = ("Auto · " if sl.auto else "") + kb.slot_label(i)
+		(sl.key as Label).text = ("Auto · " if sl.auto else "") + kb.slot_label(_bar_pos(i))
 	if not _trinket.is_empty():
 		(_trinket.key as Label).text = kb.label("trinket")
 	for m in _macro_buttons:
@@ -670,10 +690,34 @@ func set_binding(on: bool) -> void:
 		_binding_banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
 		_binding_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_root.add_child(_binding_banner)
-	_binding_banner.text = "MODO TECLAS · pasá el mouse por un botón y apretá la tecla · Esc: sin tecla · %s: salir" % Keybinds.shared().label("bind_mode")
+	_binding_banner.text = "MODO TECLAS · pasá el mouse por un botón y apretá la tecla · arrastrá para ordenar · Esc: sin tecla · %s: salir" % Keybinds.shared().label("bind_mode")
 	_binding_banner.visible = on
+	_binding_on = on
+	_tint_for_binding()
+
+
+func _tint_for_binding() -> void:
 	for sl in _slots:
-		(sl.root as Control).modulate = Color(1.0, 0.9, 0.6) if on else Color.WHITE
+		(sl.root as Control).modulate = Color(1.0, 0.9, 0.6) if _binding_on else Color.WHITE
+
+
+func _bar_drag(_at: Vector2, slot: int) -> Variant:
+	if not _binding_on or slot >= _slots.size():
+		return null
+	(_slots[slot].root as Control).set_drag_preview(Icons.rect(str(_my_abilities()[slot].icon), 56))
+	return {"bar_slot": slot}
+
+
+func _bar_can_drop(_at: Vector2, data: Variant, _slot: int) -> bool:
+	return _binding_on and data is Dictionary and data.has("bar_slot")
+
+
+func _bar_drop(_at: Vector2, data: Variant, slot: int) -> void:
+	if BarLayout.shared().swap(_kit_key(), _bar_pos(int(data.bar_slot)), _bar_pos(slot)):
+		BarLayout.shared().save()
+		_hovered = ""
+		_ability_tip.hush()
+		_build_bar.call_deferred()  # not now: this frees the very button that is handling the drop
 
 
 ## Your macros as small buttons after the trinket (only the ones with text): click to run, rebind in keybinding mode.
@@ -786,7 +830,7 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 		center_text.remove_theme_color_override("font_color")
 
 	if practice:
-		round_label.text = "Arena de práctica"
+		round_label.text = practice_title
 		score_red.visible = false
 		score_blue.visible = false
 		center_text.text = ""
@@ -800,6 +844,8 @@ func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:
 		var u = seen.get(id)
 		var dead: bool = (not u.alive) if u != null else _dead.has(id)
 		(f.root as Control).modulate.a = 0.45 if dead else (0.6 if u == null else 1.0)
+		if hide_absent_frames:
+			(f.root as Control).visible = u != null or id == my_id
 		var bad: Array = Effects.debuffs_of(u.cc) if (u != null and u.alive) else []
 		var loc = null
 		for d in bad:
@@ -1014,7 +1060,7 @@ func show_target(info: Dictionary) -> void:
 	var v: Dictionary = _tf.ally if friend else _tf.enemy
 	(_tf.ally.root as Control).visible = friend
 	(_tf.enemy.root as Control).visible = not friend
-	v.icon.texture = Icons.tex(GameData.classes[info.cls].icon)
+	v.icon.texture = null if info.get("no_portrait", false) else Icons.tex(GameData.classes[info.cls].icon)
 	v.name.text = info.name
 	v.dist.text = info.dist
 	v.hp.fill = HP_ALLY if friend else HP_ENEMY

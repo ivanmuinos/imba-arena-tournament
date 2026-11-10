@@ -434,11 +434,13 @@ func capture_input(event: InputEvent) -> bool:
 
 ## "Bola de fuego" for the selected champion (and spec); the ultimate says so.
 func slot_name(i: int) -> String:
-	var abilities := GameData.abilities(str(menu.st.get_value("cls")), str(menu.st.get_value("spec")))
+	var cls := str(menu.st.get_value("cls"))
+	var spec := str(menu.st.get_value("spec"))
+	var abilities := GameData.abilities(cls, spec)
 	if i >= abilities.size():
 		return Keybinds.action_label("slot_%d" % i)
-	var n := str(abilities[i].name)
-	return ("Definitiva: " + n) if i == abilities.size() - 1 else n
+	var a: Dictionary = abilities[BarLayout.shared().slot_at(Talents.key(cls, spec), i)]
+	return ("Definitiva: " + str(a.name)) if a.get("ult", false) else str(a.name)
 
 
 func section() -> String:

@@ -52,6 +52,7 @@ var gfx_choice := "auto"
 var gfx_level := "alta"
 ## Practice arena (the yard) / guided tutorial inside it.
 var practice := false
+var _lesson_spawn := Vector2.INF
 ## Offline and tournament matches: the Esc menu's leave button gives up. `forfeit_tournament` words it as a tournament loss.
 var forfeit_enabled := false
 var forfeit_tournament := false
@@ -140,8 +141,14 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	hud.setup(_roster, my_id, my_cls, my_team, my_spec, my_talents)
 	hud.frame_clicked.connect(_on_frame_clicked)
 	hud.macro_pressed.connect(run_macro)
-	practice = str(msg.map) == GameMap.PRACTICE_ID
+	practice = str(msg.map) == GameMap.PRACTICE_ID or str(msg.map) == GameMap.ACADEMY_ID
 	hud.practice = practice
+	if str(msg.map) == GameMap.ACADEMY_ID:
+		hud.practice_title = "Academia"
+		hud.hide_absent_frames = true
+		var at = msg.get("spawn")
+		if typeof(at) == TYPE_DICTIONARY and at.has("x") and at.has("z"):
+			_lesson_spawn = Vector2(float(at.x), float(at.z))
 	if practice and not tutorial:
 		_build_practice_panel()
 	_build_game_menu()
@@ -234,6 +241,8 @@ static func esc_step(ground_pending: bool, casting: bool, has_target: bool) -> S
 
 
 func mine_spawn() -> Vector2:
+	if _lesson_spawn != Vector2.INF:
+		return _lesson_spawn
 	var map := GameMap.get_map(client.map_id)
 	var spawns: Array = map.spawns[my_team]
 	var idx := 0
@@ -344,6 +353,11 @@ func _on_state(s: Dictionary) -> void:
 	fx.sync_aoes(s.aoes, now / 1000.0)
 	fx.sync_traps(s.traps)
 	fx.sync_powers(s.powers)
+	var lesson = s.get("you", {}).get("lesson")
+	if typeof(lesson) == TYPE_DICTIONARY:
+		world.map.set_doors(int(lesson.get("d", 0)))
+		world.sync_doors(int(lesson.get("d", 0)))
+		world.sync_plates(int(lesson.get("a", 0)), int(lesson.get("p", 0)))
 	world.map.apply_state(s.gates, s.ft)
 	world.sync_state(s.gates, s.ft, now / 1000.0)
 	hud.on_state(s, me, now)
@@ -426,6 +440,12 @@ func _on_fx(list: Array) -> void:
 		return
 	for f in list:
 		_one_fx(f)
+
+
+## A broken crate leaves the arena for good: unlike someone out of sight, there is nothing to keep selected.
+func _target_gone(id: int) -> void:
+	if controller.target == id:
+		controller.target = -1
 
 
 func _one_fx(f: Dictionary) -> void:
@@ -565,6 +585,10 @@ func _one_fx(f: Dictionary) -> void:
 				v.swing_count += 1
 				if v.shown:
 					fx.slash(pos.x, pos.z, float(v.snap.get("rot", 0.0)), f.heavy, 1.0 if (v.swing_count % 2 == 0) else -1.0)
+		"crate_break":
+			_target_gone(int(f.id))
+			fx.burst(Vector3(f.x, world.h(f.x, f.z) + 0.7, f.z), 22, 5.0, Color("#b98a55"), 0.55, 0.22, 9.0)
+			audio.play("death", Vector2(f.x, f.z))
 		"death":
 			hud.mark_dead(int(f.id))
 			if v != null:
@@ -678,7 +702,7 @@ func _input(event: InputEvent) -> void:
 			return
 		if kb_action == "" and k.shift_pressed and not k.ctrl_pressed and not k.alt_pressed:
 			kb_action = keybinds.action_for(OS.get_keycode_string(k.keycode))  # Shift held (often an ability key) + a plain key
-			if kb_action.begins_with("slot_") and _cast_on_focus(int(kb_action.substr(5))):
+			if kb_action.begins_with("slot_") and _cast_on_focus(_bar_slot(int(kb_action.substr(5)))):
 				get_viewport().set_input_as_handled()
 				return  # Shift + an ability key: on your focus, without changing your target
 		if kb_action != "":
@@ -709,7 +733,7 @@ func _input(event: InputEvent) -> void:
 	if not event.is_pressed(): return
 	get_viewport().set_input_as_handled()
 	if action.begins_with("slot_"):
-		_cast(int(action.trim_prefix("slot_")))
+		_cast(_bar_slot(int(action.trim_prefix("slot_"))))
 		return
 	match action:
 		"cancel":
@@ -741,9 +765,14 @@ func _input(event: InputEvent) -> void:
 
 
 ## A key binding's action (see Keybinds.ACTIONS).
+## The ability on a bar button: `slot_N` actions name the button, casts use the canonical slot.
+func _bar_slot(pos: int) -> int:
+	return BarLayout.shared().slot_at(Talents.key(my_cls, my_spec), pos)
+
+
 func _do_action(action: String) -> void:
 	if action.begins_with("slot_"):
-		_cast(int(action.substr(5)))
+		_cast(_bar_slot(int(action.substr(5))))
 	elif action.begins_with("macro_"):
 		if MacroStore.ENABLED:
 			run_macro(int(action.substr(6)) - 1)
@@ -1412,7 +1441,7 @@ func _target_frame(local: Vector2) -> void:
 		status = ""
 		kind = ""
 	hud.show_target({
-		"friend": friend, "name": v.entry.name, "cls": v.entry.cls, "hp": float(s.hp), "max_hp": GameData.entry_max_hp(v.entry), "cast": s.cast,
+		"friend": friend, "name": v.entry.name, "cls": v.entry.cls, "no_portrait": str(v.entry.get("dummy", "")) == "crate", "hp": float(s.hp), "max_hp": GameData.entry_max_hp(v.entry), "cast": s.cast,
 		"effects": Effects.debuffs_of(s.cc) + Effects.buffs_of(s.buffs), "dist": ("%d m" % roundi(d)) if v.shown else "fuera de vista",
 		"status": status, "status_kind": kind, "lost": not v.shown,
 	})

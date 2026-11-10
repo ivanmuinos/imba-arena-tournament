@@ -2,7 +2,7 @@
 # Real-input playtest in a real window (not --headless) for each class (or the ones given), against easy bots.
 # Usage: tools/playtest.sh [class ...]   Screens go to /tmp/playtest_<class>_*.png
 cd "$(dirname "$0")/.."
-CLASSES=${*:-"mage mage:frost warlock hunter warrior priest rogue tutorial practice"}  # class or class:spec
+CLASSES=${*:-"mage mage:frost warlock hunter warrior priest rogue tutorial practice lesson"}  # class or class:spec
 fail=0
 for token in $CLASSES; do
   c=${token%%:*}; sp=${token#*:}; [ "$sp" = "$token" ] && sp=""
@@ -10,6 +10,7 @@ for token in $CLASSES; do
   case $c in
     tutorial) mode="--tutorial-test --practice=tutorial"; cls_arg=mage; sp=${sp:-fire} ;;
     practice) mode="--practice-test --practice"; cls_arg=mage; sp=${sp:-fire} ;;
+    lesson) mode="--lesson-test --lesson=moverse"; cls_arg=mage; sp=${sp:-fire} ;;
   esac
   map=$(echo "bridge pillars tomb living" | tr ' ' '\n' | sed -n "$(( $(echo $c | cksum | cut -d' ' -f1) % 4 + 1 ))p")
   # The matches are live games against bots (units die, move off-screen, get stunned): one retry absorbs that noise.

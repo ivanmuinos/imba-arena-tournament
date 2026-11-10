@@ -29,6 +29,11 @@ var dmg_mult := 1.0
 var dummy := ""
 var home := Vector2.ZERO
 var dummy_next := 0.0
+## Academia only: its name in the scenario; `mortal` stays down at 0 health instead of refilling (crates, rivals);
+## `dormant` is off stage (no simulation, not in any snapshot) until a trigger calls it.
+var lesson_key := ""
+var mortal := false
+var dormant := false
 var patrol_dir := 1.0
 
 var x := 0.0

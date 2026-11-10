@@ -10,6 +10,7 @@ signal match_started(msg: Dictionary)
 signal state_received(snap: Dictionary)
 signal fx_received(list: Array)
 signal kill_received(msg: Dictionary)
+signal lesson_events(list: Array)
 signal match_ended(msg: Dictionary)
 signal server_error(text: String)
 signal closed(reason: String)
@@ -127,6 +128,11 @@ func _on_message(_from: int, msg: Dictionary) -> void:
 			fx_received.emit(msg.list)
 		"kill":
 			kill_received.emit(msg)
+		"lesson":
+			if typeof(msg.get("ev")) == TYPE_ARRAY:
+				var valid: Array = msg.ev.filter(func(e): return typeof(e) == TYPE_DICTIONARY and typeof(e.get("e")) == TYPE_STRING)
+				if not valid.is_empty():
+					lesson_events.emit(valid)
 		"end":
 			match_ended.emit(msg)
 		"error":
@@ -164,6 +170,10 @@ func send_stop_cast() -> void:
 
 
 ## Practice arena controls: "reset", "nocd" (on) or "ult".
+func send_cue(n: int) -> void:
+	_send({"t": "practice", "cmd": "cue", "n": n})
+
+
 func send_practice(cmd: String, on := true) -> void:
 	_send({"t": "practice", "cmd": cmd, "on": on})
 
