@@ -1,11 +1,29 @@
 class_name Rules
 extends RefCounted
 ## Pure game rules shared by server and client (port of shared/rules.ts).
-## A "mover" is any object with x, z, vx, vz, dash_left, dash_vx, dash_vz.
+## A "mover" is any object with x, z, y, vx, vz, vy, air, dash_left, dash_vx, dash_vz.
 
 const PLAYER_R := 0.5
 const ACCEL := 50.0
 const REVEAL_DIST := 3.2
+## Vertical physics (metres, seconds). A jump peaks at ~1.6 m and lasts ~0.8 s.
+const GRAVITY := 19.3
+const JUMP_V := 7.9
+## A standing jump may start moving once, at this share of the run speed.
+const AIR_START := 0.7
+## Steepest ground that can be walked (rise over run): the bridge ramps are 1.0, the cliffs about 3.5.
+const MAX_SLOPE := 1.6
+const SLIDE_SPEED := 6.0
+## How far the floor may be below the feet before the unit is falling instead of walking.
+const DROP := 0.45
+## A flying unit clears ledges up to this height above its feet.
+const LEDGE := 0.25
+## Walking backwards (relative to the facing) is this much slower.
+const BACKPEDAL := 0.65
+## Units further apart than this in height do not block each other.
+const BODY_H := 1.5
+## Air time of a leap ability (Disengage).
+const LEAP_S := 0.45
 const DR_RESET_MS := 18000.0  # WoW: a category resets 18 s after its last CC ends
 const DR_MULT := [1.0, 0.5, 0.25, 0.0]
 
@@ -19,15 +37,31 @@ static func step_mover(m, dx: float, dz: float, dt: float, speed: float, can_mov
 	if m.dash_left > 0:
 		var t := minf(dt, m.dash_left)
 		m.dash_left = maxf(0.0, m.dash_left - dt)
-		m.x += m.dash_vx * t
-		m.z += m.dash_vz * t
+		_advance(m, m.dash_vx * t, m.dash_vz * t, map)
 		m.vx = 0.0
 		m.vz = 0.0
 		collide(m, map)
+		_settle(m, dt, map, false)  # a dash skims: no gravity until it ends
+		return
+	if not m.air and map.relief:
+		_slip(m, map)
+	if m.air:
+		# Airborne: the momentum from take-off carries; there is no steering. A standing jump may pick one direction.
+		var input := Vector2(dx, dz)
+		if can_move and not _knocked(m) and input.length() > 1e-6 and Vector2(m.vx, m.vz).length() < 0.5:
+			var v := input.normalized() * speed * AIR_START
+			m.vx = v.x
+			m.vz = v.y
+		if not _advance(m, m.vx * dt, m.vz * dt, map):
+			m.vx = 0.0
+			m.vz = 0.0
+		collide(m, map)
+		_settle(m, dt, map, true)
 		return
 	if not can_move:
 		m.vx = 0.0
 		m.vz = 0.0
+		_settle(m, dt, map, true)
 		return
 	var dir := Vector2(dx, dz)
 	var target := dir.normalized() * speed if dir.length() > 1e-6 else Vector2.ZERO
@@ -37,9 +71,119 @@ static func step_mover(m, dx: float, dz: float, dt: float, speed: float, can_mov
 		dv = dv.normalized() * max_dv
 	m.vx += dv.x
 	m.vz += dv.y
-	m.x += m.vx * dt
-	m.z += m.vz * dt
+	_advance(m, m.vx * dt, m.vz * dt, map)
 	collide(m, map)
+	_settle(m, dt, map, true)
+
+
+## Leaves the ground. False when already in the air (there is no double jump).
+static func jump(m) -> bool:
+	if m.air:
+		return false
+	m.air = true
+	m.vy = JUMP_V
+	return true
+
+
+## Knockback: throws `m` `dist` metres along `dir` in a ballistic arc that lasts `air_s`. Until it lands the unit is
+## `knocked` (no steering; clients follow the server instead of predicting).
+static func knock(m, dir: Vector2, dist: float, air_s: float) -> void:
+	var d := dir.normalized() if dir.length() > 1e-6 else Vector2(0, 1)
+	m.dash_left = 0.0
+	m.vx = d.x * dist / air_s
+	m.vz = d.y * dist / air_s
+	m.vy = GRAVITY * air_s / 2.0
+	m.air = true
+	if "knocked" in m:
+		m.knocked = true
+
+
+## Speed multiplier for moving along `dir` while facing `rot`: walking backwards is slower, strafing is not.
+static func facing_speed(dir: Vector2, rot: float) -> float:
+	if dir.length() < 1e-6:
+		return 1.0
+	return BACKPEDAL if dir.normalized().dot(Vector2(sin(rot), cos(rot))) < -0.5 else 1.0
+
+
+## Puts `m` on the floor under it, at rest vertically (spawns, round resets).
+static func ground(m, map: GameMap) -> void:
+	m.y = map.height_at(m.x, m.z)
+	m.vy = 0.0
+	m.air = false
+	if "knocked" in m:
+		m.knocked = false
+
+
+static func _knocked(m) -> bool:
+	return "knocked" in m and m.knocked
+
+
+## Horizontal move by (sx, sz) against the terrain: on the ground a rise steeper than MAX_SLOPE is a wall (it slides
+## along one axis when it can); in the air anything taller than the feet stops it. Returns false when fully blocked.
+static func _advance(m, sx: float, sz: float, map: GameMap) -> bool:
+	if not map.relief:
+		m.x += sx
+		m.z += sz
+		return true
+	if _passable(m, sx, sz, map):
+		m.x += sx
+		m.z += sz
+		return true
+	if absf(sx) > 1e-9 and _passable(m, sx, 0.0, map):
+		m.x += sx
+		return true
+	if absf(sz) > 1e-9 and _passable(m, 0.0, sz, map):
+		m.z += sz
+		return true
+	return false
+
+
+static func _passable(m, sx: float, sz: float, map: GameMap) -> bool:
+	var rise: float = map.height_at(m.x + sx, m.z + sz) - m.y
+	if m.air:
+		return rise <= LEDGE
+	return rise <= MAX_SLOPE * sqrt(sx * sx + sz * sz) + 0.02
+
+
+## Vertical step after the horizontal one: falls, lands, follows the floor or walks off a ledge.
+static func _settle(m, dt: float, map: GameMap, gravity: bool) -> void:
+	var gy: float = map.height_at(m.x, m.z) if map.relief else 0.0
+	if m.air:
+		if gravity:
+			m.vy -= GRAVITY * dt
+			m.y += m.vy * dt
+		if m.y <= gy and m.vy <= 0.0:
+			m.y = gy
+			m.vy = 0.0
+			if map.relief and map.slope_at(m.x, m.z).length() > MAX_SLOPE:
+				_slip(m, map)  # landed on a cliff face: keep falling along it
+				return
+			m.air = false
+			if "knocked" in m:
+				m.knocked = false
+		elif m.y < gy:
+			m.y = gy  # clipped a ledge on the way up
+		return
+	if m.y - gy > DROP:
+		m.air = true  # the floor fell away: walked, slid or was carried off a ledge
+		m.vy = 0.0
+		return
+	m.y = gy
+
+
+## Ground too steep to stand on throws the unit off, downhill: it falls along the face instead of walking on it.
+static func _slip(m, map: GameMap) -> void:
+	var g := map.slope_at(m.x, m.z)
+	var steep := g.length()
+	if steep <= MAX_SLOPE:
+		return
+	var d := -g / steep
+	var along: float = m.vx * d.x + m.vz * d.y
+	if along < SLIDE_SPEED:
+		m.vx += d.x * (SLIDE_SPEED - along)
+		m.vz += d.y * (SLIDE_SPEED - along)
+	m.air = true
+	m.vy = minf(m.vy, 0.0)
 
 
 ## Signed distance from a point to a shape (negative inside).
@@ -116,6 +260,8 @@ static func separate(units: Array) -> void:
 		for j in range(i + 1, units.size()):
 			var a = units[i]
 			var b = units[j]
+			if absf(a.y - b.y) > BODY_H:
+				continue  # one is jumping over (or falling past) the other
 			var dx: float = b.x - a.x
 			var dz: float = b.z - a.z
 			var d := sqrt(dx * dx + dz * dz)

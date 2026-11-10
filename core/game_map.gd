@@ -13,6 +13,18 @@ extends RefCounted
 const IDS := ["bridge", "pillars", "tomb", "living", "spire"]
 ## Offline-only training ground ("Arena de práctica"): not part of the random pool or the lobby catalog.
 const PRACTICE_ID := "yard"
+## The Academia's arena: a line of rooms joined by doors (see _build_academy). Not in `IDS` nor in data/maps.json, so
+## MatchConfig.normalize refuses it and only the local lesson branch of GameServer can start it.
+const ACADEMY_ID := "academy"
+const ACADEMY_HX := 18.0
+const ACADEMY_HZ := 54.0
+const ROOM_DEPTH := 18.0
+const ROOM_COUNT := 6
+const DOOR_HW := 4.0
+## The door you can see and shoot through (`los` off).
+const GRATE_DOOR := 1
+const PILLAR_ROOM := 3
+const LAVA_ROOM := 4
 const W := 26.0
 const A := 22.0
 const R := 33.0
@@ -40,6 +52,9 @@ var hazards: Array = []      # damaging/healing floor boxes {k:"b", ..., dps, hp
 var pools: Array = []        # legacy circular hazards (none in the new maps)
 var bushes: Array = []
 var power_spots: Array = []
+var doors: Array = []        # academy: door shapes, solid while their bit in door_mask is off
+var door_mask := 0
+var plates: Array = []       # academy: floor plates {x, z, r}; the lesson stage decides which ones count
 var obstacles: Array = []
 var gates_open := false
 var ft := 0.0
@@ -58,6 +73,7 @@ static func create(map_id: String) -> GameMap:
 		"living": m._build_living()
 		"spire": m._build_spire()
 		"yard": m._build_yard()
+		"academy": m._build_academy()
 		_:
 			m.id = "test"
 			m._build_test()
@@ -189,6 +205,61 @@ func _build_yard() -> void:
 	spawns = {"red": [{"x": 0.0, "z": 17.5}, {"x": -3.0, "z": 17.5}, {"x": 3.0, "z": 17.5}], "blue": [{"x": 0.0, "z": -17.0}]}
 
 
+## Centre (z) of an academy room; room 0 is the first one, at +z.
+func room_z(room: int) -> float:
+	return ACADEMY_HZ - ROOM_DEPTH * (room + 0.5)
+
+
+## Six rooms in a line, one door between each. Every room has the same four plates (left, right, near its exit, near its
+## entrance), so any lesson can use any room without the client needing to be told where they are.
+func _build_academy() -> void:
+	name = "Academia"
+	half_x = ACADEMY_HX
+	half_z = ACADEMY_HZ
+	for sz in [1.0, -1.0]:
+		statics.append(box(0.0, sz * ACADEMY_HZ, ACADEMY_HX, 0.7, 0.0, {"wall": true}))
+	for sx in [1.0, -1.0]:
+		statics.append(box(sx * ACADEMY_HX, 0.0, 0.7, ACADEMY_HZ, 0.0, {"wall": true}))
+	for i in ROOM_COUNT - 1:
+		var z := ACADEMY_HZ - ROOM_DEPTH * (i + 1)
+		var side := (ACADEMY_HX + DOOR_HW) / 2.0
+		var half := (ACADEMY_HX - DOOR_HW) / 2.0
+		for sx in [1.0, -1.0]:
+			statics.append(box(sx * side, z, half, 0.7, 0.0, {"wall": true}))
+		doors.append(box(0.0, z, DOOR_HW, 0.7, 0.0, {"door": i, "los": i != GRATE_DOOR}))
+	for room in ROOM_COUNT:
+		var c := room_z(room)
+		for p in [[-10.0, 0.0], [10.0, 0.0], [0.0, -6.0], [0.0, 6.0]]:
+			plates.append({"x": p[0], "z": c + p[1], "r": 1.8})
+	var pillars := room_z(PILLAR_ROOM)
+	statics.append(circle(-7.0, pillars, 2.2))
+	statics.append(circle(7.0, pillars, 2.2))
+	var lava: Dictionary = GameData.maps.get("bridge", {}).get("pool", {"dps": 15, "hps": 0})
+	hazards.append(box(0.0, room_z(LAVA_ROOM) + 3.5, 13.0, 1.0, 0.0, {"dps": lava.dps, "hps": lava.hps}))
+	spawns = {"red": [{"x": 0.0, "z": room_z(0) + 3.0}], "blue": [{"x": 0.0, "z": room_z(ROOM_COUNT - 1)}]}
+
+
+## Opens exactly the doors whose bit is on. Maps without doors ignore it.
+func set_doors(mask: int) -> void:
+	if doors.is_empty():
+		return
+	door_mask = mask
+	_rebuild()
+
+
+func door_open(i: int) -> bool:
+	return door_mask & (1 << i) != 0
+
+
+## Index of the plate at a point (-1: none).
+func plate_at(x: float, z: float) -> int:
+	for i in plates.size():
+		var p: Dictionary = plates[i]
+		if Vector2(x - p.x, z - p.z).length() <= p.r:
+			return i
+	return -1
+
+
 ## Hidden open field (bush + no gates) used by the unit tests; not part of the catalog.
 func _build_test() -> void:
 	half_x = 48.0
@@ -229,10 +300,15 @@ func apply_state(open: bool, fight_ms: float) -> void:
 	for i in dyn_pillars.size():
 		var info := pillar_info(i, fight_ms)
 		sig += "|%d" % roundi(info.h * 40.0)
+	if not doors.is_empty():
+		sig += "|d%d" % door_mask
 	if sig == _sig:
 		return
 	_sig = sig
 	obstacles = statics.duplicate()
+	for i in doors.size():
+		if not door_open(i):
+			obstacles.append(doors[i])
 	if not open:
 		obstacles.append_array(gate_shapes)
 	for i in dyn_pillars.size():
@@ -241,6 +317,10 @@ func apply_state(open: bool, fight_ms: float) -> void:
 			var p: Dictionary = dyn_pillars[i]
 			var e: float = info.h * info.h * (3.0 - 2.0 * info.h)  # smoothstep: radius grows as it rises, so players are pushed out gradually
 			obstacles.append(circle(p.x, p.z, p.r * e, {"los": info.h >= 0.55, "dyn": true}))
+
+
+func _rebuild() -> void:
+	apply_state(gates_open, ft)
 
 
 # ---------------------------------------------------------------- terrain & levels (bridge map)
@@ -255,11 +335,22 @@ static func _smooth_box(x: float, z: float, hx: float, hz: float, soft: float) -
 	return ex * ez
 
 
-## Floor height (view and camera only; gameplay is 2D).
+## Floor height: units stand on it, fall to it and cannot climb its cliffs (see Rules.step_mover).
+## Whether the floor has any height at all (flat maps skip the terrain checks).
+var relief: bool:
+	get: return id == "bridge" or id == "tomb"
+
+
+## Gradient of the floor (rise per metre along x and z): its length is the steepness, it points uphill.
+func slope_at(x: float, z: float) -> Vector2:
+	const E := 0.05
+	return Vector2(height_at(x + E, z) - height_at(x - E, z), height_at(x, z + E) - height_at(x, z - E)) / (2.0 * E)
+
+
 func height_at(x: float, z: float) -> float:
 	match id:
 		"bridge":
-			var chasm := maxf(_smooth_box(absf(x) - 11.0, z, 9.0, 9.0, 1.4), _smooth_box(absf(x) - 23.0, z, 3.0, 4.0, 1.0))
+			var chasm := maxf(_smooth_box(absf(x) - 11.0, z, 9.0, 9.0, 1.4), _smooth_box(absf(x) - 22.0, z, 4.0, 4.0, 1.0))  # the two pits overlap: no ridge between them
 			var h := 3.0 - 5.0 * chasm
 			# Ramps climb out of the chasm at both ends: floor rises from -2 at |z|=4 to 3 at |z|=9.
 			var w := clampf(absf(x) - 20.0, 0.0, 1.0)
@@ -284,7 +375,7 @@ func is_low(x: float, z: float) -> bool:
 
 ## Cliff walls and bridge supports hide the high ground from anyone in the chasm (and vice versa).
 func level_los_blocked(ax: float, az: float, bx: float, bz: float) -> bool:
-	if hazards.is_empty():
+	if hazards.is_empty() or id == ACADEMY_ID:  # the academy's lava is flat: nothing to climb out of
 		return false
 	return is_low(ax, az) != is_low(bx, bz)
 
@@ -293,8 +384,14 @@ func level_los_blocked(ax: float, az: float, bx: float, bz: float) -> bool:
 func waypoint(from: Vector2, to: Vector2) -> Vector2:
 	if id != "bridge":
 		return to
-	if is_low(from.x, from.y):  # fell in: climb the nearest ramp
-		return Vector2(signf(from.x) * 22.5, signf(to.y) * 12.0 if absf(from.y) < 1.0 else signf(from.y) * 12.0)
+	if is_low(from.x, from.y):  # fell in: the cliffs cannot be climbed, so walk to the foot of the nearest ramp, then up it
+		var sx := signf(from.x) if from.x != 0.0 else 1.0
+		var sz := signf(to.y) if absf(from.y) < 1.0 else signf(from.y)
+		if absf(from.x) < 21.8:
+			return Vector2(sx * 23.2, clampf(from.y, -2.0, 2.0))
+		return Vector2(sx * 23.2, sz * 12.0)
+	if absf(from.x) > 20.0 and absf(from.y) < 9.6 and absf(from.y) >= 4.0:
+		return Vector2(signf(from.x) * 23.2, signf(from.y) * 12.0)  # on a ramp: finish the climb before turning
 	var across := from.y * to.y < 0.0 and (absf(from.y) > 3.0 or absf(to.y) > 3.0)
 	if not across:
 		return to

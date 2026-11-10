@@ -13,12 +13,13 @@ uniform sampler2D noise_tex : repeat_enable, filter_linear_mipmap;
 
 void fragment() {
 	float fres = pow(1.0 - clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0), 2.0);
-	float n = texture(noise_tex, UV * vec2(3.0, 2.0) + vec2(TIME * speed * 0.25, TIME * speed)).r;
+	// Broad noise: at a finer scale the dissolve eats the orb away in round spots, like polka dots.
+	float n = texture(noise_tex, UV * vec2(1.3, 0.9) + vec2(TIME * speed * 0.12, TIME * speed * 0.5)).r;
 	float body = 1.0 - fres;
 	vec3 col = mix(mid.rgb, core.rgb, body * body);
 	col = mix(col, edge.rgb, smoothstep(0.55, 1.0, fres) * 0.8);
 	col *= 0.75 + n * 0.5;
-	float cut = smoothstep(dissolve, dissolve + 0.18, n);
+	float cut = smoothstep(dissolve, dissolve + 0.4, n);
 	ALBEDO = col * energy;
 	ALPHA = clamp((0.55 + fres * 0.5) * cut * fade, 0.0, 1.0);
 }

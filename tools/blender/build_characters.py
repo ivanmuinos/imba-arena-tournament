@@ -27,5 +27,9 @@ def build(cls):
 
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    for c in (argv or list(BUILDERS)):
-        build(c)
+    for c in (argv or list(BUILDERS) + ["tizon"]):
+        if c == "tizon":
+            import tizon
+            tizon.build_glb(os.path.abspath(os.path.join(OUT, "tizon.glb")))
+        else:
+            build(c)

@@ -11,6 +11,11 @@ https://opengameart.org/content/swishes-sound-pack       qubodup         swish_1
 https://opengameart.org/content/air-whoosh               (CC0 page)      whoosh_long
 https://opengameart.org/content/catching-fire            frances         fire_whoosh
 https://opengameart.org/content/earth-element-magic-spell (CC0 page)     earth_big
+https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud (CC0 page)  step_1
+https://opengameart.org/content/100-cc0-sfx-2            (CC0 page)      step_2, step_3, amb_rumble (loop_ambient_03, unmodified)
+https://opengameart.org/content/100-cc0-sfx              (CC0 page)      gong_1, gong_2
+https://opengameart.org/content/win-jingle               (CC0 page)      win_brass
+(the four above: downloaded 2026-11-10)
 
 Rejected on purpose: https://opengameart.org/content/energy-drain (page says CC0 but the bundled license.txt is CC-BY-SA 3.0),
 the "37 hits and punches" pack (re-upload of third-party material), the "Spell sounds" page (mixed OGA-BY / CC0 files),

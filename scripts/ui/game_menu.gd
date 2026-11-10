@@ -261,7 +261,8 @@ func _refresh_keys() -> void:
 		if a.begins_with("slot_"):
 			var i := int(a.substr(5))
 			if i < abilities.size():
-				name = ("Definitiva: " if abilities[i].get("ult", false) else "%d. " % (i + 1)) + str(abilities[i].name)
+				var ab: Dictionary = abilities[BarLayout.shared().slot_at(Talents.key(kit_cls, kit_spec), i)]
+				name = ("Definitiva: " if ab.get("ult", false) else "%d. " % (i + 1)) + str(ab.name)
 		(_key_names[a] as Label).text = name
 
 

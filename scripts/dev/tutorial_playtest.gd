@@ -31,6 +31,7 @@ func _click_button_named(text: String) -> bool:
 
 func _wheel(up: bool) -> void:
 	var e := InputEventMouseButton.new()
+	e.device = SYNTHETIC_DEVICE
 	e.button_index = MOUSE_BUTTON_WHEEL_UP if up else MOUSE_BUTTON_WHEEL_DOWN
 	e.pressed = true
 	e.position = _mouse

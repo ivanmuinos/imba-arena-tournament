@@ -8,6 +8,7 @@ signal play_offline(cfg: Dictionary)
 ## "Arena de práctica" (training yard, offline) and the guided tutorial.
 signal play_practice(cfg: Dictionary)
 signal start_tutorial(cfg: Dictionary)
+signal start_lesson(cfg: Dictionary, id: String)
 signal host(cfg: Dictionary, port: int)
 signal join(cfg: Dictionary, address: String, port: int)
 signal map_changed(map_id: String)
@@ -90,7 +91,7 @@ func _ready() -> void:
 	_stage = Control.new()
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_stage)
-	for pair in [["splash", MSplash], ["hub", MHub], ["play", MPlay], ["setup", MSetup], ["join", MJoin], ["champions", MChampions], ["settings", MSettings], ["howto", MHowTo], ["tournament", MTournament], ["teams", MTeams]]:
+	for pair in [["splash", MSplash], ["hub", MHub], ["play", MPlay], ["setup", MSetup], ["join", MJoin], ["champions", MChampions], ["settings", MSettings], ["academy", MAcademy], ["howto", MHowTo], ["tournament", MTournament], ["teams", MTeams]]:
 		var v: MenuView = pair[1].new()
 		v.menu = self
 		_views[pair[0]] = v
@@ -200,6 +201,8 @@ func debug_goto(spec: String) -> void:
 			nav.go("play")
 		"howto":
 			nav.go("howto")
+		"academy":
+			nav.go("academy")
 		"teams":
 			nav.go("teams")
 		"tournament":
@@ -372,6 +375,25 @@ func _launch() -> void:
 	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
 
 
+## The screen that was just pushed on the navigation stack, from a view that changed it directly.
+func present_current() -> void:
+	_present(nav.current, 1)
+
+
+## Back to the Academia, after a lesson.
+func open_academy() -> void:
+	go_tab("academy")
+
+
+## Academia -> a lesson with the saved champion.
+func launch_lesson(id: String) -> void:
+	if _launching:
+		return
+	_launching = true
+	start_lesson.emit(_cfg(), id)
+	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
+
+
 ## "Cómo jugar" -> tutorial. Marks it as seen so it is only offered by itself once.
 func launch_tutorial() -> void:
 	if _launching:
@@ -486,7 +508,9 @@ func go_tab(screen: String) -> void:
 func active_tab(id: String) -> String:
 	if nav.mode != "" or id in ["play", "setup", "join"]:
 		return "play"
-	return id if id in ["hub", "champions", "howto", "tournament", "teams"] else ""
+	if id == "howto":
+		return "academy"  # the reference page lives inside the Academia
+	return id if id in ["hub", "champions", "academy", "tournament", "teams"] else ""
 
 
 func _refresh_profile() -> void:

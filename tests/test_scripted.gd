@@ -118,4 +118,4 @@ func test_server_scripted_cfg_builds_the_scripted_match_over_the_wire() -> void:
 	near(boss.dmg_mult, 1.15, 0.0001, "daño del jefe")
 	var r: Dictionary = client.roster.filter(func(e): return e.name == "Jefe")[0]
 	near(GameData.entry_max_hp(r), float(GameData.kit("warrior").hp) * 1.2, 0.01, "el cliente recibe la vida escalada")
-	eq(GameServer.PROTO, 6, "PROTO 6 (los talentos viajan en las entradas)")
+	eq(GameServer.PROTO, 7, "PROTO 7 (altura y vuelo de cada unidad en los snapshots)")

@@ -244,3 +244,60 @@ func test_kits_have_three_abilities_with_damage_and_crowd_control() -> void:
 			if cls not in BotBrain.HEALERS:
 				check(dmg >= 1 and dmg <= 2, "%s: 1 o 2 de daño (%d)" % [name, dmg])
 			check(not GameData.reserve(cls, sid).is_empty(), "%s: lo que salió del kit queda en reserva" % name)
+
+
+## Every ability text in the data: base kits, spec overrides and the reserve that talents swap in.
+func _all_abilities() -> Array:
+	var out: Array = []
+	for c in GameData.classes:
+		var info: Dictionary = GameData.classes[c]
+		out.append_array(info.get("abilities", []))
+		out.append_array(info.get("reserve", []))
+		for sid in info.get("specs", {}):
+			var over = info.specs[sid].get("abilities", {})
+			out.append_array(over.values() if over is Dictionary else over)
+	return out
+
+
+func _ability(id: String) -> Dictionary:
+	for a in _all_abilities():
+		if a is Dictionary and str(a.get("id", "")) == id:
+			return a
+	return {}
+
+
+func test_reference_text_describes_the_five_button_bar() -> void:
+	var page := HowToContent.controls()
+	check(not page.contains("siete"), "Cómo jugar no habla de siete habilidades")
+	check(not page.contains("5  6  7"), "Cómo jugar no lista las teclas 5 a 7")
+	check(page.contains("1  2  3  4  R"), "Cómo jugar lista las cinco teclas reales")
+	var readme := FileAccess.get_file_as_string("res://tools/LEEME.txt")
+	check(readme.length() > 0, "LEEME se puede leer")
+	check(not readme.contains("1–7"), "LEEME no habla de las teclas 1 a 7")
+	check(not readme.contains("4/5/6/7"), "LEEME no lista siete botones de mando")
+
+
+func test_reference_rules_match_the_simulation() -> void:
+	var page := HowToContent.rules()
+	check(not page.contains("rbusto"), "los mapas no tienen arbustos")
+	check(page.contains("velocidad y curación"), "la lista de gemas incluye Esencia")
+	check(page.contains("demora"), "el daño demora un lanzamiento, no lo corta")
+	var cast: Dictionary = {}
+	for s in TutorialFlow.new("mage", "fire").steps:
+		if s.id == "cast":
+			cast = s
+	check(not cast.is_empty(), "el tutorial tiene paso de lanzamiento")
+	check(not str(cast.text).contains("cualquier daño"), "el tutorial no dice que el daño corta el lanzamiento")
+	check(str(cast.text).contains("demora"), "el tutorial explica la demora por daño")
+
+
+func test_ability_texts_agree_with_their_numbers() -> void:
+	for a in _all_abilities():
+		var desc := str(a.get("desc", ""))
+		check(not desc.contains("tecla 1"), "%s no fija una tecla: la barra se reasigna" % a.get("id", "?"))
+		check(not desc.contains("Disipable"), "%s no promete un disipar que ningún kit tiene" % a.get("id", "?"))
+	for a in _all_abilities():
+		if str(a.get("id", "")) == "pyro":
+			check(not str(a.desc).contains("interrumpe"), "Piroexplosión: el daño la demora")
+	check(str(_ability("hymn").desc).contains("cura %d" % int(_ability("hymn").heal)), "Himno dice lo que cura")
+	check(str(_ability("soulrot").desc).contains("%d por segundo" % int(_ability("soulrot").dotDps)), "Putrefacción dice su daño por segundo")

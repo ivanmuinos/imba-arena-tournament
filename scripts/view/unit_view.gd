@@ -4,7 +4,6 @@ extends Node3D
 ## (port of UnitView in src/units.ts). Nameplates live in the HUD layer, not here.
 
 const TEAM_COLOR := {"red": Color("#ff4d4d"), "blue": Color("#4da3ff")}
-const JUMP_MS := 650.0
 ## Characters are drawn at this fraction of the model size relative to the arena (gameplay radii and ranges are unchanged:
 ## PLAYER_R stays 0.5 m, which now matches the model's body). Heights of everything attached to a unit scale with it.
 const VS := 0.73
@@ -13,6 +12,8 @@ const VS := 0.73
 static var live_params := DisplayServer.get_name() != "headless"
 
 signal landed(pos: Vector3)
+signal stepped(pos: Vector3)
+signal jumped(pos: Vector3)
 
 var entry: Dictionary
 var snap: Dictionary = {}
@@ -42,6 +43,9 @@ var _cast_orb: MeshInstance3D
 var _cast_mat: ShaderMaterial
 var _slow_ring: MeshInstance3D
 var _cast_school := ""
+var _cast_ring: MeshInstance3D
+var _cast_ring_mat: ShaderMaterial
+const CAST_RING_R := 1.35
 var _aura_mat: ShaderMaterial
 var _bubble_mat: ShaderMaterial
 var _marker := Node3D.new()
@@ -58,8 +62,12 @@ var _walk := 0.0
 var _cast_pose := 0.0
 var _death_t := 0.0
 var _speed := 0.0
-var _local_jump_at := -1.0
+## Height of the feet and whether the unit is off the ground, from the simulation (NAN = stand on the terrain).
+var _y := NAN
+var _air := false
+var _steps := StepCadence.new()
 var _was_jumping := false
+var _near_hidden := false
 var _fade := -1.0
 var _last_pos := Vector2.ZERO
 var _vel := Vector2.ZERO
@@ -70,7 +78,11 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 	is_me = p_is_me
 	_world = p_world
 	var team: Color = TEAM_COLOR[entry.team]
-	if CharacterRig.available(entry.cls):
+	if str(entry.get("dummy", "")) == "crate":
+		_model = UnitModels.crate()
+		_body.add_child(_model.root)
+		_collect_parts(_model.root)
+	elif CharacterRig.available(entry.cls):
 		_rig = CharacterRig.new()
 		_rig.setup(entry.cls, team, Cosmetics.rig_skin(str(entry.cls)) if is_me else {})
 		_body.add_child(_rig.root)
@@ -221,6 +233,19 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 	_cast_orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_cast_orb.visible = false
 	_body.add_child(_cast_orb)
+	# Casting circle on the ground: runes in the spell's school colour, with an arc that fills as the cast completes.
+	_cast_ring = MeshInstance3D.new()
+	var ring_mesh := PlaneMesh.new()
+	ring_mesh.size = Vector2(2, 2)
+	_cast_ring.mesh = ring_mesh
+	if live_params:
+		_cast_ring_mat = ShaderMaterial.new()
+		_cast_ring_mat.shader = load("res://assets/shaders/rune_circle.gdshader")
+		_cast_ring.material_override = _cast_ring_mat
+	_cast_ring.position.y = 0.11
+	_cast_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_cast_ring.visible = false
+	add_child(_cast_ring)
 
 	# Red arrow over the selected target, drawn on top of everything.
 	var arrow := StandardMaterial3D.new()
@@ -257,6 +282,14 @@ func _flat_ring(inner: float, outer: float, color: Color, alpha: float) -> MeshI
 
 
 ## Flat animated ground decal (spell_ground shader) of radius `r`.
+## The casting circle `elapsed_ms` into a cast that is `progress` (0..1) done: it fades in and opens up over the first
+## quarter second, and its arc follows the cast.
+static func cast_circle(progress: float, elapsed_ms: float) -> Dictionary:
+	var k := clampf(elapsed_ms / 250.0, 0.0, 1.0)
+	var ease_out := 1.0 - (1.0 - k) * (1.0 - k)
+	return {"alpha": ease_out, "scale": 0.8 + 0.2 * ease_out, "progress": clampf(progress, 0.0, 1.0)}
+
+
 func _ground_decal(r: float, color: Color, fill: float) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
@@ -294,6 +327,8 @@ func apply(sample: Dictionary) -> void:
 	if not predicted:
 		position.x = sample.x
 		position.z = sample.z
+		_y = sample.get("y", NAN)
+		_air = s.get("air", false)
 	_target_rot = sample.rot
 	set_shown(true)
 
@@ -310,17 +345,21 @@ func set_hidden() -> void:
 	set_shown(false)
 
 
+## Local player with the camera pressed against it (a wall right behind): the model is not drawn, so it cannot fill the screen.
+func set_near_hidden(on: bool) -> void:
+	if _body != null and _near_hidden != on:
+		_near_hidden = on
+		_body.visible = not on
+
+
 ## Local player: position from client-side prediction.
-func drive(x: float, z: float, vx: float, vz: float) -> void:
+func drive(x: float, z: float, vx: float, vz: float, y := NAN, air := false) -> void:
 	position.x = x
 	position.z = z
+	_y = y
+	_air = air
 	_speed = Vector2(vx, vz).length()
 	_vel = Vector2(vx, vz)
-
-
-## Local player: start the hop at once instead of waiting for the server.
-func jump_now(now_s: float) -> void:
-	_local_jump_at = now_s
 
 
 ## Forwards a moment of the fight to the companion (see CompanionView.react).
@@ -419,7 +458,7 @@ func update(dt: float, now_s: float) -> void:
 		_body.rotation.y += dt * 16.0  # Bladestorm spin
 	var sheep: bool = cc.has("incap") and cc.get("incapKind", "") == "poly" and s.alive
 	_sheep.visible = sheep
-	_body.visible = not sheep
+	_body.visible = not sheep and not _near_hidden
 	_ice.visible = cc.has("incap") and cc.get("incapKind", "") == "freeze" and s.alive
 	_stars.visible = (cc.has("stun") or cc.has("fear")) and s.alive
 	_stars.rotation.y = now_s * (-7.0 if cc.has("fear") else 5.0)
@@ -437,18 +476,22 @@ func update(dt: float, now_s: float) -> void:
 		_marker.position.y = 3.35 * VS + sin(now_s * 5.0) * 0.12
 		_marker.rotation.y = now_s * 2.0
 
-	# Jump arc (650 ms, ~1 m high): the local player starts it instantly.
-	var jt: float = (now_s - _local_jump_at) * 1000.0 if _local_jump_at >= 0.0 else float(s.jump)
-	var k := jt / JUMP_MS if jt >= 0.0 and jt < JUMP_MS else -1.0
-	if _local_jump_at >= 0.0 and k < 0.0:
-		_local_jump_at = -1.0
-	position.y = _world.h(position.x, position.z) + (4.0 * k * (1.0 - k) if k >= 0.0 else 0.0)
-	var jumping := k >= 0.0
-	if jumping and not _was_jumping and _rig != null:
-		_rig.jump(now_s)
+	# Height comes from the simulation: jumps, falls off ledges and knockbacks are real arcs.
+	var floor_y: float = _world.h(position.x, position.z)
+	position.y = floor_y if is_nan(_y) else maxf(floor_y, _y)
+	var jumping: bool = _air and bool(s.alive)
+	if jumping and not _was_jumping:
+		if _rig != null:
+			_rig.jump(now_s)
+		if visible:
+			jumped.emit(position)
 	if _was_jumping and not jumping and s.alive:
 		landed.emit(Vector3(position.x, _world.h(position.x, position.z), position.z))
 	_was_jumping = jumping
+	# Footsteps: one per stride while it walks on the ground. A stealthed unit makes none (they would give it away).
+	var walking: bool = visible and bool(s.alive) and not jumping and not s.get("buffs", []).has("stealth")
+	if _steps.advance(dt, _speed, float(GameData.classes[entry.cls].speed), walking):
+		stepped.emit(position)
 
 	var shield_color = null
 	if b.has("shield"):
@@ -490,10 +533,18 @@ func update(dt: float, now_s: float) -> void:
 				_cast_mat.set_shader_parameter("core", pal.core)
 				_cast_mat.set_shader_parameter("mid", pal.mid)
 				_cast_mat.set_shader_parameter("edge", pal.edge)
+				_cast_ring_mat.set_shader_parameter("color", pal.mid)
+				_cast_ring_mat.set_shader_parameter("core", pal.core)
 		var prog: float = 1.0 - float(s.cast.left) / maxf(1.0, float(s.cast.total))
 		var sz := 0.6 + prog * 1.1 + sin(now_s * 18.0) * 0.08
 		_cast_orb.scale = Vector3.ONE * sz
 		_cast_orb.position = Vector3(0.28, 1.35, 0.5)
+		var circle := cast_circle(prog, float(s.cast.total) - float(s.cast.left))
+		_cast_ring.scale = Vector3(CAST_RING_R * circle.scale, 1.0, CAST_RING_R * circle.scale)
+		if live_params:
+			_cast_ring_mat.set_shader_parameter("progress", circle.progress)
+			_cast_ring_mat.set_shader_parameter("fade", circle.alpha * 0.8)
+	_cast_ring.visible = casting_now and live_params
 
 	# See-through when stealthed, or when the camera is right on top of the unit.
 	var want := 0.82 if near_camera else (0.75 if b.has("stealth") else 0.0)

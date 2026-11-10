@@ -2,9 +2,11 @@ class_name AudioBank
 extends Node
 ## Every ability and combat sound is a layered mix of real CC0 recordings (assets/third_party/oga_sfx: OpenGameArt packs;
 ## Kenney impact/UI packs for body hits and the interface). Nothing about an ability is synthesised.
-## Only the round fanfares and countdown "fight" keep tiny synth recipes ("R", [wave, at_s, dur_s, f0, f1, vol]).
+## Footsteps, the round gong and the win jingle are recordings too (the "R" synth recipes are empty and kept only as a hook).
 ## Each event is a list of layers [group, pitch, dB, delay_s]: cast/charge + release/whoosh + impact, with a little random
 ## pitch and volume per play, a small room reverb send and a distance low-pass (three buses: near / mid / far).
+## A sound with a position plays from that point of the world, so the camera hears it to the left or right; the volume
+## by distance is still decided here. The arena has a quiet looping ambience bed.
 ## Periodic damage (DoT ticks) never plays a sound.
 
 const RATE := 22050
@@ -18,6 +20,13 @@ var gain_db := 0.0
 var _cache := {}
 var _players: Array[AudioStreamPlayer] = []
 var _next := 0
+## Players for sounds that have a place in the world (stereo position from the camera).
+const SPATIAL_POOL := 24
+const EAR_HEIGHT := 1.2
+var _spatial: Array[AudioStreamPlayer3D] = []
+var _next_spatial := 0
+var _ambience: AudioStreamPlayer
+const AMBIENCE_DB := -20.0
 var _buses_ready := false
 
 ## Files that must never appear in a combat group: household/mechanical noises that read as a door lock or a page turn.
@@ -39,6 +48,8 @@ const SAMPLE_GROUPS := {
 	"swish": ["swish_1", "swish_2", "swish_3", "swish_4"], "whoosh_long": ["whoosh_long"], "blade": ["blade_1", "blade_2", "blade_3"],
 	"metal": ["metal_1", "metal_2", "metal_3"], "chain": ["chain_1"], "stone": ["stone_1", "stone_2"], "earth_big": ["earth_big"],
 	"wood": ["wood_1"], "death": ["death_1"],
+	# movement and round cues
+	"step": ["step_1", "step_2", "step_3"], "gong": ["gong_1", "gong_2"], "win_jingle": ["win_brass"],
 	# soft body impacts (Kenney Impact Sounds, assets/third_party/kenney_audio)
 	"punch": ["impactPunch_heavy_000", "impactPunch_heavy_001"], "cloth": ["cloth1", "cloth2"],
 	# Kenney Interface Sounds (assets/third_party/kenney_ui)
@@ -60,7 +71,13 @@ const LAYERS := {
 	"hitSpell": [["punch", 1.4, -10.0, 0.0], ["arc_soft", 1.5, -14.0, 0.0]],
 	"hitMe": [["punch", 1.2, -8.0, 0.0], ["cloth", 1.0, -9.0, 0.0]],            # melee / arrow hit on you: short organic thud
 	"hitMeSpell": [["punch", 1.45, -11.0, 0.0], ["arc_soft", 1.6, -16.0, 0.0]],  # spell hit on you: softer, with a faint magical tail
-	"death": [["death", 1.0, -3.0, 0.0]], "land": [["wood", 0.9, -9.0, 0.0]],
+	"death": [["death", 1.0, -3.0, 0.0]],
+	# movement: a footstep per stride, cloth on take-off, a heavier step and a thud on landing
+	"step": [["step", 1.0, -13.0, 0.0]], "jump": [["cloth", 1.15, -11.0, 0.0], ["swish", 0.7, -18.0, 0.0]],
+	"land": [["step", 0.72, -5.0, 0.0], ["punch", 0.7, -13.0, 0.0]],
+	# round cues: the arena gong opens the fight; brass for a win, a low gong for a loss
+	"fight": [["gong", 1.0, -3.0, 0.0], ["earth_big", 0.8, -11.0, 0.0]],
+	"win": [["win_jingle", 1.0, -2.0, 0.0]], "lose": [["gong", 0.6, -4.0, 0.0], ["shadow_low", 0.7, -6.0, 0.12]],
 	"heal": [["heal", 1.0, -8.0, 0.0]], "healspell": [["holy_chime", 1.2, -6.0, 0.0], ["heal", 1.0, -7.0, 0.05]], "power": [["arc_bright", 1.0, -8.0, 0.0]], "absorb": [["holy_chime", 1.1, -9.0, 0.0]],
 	"interrupt": [["metal", 1.3, -7.0, 0.0]], "ccMe": [["shadow_low", 1.1, -8.0, 0.0]],
 	# fire
@@ -125,13 +142,8 @@ const LAYERS := {
 	"drainlife": [["shadow_swell", 1.1, -6.0, 0.0], ["heal", 0.8, -12.0, 0.25]], "soulrot": [["shadow_swell", 0.7, -3.0, 0.0], ["earth_big", 0.9, -9.0, 0.05]],
 }
 
-## Non-ability synth recipes (countdown fight cue, round result jingles, footstep).
-const R := {
-	"fight": [["saw", 0.0, 0.3, 200, 400, 0.22], ["sine", 0.08, 0.4, 600, 900, 0.3]],
-	"win": [["sine", 0.0, 0.15, 520, 520, 0.3], ["sine", 0.15, 0.15, 660, 660, 0.3], ["sine", 0.3, 0.15, 780, 780, 0.3], ["sine", 0.45, 0.5, 1040, 1040, 0.3]],
-	"step": [["noise", 0.0, 0.07, 0.22, 0, 0.22], ["sine", 0.0, 0.06, 120, 70, 0.22]],
-	"lose": [["sine", 0.0, 0.25, 400, 400, 0.3], ["sine", 0.25, 0.25, 330, 330, 0.3], ["sine", 0.5, 0.6, 260, 200, 0.3]],
-}
+## Synth recipes ([wave, at_s, dur_s, f0, f1, vol] per layer) for events without a recording. None are left.
+const R := {}
 
 
 func _ready() -> void:
@@ -143,6 +155,31 @@ func _ready() -> void:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
 		_players.append(p)
+	for i in SPATIAL_POOL:
+		var p3 := AudioStreamPlayer3D.new()
+		p3.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED  # play() already fades by distance
+		p3.attenuation_filter_cutoff_hz = 20500.0  # and the far buses already muffle
+		p3.panning_strength = 0.85
+		add_child(p3)
+		_spatial.append(p3)
+	_ambience = AudioStreamPlayer.new()
+	add_child(_ambience)
+
+
+## The arena's ambience bed: a low, quiet loop under the whole match.
+func start_ambience() -> void:
+	var stream := _sample("amb_rumble") as AudioStreamOggVorbis
+	if stream == null:
+		return
+	stream.loop = true
+	_ambience.stream = stream
+	_ambience.volume_db = AMBIENCE_DB + gain_db
+	if not muted:
+		_ambience.play()
+
+
+func stop_ambience() -> void:
+	_ambience.stop()
 
 
 ## Three SFX buses with a shared-style room reverb send; the far ones also low-pass (distant sounds lose their highs).
@@ -169,9 +206,10 @@ func _make_buses() -> void:
 
 
 func _exit_tree() -> void:
-	for p in _players:
-		p.stop()
-		p.stream = null
+	for p in _players + _spatial + [_ambience]:
+		if p != null:
+			p.stop()
+			p.stream = null
 	_cache.clear()
 
 
@@ -188,7 +226,7 @@ func play(sound: String, pos := Vector2.INF, max_dist := 70.0) -> void:
 		vol = -clampf(d / 3.0, 0.0, 24.0)
 		bus = "SFX_near" if d < 18.0 else ("SFX_mid" if d < 40.0 else "SFX_far")
 	if not LAYERS.has(sound):
-		_fire(_stream(sound), 1.0, vol - 6.0 + gain_db, "SFX_near")
+		_fire(_stream(sound), 1.0, vol - 6.0 + gain_db, "SFX_near", pos)
 		return
 	var is_ui := sound.begins_with("ui") or sound == "error" or sound == "tick"
 	for layer in LAYERS[sound]:
@@ -198,16 +236,21 @@ func play(sound: String, pos := Vector2.INF, max_dist := 70.0) -> void:
 		var db: float = vol - 6.0 + gain_db + float(layer[2]) + (0.0 if is_ui else randf_range(-1.5, 1.0))
 		var delay: float = layer[3]
 		if delay <= 0.0 or not is_inside_tree():
-			_fire(stream, pitch, db, "SFX_near" if is_ui else bus)
+			_fire(stream, pitch, db, "SFX_near" if is_ui else bus, pos)
 		else:
-			get_tree().create_timer(delay).timeout.connect(_fire.bind(stream, pitch, db, bus))
+			get_tree().create_timer(delay).timeout.connect(_fire.bind(stream, pitch, db, bus, pos))
 
 
-func _fire(stream: AudioStream, pitch: float, db: float, bus: String) -> void:
+func _fire(stream: AudioStream, pitch: float, db: float, bus: String, pos := Vector2.INF) -> void:
 	if _players.is_empty():
 		return
-	var p := _players[_next]
-	_next = (_next + 1) % POOL
+	var p: Node = _players[_next]
+	if pos != Vector2.INF and not _spatial.is_empty():
+		p = _spatial[_next_spatial]
+		_next_spatial = (_next_spatial + 1) % SPATIAL_POOL
+		(p as AudioStreamPlayer3D).position = Vector3(pos.x, EAR_HEIGHT, pos.y)
+	else:
+		_next = (_next + 1) % POOL
 	p.stream = stream
 	p.pitch_scale = pitch
 	p.volume_db = db
@@ -217,12 +260,16 @@ func _fire(stream: AudioStream, pitch: float, db: float, bus: String) -> void:
 
 func toggle_mute() -> bool:
 	muted = not muted
+	if _ambience != null and _ambience.stream != null:
+		_ambience.stream_paused = muted
+		if not muted and not _ambience.playing:
+			_ambience.play()
 	return muted
 
 
 func _sample(file: String) -> AudioStream:
 	if not _cache.has(file):
-		for path in ["res://assets/third_party/oga_sfx/%s.wav" % file, "res://assets/third_party/kenney_audio/%s.ogg" % file, "res://assets/third_party/kenney_ui/%s.ogg" % file]:
+		for path in ["res://assets/third_party/oga_sfx/%s.wav" % file, "res://assets/third_party/oga_sfx/%s.ogg" % file, "res://assets/third_party/kenney_audio/%s.ogg" % file, "res://assets/third_party/kenney_ui/%s.ogg" % file]:
 			if ResourceLoader.exists(path):
 				_cache[file] = load(path)
 				break

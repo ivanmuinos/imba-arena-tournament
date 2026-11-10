@@ -11,6 +11,8 @@ const THEMES := {
 		"torch": 0xff9a40, "glow": 0xff6a2a, "ember": 0xffb060, "tint": 0xffffff},
 	"pillars": {"sky_top": 0x2a2a3a, "sky_horizon": 0xc89070, "fog": 0x6a5248, "fog_density": 0.002, "ambient": 0xf0e0d0, "ambient_energy": 0.95, "sun": 0xfff0d8, "sun_energy": 2.0,
 		"torch": 0xffb860, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf0e8e0},
+	"academy": {"sky_top": 0x2a1f2a, "sky_horizon": 0xe08f52, "fog": 0x6a4c40, "fog_density": 0.0012, "ambient": 0xf4e6d6, "ambient_energy": 1.1, "sun": 0xfff0d8, "sun_energy": 2.1,
+		"torch": 0xffb050, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf4ece4},
 	"yard": {"sky_top": 0x2a2a3a, "sky_horizon": 0xd8a070, "fog": 0x6a5248, "fog_density": 0.0016, "ambient": 0xf4e6d6, "ambient_energy": 1.05, "sun": 0xfff0d8, "sun_energy": 2.1,
 		"torch": 0xffb860, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf0e8e0},
 	"tomb": {"sky_top": 0x182848, "sky_horizon": 0x5a78b8, "fog": 0x34466a, "fog_density": 0.0024, "ambient": 0xc8d8ff, "ambient_energy": 1.0, "sun": 0xe0ecff, "sun_energy": 1.9,
@@ -23,6 +25,12 @@ const THEMES := {
 
 var map: GameMap
 var sun: DirectionalLight3D
+var rim: DirectionalLight3D
+## Light balance over the per-arena theme: less flat ambient, a stronger key, a cool rim.
+const AMBIENT_SCALE := 0.72
+const SUN_SCALE := 1.25
+const RIM_ENERGY := 0.55
+const SHADE := Color(0.5, 0.62, 1.0)
 var env: Environment
 var embers: CPUParticles3D
 
@@ -41,6 +49,8 @@ var _local_ft := 0.0
 var _ft_at := 0.0
 var _gates_open := false
 var _terrain: MeshInstance3D
+var _doors: Array = []  # academy: {root, left, right, grate, t, goal}
+var _plates: Array = []  # academy: one ring per map plate, hidden until a lesson uses it
 var _floaters: Array = []  # {node, base_y, phase}: crystals that bob and turn (elven plaza)
 var _terrain_mat: ShaderMaterial
 
@@ -58,6 +68,9 @@ func setup(p_map: GameMap) -> void:
 		_build_bridge()
 	if map.id == "spire":
 		_build_spire_plaza()
+	if map.id == GameMap.ACADEMY_ID:
+		_build_academy_doors()
+		_build_academy_plates()
 	_build_room_decor()
 	_build_outer_decor()
 	_build_embers()
@@ -90,6 +103,65 @@ func _place_kit(kit_name: String, pos: Vector3, rot_y := 0.0, scl := Vector3.ONE
 	n.scale = scl
 	(parent if parent != null else self).add_child(n)
 	return n
+
+
+## A brazier: the kit's stand with a flame of particles in place of its solid "fire" lump.
+func _place_torch(pos: Vector3, rot_y := 0.0) -> void:
+	var n := _place_kit("torch", pos, rot_y)
+	if n == null:
+		return
+	var fire := n.find_child("torch_fire", true, false) as MeshInstance3D
+	var at := Vector3(0.0, 2.1, 0.0)
+	if fire != null:  # the flame starts where the lump sat in the bowl (its origin is the torch's foot, not the fire)
+		var xf := fire.transform
+		var up := fire.get_parent()
+		while up != n and up is Node3D:
+			xf = (up as Node3D).transform * xf
+			up = up.get_parent()
+		var bb := fire.get_aabb()
+		at = xf * (bb.position + bb.size * Vector3(0.5, 0.15, 0.5))
+		fire.visible = false
+	var core := _col(_theme.torch)
+	for layer in 2:  # 0: the body of the flame; 1: a few sparks that fly higher
+		var p := CPUParticles3D.new()
+		p.amount = 12 if layer == 0 else 5
+		p.lifetime = 0.55 if layer == 0 else 1.5
+		p.preprocess = 1.5
+		p.randomness = 0.6
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		p.emission_sphere_radius = 0.16
+		p.direction = Vector3.UP
+		p.spread = 12.0 if layer == 0 else 28.0
+		p.gravity = Vector3(0, 1.4, 0)
+		p.initial_velocity_min = 0.7 if layer == 0 else 1.2
+		p.initial_velocity_max = 1.3 if layer == 0 else 2.2
+		p.scale_amount_min = 0.7
+		p.scale_amount_max = 1.2
+		var shrink := Curve.new()
+		shrink.add_point(Vector2(0.0, 0.55))
+		shrink.add_point(Vector2(0.2, 1.0))
+		shrink.add_point(Vector2(1.0, 0.1))
+		p.scale_amount_curve = shrink
+		var ramp := Gradient.new()
+		ramp.offsets = PackedFloat32Array([0.0, 0.25, 0.7, 1.0])
+		ramp.colors = PackedColorArray([Color(core.r, core.g, core.b, 0.0), core.lerp(Color.WHITE, 0.25), Color(core.r, core.g * 0.75, core.b * 0.6, 0.8), Color(core.r * 0.7, core.g * 0.25, core.b * 0.2, 0.0)])
+		p.color_ramp = ramp
+		var qm := QuadMesh.new()
+		qm.size = Vector2(0.5, 0.5) if layer == 0 else Vector2(0.07, 0.07)
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		# Alpha-blended : additive flames wash out to grey against a lit wall, these keep their colour.
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		mat.albedo_texture = Textures.glow_dot()
+		mat.albedo_color = Color(1.25, 1.25, 1.25) if layer == 0 else Color(1.6, 1.6, 1.6)
+		mat.vertex_color_use_as_albedo = true
+		mat.disable_fog = true
+		qm.material = mat
+		p.mesh = qm
+		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		p.position = at + Vector3(0.0, 0.12, 0.0)
+		n.add_child(p)
 
 
 func _shape_rot(o: Dictionary) -> float:
@@ -146,60 +218,84 @@ func _kit_surface(src: StandardMaterial3D, kind: String, tint: Color) -> ShaderM
 # ---------------------------------------------------------------- environment
 
 func _build_environment() -> void:
-	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = _col(_theme.sky_top).srgb_to_linear()
-	sky_mat.sky_horizon_color = _col(_theme.sky_horizon).srgb_to_linear()
-	sky_mat.ground_horizon_color = _col(_theme.sky_horizon).srgb_to_linear().darkened(0.3)
-	sky_mat.ground_bottom_color = _col(_theme.fog).srgb_to_linear()
-	sky_mat.sky_curve = 0.25
-	sky_mat.sun_angle_max = 0.0
-	sky_mat.sun_curve = 0.0
+	# Dusk-blue overhead against the theme's horizon colour, a visible sun and clouds (assets/shaders/sky.gdshader).
+	var top := _col(_theme.sky_top).lightened(0.12).lerp(Color(0.16, 0.24, 0.55), 0.35)
+	var horizon := _col(_theme.sky_horizon)
+	var sky_mat := ShaderMaterial.new()
+	sky_mat.shader = load("res://assets/shaders/sky.gdshader")
+	sky_mat.set_shader_parameter("top_color", top)
+	sky_mat.set_shader_parameter("horizon_color", horizon)
+	sky_mat.set_shader_parameter("ground_color", _col(_theme.fog).darkened(0.2))
+	sky_mat.set_shader_parameter("cloud_color", horizon.lerp(Color.WHITE, 0.45))
+	sky_mat.set_shader_parameter("cloud_tex", Textures.spell_noise())
+	sky_mat.set_shader_parameter("cloud_cover", 0.52)
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 	env = Environment.new()
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
+	# Lighting with shape: a dim ambient (so the shadow side of things is really darker), a strong warm key from the
+	# sun and a cool rim from behind (see below). A bright flat ambient washed every model out.
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = _col(_theme.ambient)
-	env.ambient_light_energy = _theme.ambient_energy
-	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 1.05
+	# Warm sun against cool shade: the ambient (all a shadow receives) leans to sky blue in every theme.
+	env.ambient_light_color = _col(_theme.ambient).lerp(_col(_theme.sky_top).lightened(0.35), 0.35).lerp(SHADE, 0.45)
+	env.ambient_light_energy = float(_theme.ambient_energy) * AMBIENT_SCALE
+	env.tonemap_mode = Environment.TONE_MAPPER_AGX  # keeps colour in bright fire and spells instead of clipping to white
+	env.tonemap_exposure = 1.15
+	env.tonemap_white = 6.0
 	env.glow_enabled = true
-	env.glow_intensity = 0.4
-	env.glow_strength = 1.0
-	env.glow_bloom = 0.03
-	env.glow_hdr_threshold = 1.4
+	env.glow_intensity = 0.55
+	env.glow_strength = 0.95
+	env.glow_bloom = 0.02
+	env.glow_hdr_threshold = 1.15
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.ssao_enabled = true
-	env.ssao_radius = 1.6
-	env.ssao_intensity = 1.0
+	env.ssao_radius = 1.4
+	env.ssao_intensity = 1.7
+	env.ssao_power = 1.6
 	env.ssr_enabled = true
 	env.fog_enabled = true
 	env.fog_light_color = _col(_theme.fog)
-	env.fog_density = _theme.fog_density
+	env.fog_density = float(_theme.fog_density) * 0.6  # thinner: distance fades, colours up close stay clean
 	env.fog_sky_affect = 0.15
+	env.fog_aerial_perspective = 0.4
+	env.fog_sun_scatter = 0.25
 	env.volumetric_fog_enabled = true
 	env.volumetric_fog_density = 0.002
 	env.volumetric_fog_albedo = _col(_theme.fog).lightened(0.25)
 	env.volumetric_fog_emission = _col(_theme.glow) * 0.01
 	env.volumetric_fog_length = 70.0
 	env.adjustment_enabled = true
-	env.adjustment_contrast = 1.08
-	env.adjustment_saturation = 1.0
-	env.adjustment_brightness = 1.05
+	env.adjustment_contrast = 1.12
+	env.adjustment_saturation = 1.22
+	env.adjustment_brightness = 1.0
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 	sun = DirectionalLight3D.new()
 	sun.light_color = _col(_theme.sun)
-	sun.light_energy = _theme.sun_energy
+	sun.light_energy = float(_theme.sun_energy) * SUN_SCALE
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.04
 	sun.shadow_normal_bias = 1.0
-	sun.directional_shadow_max_distance = 90.0
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	sun.rotation = Vector3(deg_to_rad(-48), deg_to_rad(-30), 0)
+	sun.shadow_blur = 1.0
+	sun.light_angular_distance = 0.35  # crisp, readable shadows that only soften a little far from the caster
+	sun.light_volumetric_fog_energy = 1.6  # light shafts through the haze
+	sun.directional_shadow_max_distance = 70.0
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	sun.directional_shadow_blend_splits = true
+	# Low and from the side: both teams see long shadows across the floor and the sun to one side of the sky.
+	sun.rotation = Vector3(deg_to_rad(-40), deg_to_rad(-70), 0)
 	add_child(sun)
+	# Rim: a cool light from behind and above, opposite the sun, that outlines characters and pillars against the floor.
+	rim = DirectionalLight3D.new()
+	rim.light_color = _col(_theme.sky_top).lightened(0.55).lerp(Color(0.55, 0.7, 1.0), 0.5)
+	rim.light_energy = RIM_ENERGY
+	rim.light_specular = 0.2
+	rim.shadow_enabled = false
+	rim.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY  # or the sky would draw a second sun
+	rim.rotation = Vector3(deg_to_rad(-28), deg_to_rad(110), 0)
+	add_child(rim)
 
 
 ## Scales the expensive features to a Quality level (see logic/quality.gd).
@@ -254,6 +350,11 @@ func _full_h(x: float, z: float) -> float:
 	var ax := absf(x)
 	var az := absf(z)
 	var out := 0.0
+	if map.id == GameMap.ACADEMY_ID:  # no pockets behind start rooms here: just cliffs around the long hall
+		out = maxf(ax - GameMap.ACADEMY_HX, az - GameMap.ACADEMY_HZ)
+		if out > 0.0:
+			base += minf(out * out * 0.16, 14.0) + 2.0 * sin(x * 0.4) * cos(z * 0.33) * minf(out, 3.0) * 0.4
+		return base
 	if ax > GameMap.W:
 		out = maxf(out, ax - GameMap.W)
 	if az > GameMap.R:
@@ -267,7 +368,7 @@ func _full_h(x: float, z: float) -> float:
 
 func _build_terrain() -> void:
 	var ext_x := GameMap.W + 24.0
-	var ext_z := GameMap.R + 24.0
+	var ext_z := (GameMap.ACADEMY_HZ if map.id == GameMap.ACADEMY_ID else GameMap.R) + 24.0
 	var step := 0.8
 	var nx := int(2.0 * ext_x / step)
 	var nz := int(2.0 * ext_z / step)
@@ -292,7 +393,7 @@ func _build_terrain() -> void:
 			verts.append(Vector3(x, y, z))
 			norms.append(Vector3(hl - hr, 2.0 * step, hd - hu).normalized())
 			uvs.append(Vector2(x, z) / 6.0)
-			var inside := absf(x) <= GameMap.W and absf(z) <= GameMap.R
+			var inside := absf(x) <= map.half_x and absf(z) <= map.half_z if map.id == GameMap.ACADEMY_ID else absf(x) <= GameMap.W and absf(z) <= GameMap.R
 			var lava_floor := map.is_low(x, z)
 			var tint := 1.0 - clampf(y * 0.015, 0.0, 0.25)
 			var glow := 0.1 if not inside else (0.9 if lava_floor else 0.55)
@@ -318,7 +419,9 @@ func _build_terrain() -> void:
 	_terrain_mat = ShaderMaterial.new()
 	_terrain_mat.shader = load("res://assets/shaders/terrain.gdshader")
 	_terrain_mat.set_shader_parameter("ash_tex", tex[0])
+	_terrain_mat.set_shader_parameter("ash_nrm", tex[2])
 	_terrain_mat.set_shader_parameter("rock_tex", Textures.rock())
+	_terrain_mat.set_shader_parameter("rock_nrm", Textures.rock_normal())
 	_terrain_mat.set_shader_parameter("glow_tex", tex[1])
 	_terrain_mat.set_shader_parameter("glow_color", _col(_theme.glow))
 	_terrain_mat.set_shader_parameter("glow_strength", 1.2 if map.id != "tomb" else 0.9)
@@ -338,11 +441,12 @@ func _build_terrain() -> void:
 		lm.shader = load("res://assets/shaders/lava.gdshader")
 		lm.set_shader_parameter("energy", 1.7)
 		q.material_override = lm
-		q.position = Vector3(hz.x, -1.55, hz.z)
+		q.position = Vector3(hz.x, 0.06 if map.id == GameMap.ACADEMY_ID else -1.55, hz.z)  # the academy's lava lies on flat floor
 		q.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(q)
 	if not map.hazards.is_empty():
-		_add_light(Vector3(0, 1.0, 0), _col(_theme.glow), 5.0, 34.0, true)
+		var over: Vector3 = Vector3(map.hazards[0].x, 1.0, map.hazards[0].z) if map.id == GameMap.ACADEMY_ID else Vector3(0, 1.0, 0)
+		_add_light(over, _col(_theme.glow), 5.0, 34.0, true)
 
 
 func _add_light(pos: Vector3, color: Color, energy: float, rng: float, flicker := false) -> OmniLight3D:
@@ -501,6 +605,9 @@ func _build_bridge() -> void:
 
 
 func _build_room_decor() -> void:
+	if map.id == GameMap.ACADEMY_ID:
+		_build_academy_decor()
+		return
 	if map.gate_shapes.is_empty():
 		_build_yard_decor()
 		return
@@ -509,7 +616,7 @@ func _build_room_decor() -> void:
 		for pos in [Vector2(-6.8, sgn * (GameMap.A + 3.0)), Vector2(6.8, sgn * (GameMap.A + 3.0)), Vector2(-6.8, sgn * (GameMap.R - 2.5)), Vector2(6.8, sgn * (GameMap.R - 2.5)),
 				Vector2(-GameMap.GATE_HW - 1.2, sgn * (GameMap.A - 1.4)), Vector2(GameMap.GATE_HW + 1.2, sgn * (GameMap.A - 1.4))]:
 			var y := h(pos.x, pos.y)
-			_place_kit("torch", Vector3(pos.x, y, pos.y), 0.0)
+			_place_torch(Vector3(pos.x, y, pos.y), 0.0)
 			_add_light(Vector3(pos.x, y + 2.4, pos.y), _col(_theme.torch), 2.6, 12.0, true)
 		# a rune-lit floor disc marking where each team spawns
 		var disc := MeshInstance3D.new()
@@ -525,13 +632,95 @@ func _build_room_decor() -> void:
 			pass
 
 
+# ---------------------------------------------------------------- academy
+
+func _build_academy_decor() -> void:
+	for room in GameMap.ROOM_COUNT:
+		var z := map.room_z(room)
+		for sx in [1.0, -1.0]:
+			_place_torch(Vector3(sx * (GameMap.ACADEMY_HX - 1.6), 0.0, z), 0.0)
+			_add_light(Vector3(sx * (GameMap.ACADEMY_HX - 1.6), 2.4, z), _col(_theme.torch), 2.4, 13.0, true)
+
+
+## Ordinary doors are the arena's gate leaves, narrowed; the grate door is bars you can see through, and it sinks to open.
+func _build_academy_doors() -> void:
+	for i in map.doors.size():
+		var o: Dictionary = map.doors[i]
+		var root := Node3D.new()
+		root.position = Vector3(0.0, 0.0, o.z)
+		add_child(root)
+		var d := {"root": root, "left": null, "right": null, "grate": not o.los, "t": 0.0, "goal": 0.0}
+		if d.grate:
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = Color("#3a3230")
+			mat.metallic = 0.7
+			mat.roughness = 0.5
+			var x := -GameMap.DOOR_HW + 0.4
+			while x <= GameMap.DOOR_HW:
+				_mi(MeshBuilder.cylinder(0.09, 0.09, 4.2, 6), mat, Vector3(x, 2.1, 0.0), root)
+				x += 0.8
+			_mi(MeshBuilder.box(Vector3(GameMap.DOOR_HW * 2.0, 0.2, 0.3)), mat, Vector3(0.0, 3.9, 0.0), root)
+		else:
+			var narrow := GameMap.DOOR_HW / GameMap.GATE_HW
+			var left := Node3D.new()
+			left.position = Vector3(-GameMap.DOOR_HW, 0.0, 0.0)
+			root.add_child(left)
+			_place_kit("gate_leaf", Vector3.ZERO, 0.0, Vector3(narrow, 1.0, 1.0), left)
+			var right := Node3D.new()
+			right.position = Vector3(GameMap.DOOR_HW, 0.0, 0.0)
+			root.add_child(right)
+			_place_kit("gate_leaf", Vector3.ZERO, 0.0, Vector3(-narrow, 1.0, 1.0), right)
+			d.left = left
+			d.right = right
+		_doors.append(d)
+
+
+func _build_academy_plates() -> void:
+	for p in map.plates:
+		var ring := MeshInstance3D.new()
+		ring.mesh = MeshBuilder.ring(p.r - 0.35, p.r, 40)
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		ring.material_override = mat
+		ring.position = Vector3(p.x, 0.09, p.z)
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		ring.visible = false
+		add_child(ring)
+		_plates.append(ring)
+
+
+## Lesson state from the snapshot: which doors are open.
+func sync_doors(mask: int) -> void:
+	for i in _doors.size():
+		_doors[i].goal = 1.0 if mask & (1 << i) != 0 else 0.0
+
+
+## Lesson state from the snapshot: plates the lesson uses, and which of them were already stepped on.
+func sync_plates(active: int, pressed: int) -> void:
+	for i in _plates.size():
+		var ring: MeshInstance3D = _plates[i]
+		ring.visible = active & (1 << i) != 0
+		(ring.material_override as StandardMaterial3D).albedo_color = Color(0.25, 0.9, 0.4) if pressed & (1 << i) != 0 else Color(2.4, 1.7, 0.5)
+
+
+func _update_doors(dt: float) -> void:
+	for d in _doors:
+		d.t = move_toward(d.t, d.goal, dt / 0.9)
+		var e: float = d.t * d.t * (3.0 - 2.0 * d.t)
+		if d.grate:
+			(d.root as Node3D).position.y = -e * 4.4
+		else:
+			(d.left as Node3D).rotation.y = e * deg_to_rad(100.0)
+			(d.right as Node3D).rotation.y = -e * deg_to_rad(100.0)
+
+
 ## Training yard: torches along both end walls and a rune ring where the player starts.
 func _build_yard_decor() -> void:
 	for sgn in [1.0, -1.0]:
 		for x in [-20.0, -10.0, 0.0, 10.0, 20.0]:
 			var pos := Vector2(x, sgn * (GameMap.A - 1.6))
 			var y := h(pos.x, pos.y)
-			_place_kit("torch", Vector3(pos.x, y, pos.y), 0.0)
+			_place_torch(Vector3(pos.x, y, pos.y), 0.0)
 			_add_light(Vector3(pos.x, y + 2.4, pos.y), _col(_theme.torch), 2.4, 12.0, true)
 	var disc := MeshInstance3D.new()
 	disc.mesh = MeshBuilder.ring(3.2, 3.6, 48)
@@ -549,17 +738,19 @@ func _build_outer_decor() -> void:
 		_build_spire_outer()
 		return
 	# Cliffs behind the walls and dead ember trees / rocks scattered outside the play area.
+	var far_x := GameMap.ACADEMY_HX if map.id == GameMap.ACADEMY_ID else GameMap.W
+	var far_z := GameMap.ACADEMY_HZ if map.id == GameMap.ACADEMY_ID else GameMap.R
 	for k in 36:
 		var a := TAU * k / 36.0
-		var px := cos(a) * (GameMap.W + 15.0) * 1.1
-		var pz := sin(a) * (GameMap.R + 15.0) * 1.08
+		var px := cos(a) * (far_x + 15.0) * 1.1
+		var pz := sin(a) * (far_z + 15.0) * 1.08
 		var n := _place_kit("cliff", Vector3(px, _full_h(px, pz) - 1.0, pz), -a + PI / 2, Vector3(0.95, 0.8 + _rand.next() * 0.4, 0.95))
 		if n != null:
 			_tint_materials(n)
 	for k in 70:
-		var x := (_rand.next() * 2.0 - 1.0) * (GameMap.W + 16.0)
-		var z := (_rand.next() * 2.0 - 1.0) * (GameMap.R + 16.0)
-		if absf(x) < GameMap.W + 2.5 and absf(z) < GameMap.R + 2.5:
+		var x := (_rand.next() * 2.0 - 1.0) * (far_x + 16.0)
+		var z := (_rand.next() * 2.0 - 1.0) * (far_z + 16.0)
+		if absf(x) < far_x + 2.5 and absf(z) < far_z + 2.5:
 			continue
 		var y := _full_h(x, z)
 		var kitn: String = ["tree_a", "tree_b", "tree_c", "rock_a", "rock_b", "rock_c", "crystal"][int(_rand.next() * 7)]
@@ -747,6 +938,7 @@ func sync_state(open: bool, ft: float, now_s: float) -> void:
 
 
 func update(dt: float, now_s: float) -> void:
+	_update_doors(dt)
 	_gate_t = move_toward(_gate_t, _gate_goal, dt / 1.6)
 	var e := _gate_t * _gate_t * (3.0 - 2.0 * _gate_t)
 	for g in _gates:

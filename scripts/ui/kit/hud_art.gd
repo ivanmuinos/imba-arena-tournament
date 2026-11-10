@@ -1,75 +1,91 @@
 class_name HudArt
 extends RefCounted
-## The match HUD art (assets/ui/hud, cut from referencias/hud_kit_2.jpeg by tools/build_hud_kit.gd). Every number here
-## is in kit px, the same ones the build script uses; `s` scales kit px to HUD px.
+## The match HUD skin, drawn in code: flat dark-steel panels with a thin bronze edge, compact and docked to the screen
+## edges (it replaced the painted gargoyle kit, which was large and had wide transparent margins, so it seemed to float).
+## Every number is in HUD px (the 1280x720 design); `s` scales a frame.
 
-## Unit frames: art origin and size, the round portrait (centre, radius) and the bar tracks, top to bottom.
-const ALLY := {"tex": "frame_ally", "origin": Vector2(1163, 792), "size": Vector2(798, 246), "circle": [Vector2(1295, 938), 82.0],
-	"bars": [Rect2(1412, 884, 338, 36), Rect2(1412, 932, 340, 28), Rect2(1411, 969, 344, 31)]}
-const ENEMY := {"tex": "frame_enemy", "origin": Vector2(1891, 17), "size": Vector2(832, 344), "circle": [Vector2(2070, 200), 112.0],
-	"bars": [Rect2(2235, 107, 311, 32), Rect2(2241, 150, 306, 33)]}
-const FOCUS := {"tex": "bar_focus", "origin": Vector2(2245, 256), "size": Vector2(470, 90), "bars": [Rect2(2329, 298, 362, 30)]}
+const STEEL := Color(0.05, 0.055, 0.07, 0.9)
+const TRACK := Color(0.0, 0.0, 0.0, 0.78)
+const EDGE := Color("#a8854a")
+const EDGE_DIM := Color("#5c4a2c")
+const EDGE_ENEMY := Color("#a8483c")
 
-static var _tex := {}
+## Unit frames: size, the square portrait and the bar tracks (health, then cast).
+const ALLY := {"size": Vector2(188, 46), "portrait": Rect2(4, 4, 38, 38), "bars": [Rect2(46, 20, 138, 14), Rect2(46, 36, 138, 6)], "edge": EDGE}
+const ENEMY := {"size": Vector2(188, 46), "portrait": Rect2(4, 4, 38, 38), "bars": [Rect2(46, 20, 138, 14), Rect2(46, 36, 138, 6)], "edge": EDGE_ENEMY}
+const FOCUS := {"size": Vector2(170, 18), "bars": [Rect2(3, 3, 164, 12)], "edge": EDGE_DIM}
+
 static var _mask: ShaderMaterial = null
-static var _panel: Texture2D = null
 
 
-static func tex(name: String) -> Texture2D:
-	if not _tex.has(name):
-		_tex[name] = load("res://assets/ui/hud/%s.png" % name)
-	return _tex[name]
-
-
-## A TextureRect that stretches a piece of art over its rect.
-static func art(name: String) -> TextureRect:
-	var r := TextureRect.new()
-	r.texture = tex(name)
-	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	r.stretch_mode = TextureRect.STRETCH_SCALE
-	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	r.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	return r
-
-
-## The stone panel with gold corners as a 9-slice, for every HUD panel.
-static func panel_style(pad := 10) -> StyleBoxTexture:
-	if _panel == null:
-		_panel = tex("panel")
-	var s := StyleBoxTexture.new()
-	s.texture = _panel
-	s.set_texture_margin_all(20)
+## A flat panel: steel fill, 1 px edge, slightly rounded. `flush` names a screen side the panel touches ("top",
+## "bottom" or ""): no edge and square corners there, so it reads as part of the screen border.
+static func flat(edge := EDGE, pad := 0, flush := "", bg := STEEL) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = edge
+	s.set_border_width_all(1)
+	s.set_corner_radius_all(4)
 	s.set_content_margin_all(pad)
+	s.anti_aliasing = true
+	if flush == "top":
+		s.border_width_top = 0
+		s.corner_radius_top_left = 0
+		s.corner_radius_top_right = 0
+	elif flush == "bottom":
+		s.border_width_bottom = 0
+		s.corner_radius_bottom_left = 0
+		s.corner_radius_bottom_right = 0
+	else:
+		s.shadow_color = Color(0, 0, 0, 0.45)
+		s.shadow_size = 3
 	return s
 
 
-## A unit frame built on `spec` at scale `s`: {root, art, icon (round portrait or null), bars (Bar per track)}.
-## The root has the art's size; the bars are drawn into the art's empty tracks.
+## The style of every HUD panel (score, tooltips, alerts, the Esc menu).
+static func panel_style(pad := 10) -> StyleBox:
+	return flat(EDGE, pad)
+
+
+## A unit frame built on `spec` at scale `s`: {root, art (the panel), icon (portrait or null), bars (Bar per track)}.
 static func unit_frame(spec: Dictionary, s: float) -> Dictionary:
 	var root := Control.new()
 	root.custom_minimum_size = spec.size * s
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var a := art(spec.tex)
+	var a := Panel.new()
+	a.add_theme_stylebox_override("panel", flat(spec.edge))
 	a.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	a.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(a)
 	var icon: TextureRect = null
-	if spec.has("circle"):
-		var r: float = spec.circle[1] * s
+	if spec.has("portrait"):
+		var pr: Rect2 = spec.portrait
 		icon = TextureRect.new()
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon.position = (spec.circle[0] - spec.origin) * s - Vector2(r, r)
-		icon.size = Vector2(r, r) * 2.0
-		icon.material = circle_mask()
+		icon.position = pr.position * s
+		icon.size = pr.size * s
 		root.add_child(icon)
+		var ring := Panel.new()  # a thin edge over the portrait
+		ring.add_theme_stylebox_override("panel", UiKit.box(Color(0, 0, 0, 0), spec.edge, 2, 1, 0))
+		ring.position = icon.position
+		ring.size = icon.size
+		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(ring)
 	var bars := []
 	for t in spec.bars:
+		var track := ColorRect.new()
+		track.color = TRACK
+		track.position = t.position * s
+		track.size = t.size * s
+		track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(track)
 		var b := Bar.new(0.0)
 		b.bare = true
 		b.ratio = 0.0  # an unused track stays empty
-		b.position = (t.position - spec.origin) * s
+		b.position = t.position * s
 		b.size = t.size * s
 		root.add_child(b)
 		bars.append(b)

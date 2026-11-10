@@ -15,8 +15,8 @@ const V2_ULT_DEFAULT := "7"
 
 ## [action, label shown in Controles, default key]
 const ACTIONS := [
-	["slot_0", "Habilidad 1 (básica)", "1"], ["slot_1", "Habilidad 2", "2"], ["slot_2", "Habilidad 3", "3"],
-	["slot_3", "Habilidad 4", "4"], ["slot_4", "Definitiva", "R"], ["trinket", "Abalorio PvP", "T"], ["jump", "Saltar", "Space"],
+	["slot_0", "Botón 1", "1"], ["slot_1", "Botón 2", "2"], ["slot_2", "Botón 3", "3"],
+	["slot_3", "Botón 4", "4"], ["slot_4", "Botón 5", "R"], ["trinket", "Abalorio PvP", "T"], ["jump", "Saltar", "Space"],
 	["target_next", "Siguiente objetivo", "Tab"], ["self", "Seleccionarte a vos", "F1"], ["ally_1", "Aliado 1", "F2"],
 	["ally_2", "Aliado 2", "F3"], ["focus", "Marcar foco (Shift + poder: lo lanza al foco)", "F"], ["mute", "Silenciar", "M"], ["bind_mode", "Modo teclas (reasignar en partida)", "Ctrl+K"],
 	["macro_1", "Macro 1", "Ctrl+1"], ["macro_2", "Macro 2", "Ctrl+2"], ["macro_3", "Macro 3", "Ctrl+3"],

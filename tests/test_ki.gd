@@ -70,7 +70,7 @@ func test_flash_step_awaken_guard_and_palm() -> void:
 	far.cast = {"slot": 1, "start_at": 1000, "ends_at": 3000, "ax": 0, "az": 0, "target_id": -1, "lock": -1, "pushes": 0}
 	m._execute(g, slot_of(g, "palm"), far.x, far.z, far.id, 1500)
 	check(far.cast.is_empty(), "la palma interrumpe")
-	check(far.dash_left > 0.0, "y lo empuja")
+	check(far.knocked and far.air, "y lo empuja por el aire")
 
 
 func test_ki_bot_fights() -> void:

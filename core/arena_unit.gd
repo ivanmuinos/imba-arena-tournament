@@ -29,12 +29,23 @@ var dmg_mult := 1.0
 var dummy := ""
 var home := Vector2.ZERO
 var dummy_next := 0.0
+## Academia only: its name in the scenario; `mortal` stays down at 0 health instead of refilling (crates, rivals);
+## `dormant` is off stage (no simulation, not in any snapshot) until a trigger calls it.
+var lesson_key := ""
+var mortal := false
+var dormant := false
 var patrol_dir := 1.0
 
 var x := 0.0
 var z := 0.0
 var vx := 0.0
 var vz := 0.0
+## Height of the feet, vertical speed and whether it is off the ground (Rules.step_mover). `knocked`: thrown by a
+## knockback, with no control until it lands.
+var y := 0.0
+var vy := 0.0
+var air := false
+var knocked := false
 var dash_left := 0.0
 var dash_vx := 0.0
 var dash_vz := 0.0
@@ -118,7 +129,6 @@ var burn_by: ArenaUnit = null
 var curses := {}
 var tempest_stacks := 0  # ronin: Steel Tempest casts in a row (the third one throws a tornado)
 var tempest_at := -1e9
-var jump_at := -1e9
 var auto_target := -1
 ## Auto-attack toggled on (melee classes and the hunter only).
 var auto_on := false

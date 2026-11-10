@@ -9,8 +9,8 @@ const ACTIONS := {
 	"ally_0": "Seleccionarte a vos", "ally_1": "Aliado 1", "ally_2": "Aliado 2",
 	"cancel": "Cancelar / soltar objetivo", "face": "Mirar al objetivo", "mute": "Silenciar",
 	"orbit": "Seleccionar / orbitar cámara", "look": "Autoataque / mirar con cámara",
-	"slot_0": "Habilidad 1", "slot_1": "Habilidad 2", "slot_2": "Habilidad 3", "slot_3": "Habilidad 4",
-	"slot_4": "Definitiva",
+	"slot_0": "Botón 1", "slot_1": "Botón 2", "slot_2": "Botón 3", "slot_3": "Botón 4",
+	"slot_4": "Botón 5",
 }
 var store: RefCounted
 
