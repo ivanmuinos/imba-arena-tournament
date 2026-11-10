@@ -200,22 +200,22 @@ func _build() -> void:
 
 	# Score bar.
 	var sb := PanelContainer.new()
-	sb.add_theme_stylebox_override("panel", HudArt.panel_style(12))
+	sb.add_theme_stylebox_override("panel", HudArt.flat(HudArt.EDGE, 6, "top"))
 	sb.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	sb.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	sb.position.y = 10
+	sb.position.y = 0  # docked to the top edge
 	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 18)
-	score_red = UiKit.label("0", 34, UiKit.RED, HORIZONTAL_ALIGNMENT_CENTER)
-	score_red.custom_minimum_size = Vector2(40, 0)
-	round_label = UiKit.label("Ronda 1", 15, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER)
-	round_label.custom_minimum_size = Vector2(240, 0)
+	h.add_theme_constant_override("separation", 12)
+	score_red = UiKit.label("0", 24, UiKit.RED, HORIZONTAL_ALIGNMENT_CENTER)
+	score_red.custom_minimum_size = Vector2(30, 0)
+	round_label = UiKit.label("Ronda 1", 13, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER)
+	round_label.custom_minimum_size = Vector2(170, 0)
 	round_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	score_blue = UiKit.label("0", 34, UiKit.BLUE, HORIZONTAL_ALIGNMENT_CENTER)
-	score_blue.custom_minimum_size = Vector2(40, 0)
-	ping_label = UiKit.label("– ms", 12, UiKit.MUTED)
+	score_blue = UiKit.label("0", 24, UiKit.BLUE, HORIZONTAL_ALIGNMENT_CENTER)
+	score_blue.custom_minimum_size = Vector2(30, 0)
+	ping_label = UiKit.label("– ms", 11, UiKit.MUTED)
 	ping_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	fps_label = UiKit.label("– fps", 12, UiKit.MUTED)
+	fps_label = UiKit.label("– fps", 11, UiKit.MUTED)
 	fps_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	for c in [score_red, round_label, score_blue, ping_label, fps_label]:
 		h.add_child(c)
@@ -223,20 +223,20 @@ func _build() -> void:
 	_root.add_child(sb)
 
 	_frames_ally = VBoxContainer.new()
-	_frames_ally.add_theme_constant_override("separation", 6)
-	_frames_ally.position = Vector2(16, 14)
+	_frames_ally.add_theme_constant_override("separation", 4)
+	_frames_ally.position = Vector2(8, 8)
 	_root.add_child(_frames_ally)
 	_frames_enemy = VBoxContainer.new()
-	_frames_enemy.add_theme_constant_override("separation", 6)
+	_frames_enemy.add_theme_constant_override("separation", 4)
 	_frames_enemy.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_frames_enemy.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_frames_enemy.position = Vector2(-16, 14)
+	_frames_enemy.position = Vector2(-8, 8)
 	_frames_enemy.resized.connect(func(): _frames_enemy.pivot_offset = Vector2(_frames_enemy.size.x, 0))  # scales from the right edge
 	_root.add_child(_frames_enemy)
 	_killfeed = VBoxContainer.new()
 	_killfeed.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_killfeed.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_killfeed.position = Vector2(16, -190)  # above the action bar's left orb
+	_killfeed.position = Vector2(8, -120)
 	_root.add_child(_killfeed)
 
 	_build_target_frame()
@@ -272,8 +272,8 @@ func _build() -> void:
 	status_line.anchor_right = 1.0
 	status_line.anchor_top = 1.0
 	status_line.anchor_bottom = 1.0
-	status_line.offset_top = -200
-	status_line.offset_bottom = -176
+	status_line.offset_top = -176
+	status_line.offset_bottom = -152
 	status_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(status_line)
 	lock_hint = UiKit.label("Clic derecho + arrastrar: mirar · Clic izquierdo + arrastrar: cámara · Tab: objetivo · F: foco (Shift + poder: al foco) · Esc: soltar objetivo", 14, UiKit.MUTED, HORIZONTAL_ALIGNMENT_CENTER)
@@ -291,8 +291,8 @@ func _build() -> void:
 	bottom.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	bottom.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	bottom.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	bottom.position.y = -14
-	bottom.add_theme_constant_override("separation", 6)
+	bottom.position.y = 0  # the bar sits on the bottom edge of the screen
+	bottom.add_theme_constant_override("separation", 5)
 	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_my_debuffs = AuraRow.new().setup(34)
 	_my_debuffs.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -305,7 +305,7 @@ func _build() -> void:
 	_macro_bar.add_theme_constant_override("separation", 5)
 	_macro_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	bottom.add_child(_macro_bar)
-	_bar_frame = ActionBarFrame.new()  # the action bar art with its holes and orbs, scaled by the "bar_scale" setting
+	_bar_frame = ActionBarFrame.new()  # buttons, health and ultimate charge, scaled by the "bar_scale" setting
 	_bar_holder = Control.new()  # takes the frame's scaled size in the column: a container ignores its children's scale
 	_bar_holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_bar_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -379,19 +379,19 @@ func _build_target_frame() -> void:
 	_target_panel = VBoxContainer.new()
 	_target_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_target_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_target_panel.position = Vector2(0, 66)
+	_target_panel.position = Vector2(0, 46)
 	_target_panel.add_theme_constant_override("separation", 2)
 	_target_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var holder := Control.new()  # both art variants on the same spot; show_target shows one
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for kind in ["ally", "enemy"]:
-		var uf := HudArt.unit_frame(HudArt.ALLY if kind == "ally" else HudArt.ENEMY, 0.44 if kind == "ally" else 0.42)
+		var uf := HudArt.unit_frame(HudArt.ALLY if kind == "ally" else HudArt.ENEMY, 1.35)
 		var hp: Bar = uf.bars[0]
 		var cast: Bar = uf.bars[1]
 		cast.fill = Color("#ffd166")
-		var nm := UiKit.label("", 19, UiKit.INK)
-		UiKit.outlined(nm, 5)
-		nm.position = hp.position + Vector2(2, -25)
+		var nm := UiKit.label("", 16, UiKit.INK)
+		UiKit.outlined(nm, 4)
+		nm.position = hp.position + Vector2(2, -24)
 		nm.size = Vector2(hp.size.x * 0.75, 24)
 		nm.clip_text = true
 		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -422,13 +422,13 @@ func _build_focus_frame() -> void:
 	_focus_panel = VBoxContainer.new()
 	_focus_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_focus_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_focus_panel.position = Vector2(290, 74)
+	_focus_panel.position = Vector2(240, 50)
 	_focus_panel.add_theme_constant_override("separation", 0)
 	_focus_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ff.name = UiKit.label("", 14, UiKit.INK)
 	UiKit.outlined(_ff.name, 4)
 	_focus_panel.add_child(_ff.name)
-	var uf := HudArt.unit_frame(HudArt.FOCUS, 0.45)
+	var uf := HudArt.unit_frame(HudArt.FOCUS, 1.0)
 	_ff.hp = uf.bars[0]
 	_ff.hp.fill = HP_ENEMY
 	_focus_panel.add_child(uf.root)
@@ -514,7 +514,7 @@ func _make_frame(r: Dictionary, me: bool) -> Dictionary:
 		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 			frame_clicked.emit(r.id))
 	var ally: bool = r.team == my_team
-	var uf := HudArt.unit_frame(HudArt.ALLY if ally else HudArt.ENEMY, 0.3 if ally else 0.29)
+	var uf := HudArt.unit_frame(HudArt.ALLY if ally else HudArt.ENEMY, 1.0)
 	var frame: Control = uf.root
 	var picon: TextureRect = uf.icon
 	picon.texture = Icons.tex(GameData.classes[r.cls].icon)
@@ -595,7 +595,7 @@ func _build_bar() -> void:
 		var slot := Panel.new()
 		slot.custom_minimum_size = Vector2(60, 60)
 		var ult: bool = a.get("ult", false)
-		slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.03, 0.02, 0.015, 0.95), Color("#ffb84d") if ult else Color(0, 0, 0, 0), 2, 2 if ult else 0, 0))
+		slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.03, 0.02, 0.015, 0.95), Color("#ffb84d") if ult else HudArt.EDGE_DIM, 2, 2, 0))
 		slot.mouse_filter = Control.MOUSE_FILTER_PASS
 		slot.mouse_entered.connect(_show_ability_tip.bind(i))
 		slot.mouse_exited.connect(_ability_tip.hush)
@@ -757,13 +757,13 @@ func _build_macro_bar() -> void:
 func _build_trinket(dim_tex: Texture2D) -> void:
 	var slot := Panel.new()
 	slot.custom_minimum_size = Vector2(60, 60)
-	slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.1, 0.05, 0.04, 0.85), Color("#ffd166"), 30, 2, 0))
+	slot.add_theme_stylebox_override("panel", UiKit.box(Color(0.03, 0.02, 0.015, 0.95), Color("#ffd166"), 2, 2, 0))
 	slot.tooltip_text = "Abalorio PvP: rompe aturdimientos, ovejas, miedos, raíces, silencios y ralentizaciones. 2 min de reutilización."
 	var icon := Icons.rect("dispel", 56)
 	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 3)
 	var key := UiKit.label("", 11, Color("#ffd27a"))
 	UiKit.outlined(key, 4)
-	key.position = Vector2(6, 1)
+	key.position = Vector2(4, 1)
 	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sweep := TextureProgressBar.new()
 	sweep.fill_mode = TextureProgressBar.FILL_CLOCKWISE
@@ -795,7 +795,7 @@ func ally_ids() -> Array:
 func set_friend(id: int) -> void:
 	for fid in _frames:
 		var f: Dictionary = _frames[fid]
-		(f.art as TextureRect).self_modulate = Color(0.7, 1.0, 0.7) if fid == id else Color.WHITE
+		(f.art as Control).self_modulate = Color(0.7, 1.0, 0.7) if fid == id else Color.WHITE
 
 
 func on_state(s: Dictionary, me: Dictionary, now_ms: float) -> void:

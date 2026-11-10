@@ -335,11 +335,22 @@ static func _smooth_box(x: float, z: float, hx: float, hz: float, soft: float) -
 	return ex * ez
 
 
-## Floor height (view and camera only; gameplay is 2D).
+## Floor height: units stand on it, fall to it and cannot climb its cliffs (see Rules.step_mover).
+## Whether the floor has any height at all (flat maps skip the terrain checks).
+var relief: bool:
+	get: return id == "bridge" or id == "tomb"
+
+
+## Gradient of the floor (rise per metre along x and z): its length is the steepness, it points uphill.
+func slope_at(x: float, z: float) -> Vector2:
+	const E := 0.05
+	return Vector2(height_at(x + E, z) - height_at(x - E, z), height_at(x, z + E) - height_at(x, z - E)) / (2.0 * E)
+
+
 func height_at(x: float, z: float) -> float:
 	match id:
 		"bridge":
-			var chasm := maxf(_smooth_box(absf(x) - 11.0, z, 9.0, 9.0, 1.4), _smooth_box(absf(x) - 23.0, z, 3.0, 4.0, 1.0))
+			var chasm := maxf(_smooth_box(absf(x) - 11.0, z, 9.0, 9.0, 1.4), _smooth_box(absf(x) - 22.0, z, 4.0, 4.0, 1.0))  # the two pits overlap: no ridge between them
 			var h := 3.0 - 5.0 * chasm
 			# Ramps climb out of the chasm at both ends: floor rises from -2 at |z|=4 to 3 at |z|=9.
 			var w := clampf(absf(x) - 20.0, 0.0, 1.0)
@@ -373,8 +384,14 @@ func level_los_blocked(ax: float, az: float, bx: float, bz: float) -> bool:
 func waypoint(from: Vector2, to: Vector2) -> Vector2:
 	if id != "bridge":
 		return to
-	if is_low(from.x, from.y):  # fell in: climb the nearest ramp
-		return Vector2(signf(from.x) * 22.5, signf(to.y) * 12.0 if absf(from.y) < 1.0 else signf(from.y) * 12.0)
+	if is_low(from.x, from.y):  # fell in: the cliffs cannot be climbed, so walk to the foot of the nearest ramp, then up it
+		var sx := signf(from.x) if from.x != 0.0 else 1.0
+		var sz := signf(to.y) if absf(from.y) < 1.0 else signf(from.y)
+		if absf(from.x) < 21.8:
+			return Vector2(sx * 23.2, clampf(from.y, -2.0, 2.0))
+		return Vector2(sx * 23.2, sz * 12.0)
+	if absf(from.x) > 20.0 and absf(from.y) < 9.6 and absf(from.y) >= 4.0:
+		return Vector2(signf(from.x) * 23.2, signf(from.y) * 12.0)  # on a ramp: finish the climb before turning
 	var across := from.y * to.y < 0.0 and (absf(from.y) > 3.0 or absf(to.y) > 3.0)
 	if not across:
 		return to

@@ -104,6 +104,22 @@ objetivo muere, elegís un aliado o limpiás la selección. Mago, brujo y sacerd
 Selección: anillo grande animado bajo el objetivo (rojo hostil / verde aliado), contorno de luz en el modelo, flecha sobre la cabeza, nameplate
 agrandada y al frente, marco de objetivo grande, flecha en el borde de la pantalla si está fuera de vista y resalte + cursor (espada/mano) al pasar el mouse.
 
+## Físicas (altura real)
+
+La simulación del servidor tiene eje vertical (`Rules.step_mover`, compartido con la predicción del cliente):
+
+- **Salto real**: ~1,6 m de alto y ~0,8 s, sólo desde el suelo. En el aire se conserva el impulso con el que saliste: no se
+  cambia de rumbo en vuelo (un salto parado deja elegir una dirección, una vez). Girar la cámara en el aire sí se puede.
+- **Caídas y pendientes**: caminar por un borde te hace caer con tu impulso; el suelo demasiado empinado (más de `MAX_SLOPE`)
+  no se puede subir ni pisar. En el Puente de Magma del abismo sólo se sale por las rampas.
+- **Empujones con parábola** (`Rules.knock`): Palma, Golazo, Salva y la Retirada del cazador vuelan en arco; hasta aterrizar
+  no hay control, y un empujón desde el puente termina en la lava.
+- **Retroceder es más lento** (65%); el paso lateral va a velocidad plena. Los bots no tienen esta penalidad.
+- No se puede empezar un hechizo con tiempo de lanzamiento en el aire; los instantáneos sí.
+- Sin daño por caída. Alcances, línea de visión y lava siguen midiéndose en el plano.
+
+Protocolo de red **7**: cada unidad viaja con su altura y si está en el aire. Tests en `tests/test_physics.gd`.
+
 ## Brujo — Aflicción
 
 Sexta clase jugable: seleccioná **Brujo** en Campeones o usá `--offline --cls=warlock`.

@@ -7,8 +7,11 @@ class Mover:
 	extends RefCounted
 	var x := 0.0
 	var z := 0.0
+	var y := 0.0
 	var vx := 0.0
 	var vz := 0.0
+	var vy := 0.0
+	var air := false
 	var dash_left := 0.0
 	var dash_vx := 0.0
 	var dash_vz := 0.0
@@ -19,12 +22,24 @@ var predict_until := 0.0
 var last_phase := ""
 
 
-func place(x: float, z: float) -> void:
+func place(x: float, z: float, map: GameMap = null) -> void:
 	m.x = x
 	m.z = z
 	m.vx = 0.0
 	m.vz = 0.0
+	m.vy = 0.0
+	m.air = false
 	m.dash_left = 0.0
+	if map != null:
+		m.y = map.height_at(x, z)
+
+
+## Space bar: the jump starts on this frame, the server confirms. False when it cannot (in the air, stunned, rooted...).
+func jump(me: Dictionary) -> bool:
+	var cc: Dictionary = me.cc
+	if not me.alive or cc.has("stun") or cc.has("incap") or cc.has("root") or cc.has("fear") or me.get("dashing", false) or m.dash_left > 0.0:
+		return false
+	return Rules.jump(m)
 
 
 static func speed_for(cls: String, me: Dictionary) -> float:
@@ -42,22 +57,32 @@ func on_state(me: Dictionary, phase: String, now_ms: float) -> void:
 	last_phase = phase
 	if now_ms > predict_until and (phase_changed or Vector2(me.x - m.x, me.z - m.z).length() > 2.5 or not me.alive):
 		place(me.x, me.z)
+		m.y = me.get("y", m.y)
+		m.air = me.get("air", false)
 
 
 ## Advances the local unit one frame. `age_s` = seconds since the last snapshot arrived.
-func step(dt: float, input: Vector2, me: Dictionary, cls: String, phase: String, map: GameMap, age_s: float, now_ms: float) -> void:
+## `face` is the yaw the local character looks along (walking backwards is slower); NAN = unknown, full speed.
+func step(dt: float, input: Vector2, me: Dictionary, cls: String, phase: String, map: GameMap, age_s: float, now_ms: float, face := NAN) -> void:
 	var cc: Dictionary = me.cc
-	if cc.has("fear") or me.get("dashing", false):
-		# Server-driven movement: follow it instead of predicting.
+	if now_ms > predict_until and (cc.has("fear") or me.get("dashing", false)):
+		# Server-driven movement (fear, charges, knockbacks): follow it instead of predicting.
 		var k := 1.0 - exp(-14.0 * dt)
 		m.x += (me.x - m.x) * k
 		m.z += (me.z - m.z) * k
+		m.y += (float(me.get("y", m.y)) - m.y) * k
+		m.air = me.get("air", false)
 		m.vx = 0.0
 		m.vz = 0.0
+		m.vy = 0.0
+		m.dash_left = 0.0
 		return
 	var casting_still: bool = me.cast != null and input.length() < 1e-6
 	var can_move: bool = Rules.can_walk_in(phase) and me.alive and not cc.has("stun") and not cc.has("incap") and not cc.has("root") and not casting_still
-	Rules.step_mover(m, input.x, input.y, dt, speed_for(cls, me), can_move, map)
+	var speed := speed_for(cls, me)
+	if not is_nan(face) and not cc.has("fear"):
+		speed *= Rules.facing_speed(input, face)
+	Rules.step_mover(m, input.x, input.y, dt, speed, can_move, map)
 	if age_s < 0.1 and now_ms > predict_until:
 		var c := 1.0 - exp(-(2.0 if m.dash_left > 0.0 else 7.0) * dt)
 		m.x += (me.x - m.x) * c
@@ -78,11 +103,10 @@ func predict_movement(spec: Dictionary, dir: Vector2, me: Dictionary, map: GameM
 		var p := Rules.blink_target(map, m.x, m.z, d.x, d.y, spec.dist)
 		m.x = p.x
 		m.z = p.y
+		m.y = map.height_at(p.x, p.y)
 	elif not me.cc.has("root"):
-		m.dash_left = 0.28
-		m.dash_vx = -d.x * (spec.dist / 0.28)
-		m.dash_vz = -d.y * (spec.dist / 0.28)
+		Rules.knock(m, -d, float(spec.dist), Rules.LEAP_S)
 	else:
 		return false
-	predict_until = now_ms + 350.0
+	predict_until = now_ms + (350.0 if spec.id == "blink" else Rules.LEAP_S * 1000.0 + 80.0)
 	return true

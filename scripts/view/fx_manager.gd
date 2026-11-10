@@ -21,6 +21,9 @@ const TRAIL := preload("res://assets/shaders/spell_trail.gdshader")
 const GROUND := preload("res://assets/shaders/spell_ground.gdshader")
 const SCORCH := preload("res://assets/shaders/scorch.gdshader")
 const SLASH := preload("res://assets/shaders/slash.gdshader")
+const SHOCK := preload("res://assets/shaders/shock_ring.gdshader")
+const SPARK_POOL := 24
+const SMOKE_POOL := 16
 const LIGHTS := 6
 const SCORCHES := 14
 
@@ -64,6 +67,11 @@ var _beams := {}
 var _pool: Array = []  # {node, free_at}
 var _pool_idx := 0
 var _particle_mesh: QuadMesh
+## Sparks (streaks along their flight) and smoke (soft puffs that hide what is behind) have their own pools.
+var _spark_pool: Array = []
+var _spark_idx := 0
+var _smoke_pool: Array = []
+var _smoke_idx := 0
 ## Set by apply_quality(): particle multiplier, short impact lights, scorch decals.
 var q := {"particles": 1.0, "fx_lights": true, "decals": true}
 var _lights: Array = []   # {light, t, dur, energy}
@@ -86,7 +94,7 @@ func setup(p_world: ArenaWorld) -> void:
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.albedo_texture = Textures.glow_dot()
-	mat.albedo_color = Color(1.35, 1.35, 1.35, 1.0)
+	mat.albedo_color = Color(1.1, 1.1, 1.1, 1.0)
 	mat.vertex_color_use_as_albedo = true
 	mat.disable_fog = true
 	mat.particles_anim_h_frames = 1
@@ -96,6 +104,53 @@ func setup(p_world: ArenaWorld) -> void:
 		var p := _make_particles()
 		add_child(p)
 		_pool.append({"node": p, "free_at": 0.0})
+	var spark_mesh := QuadMesh.new()
+	spark_mesh.size = Vector2(0.07, 0.55)
+	var spark_mat := mat.duplicate() as StandardMaterial3D
+	spark_mat.albedo_texture = Textures.spark()
+	spark_mat.albedo_color = Color(1.6, 1.6, 1.6, 1.0)
+	spark_mesh.material = spark_mat
+	for i in SPARK_POOL:
+		var sp := _make_particles()
+		sp.mesh = spark_mesh
+		sp.set_particle_flag(CPUParticles3D.PARTICLE_FLAG_ALIGN_Y_TO_VELOCITY, true)
+		sp.emission_sphere_radius = 0.05
+		sp.damping_min = 3.0
+		sp.damping_max = 6.0
+		add_child(sp)
+		_spark_pool.append({"node": sp})
+	var smoke_mesh := QuadMesh.new()
+	smoke_mesh.size = Vector2(1.0, 1.0)
+	var smoke_mat := StandardMaterial3D.new()
+	smoke_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	smoke_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	smoke_mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+	smoke_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	smoke_mat.albedo_texture = Textures.smoke_puff()
+	smoke_mat.vertex_color_use_as_albedo = true
+	smoke_mesh.material = smoke_mat
+	var swell := Curve.new()
+	swell.add_point(Vector2(0.0, 0.35))
+	swell.add_point(Vector2(0.3, 0.8))
+	swell.add_point(Vector2(1.0, 1.0))
+	var thin := Gradient.new()
+	thin.offsets = PackedFloat32Array([0.0, 0.15, 0.5, 1.0])
+	thin.colors = PackedColorArray([Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.34), Color(1, 1, 1, 0.2), Color(1, 1, 1, 0.0)])
+	for i in SMOKE_POOL:
+		var sm := _make_particles()
+		sm.mesh = smoke_mesh
+		sm.explosiveness = 0.8
+		sm.scale_amount_curve = swell
+		sm.color_ramp = thin
+		sm.angle_min = 0.0
+		sm.angle_max = 360.0
+		sm.angular_velocity_min = -30.0
+		sm.angular_velocity_max = 30.0
+		sm.damping_min = 1.5
+		sm.damping_max = 3.0
+		sm.spread = 70.0
+		add_child(sm)
+		_smoke_pool.append({"node": sm})
 	for i in LIGHTS:
 		var l := OmniLight3D.new()
 		l.light_energy = 0.0
@@ -192,6 +247,14 @@ func _make_particles() -> CPUParticles3D:
 	ramp.offsets = PackedFloat32Array([0.0, 0.2, 1.0])
 	ramp.colors = PackedColorArray([Color(1, 1, 1, 0.0), Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
 	p.color_ramp = ramp
+	# Motes swell in and shrink away, and lose speed as they fly, instead of popping out at full size.
+	var shrink := Curve.new()
+	shrink.add_point(Vector2(0.0, 0.5))
+	shrink.add_point(Vector2(0.15, 1.0))
+	shrink.add_point(Vector2(1.0, 0.15))
+	p.scale_amount_curve = shrink
+	p.damping_min = 1.0
+	p.damping_max = 2.5
 	return p
 
 
@@ -209,6 +272,44 @@ func burst(pos: Vector3, n: int, speed: float, color: Color, life: float, size: 
 	p.gravity = Vector3(0, -gravity, 0)
 	p.scale_amount_min = size * 0.6
 	p.scale_amount_max = size * 1.3
+	p.color = color
+	p.restart()
+	p.emitting = true
+
+
+## Sparks: thin bright streaks thrown out fast that stretch along their flight and die quickly.
+func sparks(pos: Vector3, n: int, speed: float, color: Color, life: float, gravity := 9.0, up := 0.0) -> void:
+	var p: CPUParticles3D = _spark_pool[_spark_idx].node
+	_spark_idx = (_spark_idx + 1) % SPARK_POOL
+	p.emitting = false
+	p.position = pos
+	p.amount = maxi(1, int(round(n * q.particles)))
+	p.lifetime = life
+	p.direction = Vector3.UP
+	p.spread = 180.0 if up <= 0.0 else 55.0
+	p.initial_velocity_min = speed * 0.45
+	p.initial_velocity_max = speed
+	p.gravity = Vector3(0, -gravity, 0)
+	p.scale_amount_min = 0.6
+	p.scale_amount_max = 1.2
+	p.color = color
+	p.restart()
+	p.emitting = true
+
+
+## Smoke or dust: a few soft puffs that swell, drift up and thin out. `color` is the smoke's own colour (not a glow).
+func smoke(pos: Vector3, n: int, size: float, color: Color, life: float, rise := 1.0, speed := 1.2) -> void:
+	var p: CPUParticles3D = _smoke_pool[_smoke_idx].node
+	_smoke_idx = (_smoke_idx + 1) % SMOKE_POOL
+	p.emitting = false
+	p.position = pos
+	p.amount = maxi(1, int(round(n * q.particles)))
+	p.lifetime = life
+	p.initial_velocity_min = speed * 0.3
+	p.initial_velocity_max = speed
+	p.gravity = Vector3(0, rise, 0)
+	p.scale_amount_min = size * 1.3  # few and large: overlapping puffs read as one cloud, small ones as spots
+	p.scale_amount_max = size * 2.1
 	p.color = color
 	p.restart()
 	p.emitting = true
@@ -295,6 +396,23 @@ func _make_proj(kind: String) -> Node3D:
 		head.position.z = 0.62
 		head.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		g.add_child(head)
+	# Halo: a soft glow around a spell's head, so it reads as a light and not as a ball. Arrows and bullets have none.
+	var halo := MeshInstance3D.new()
+	halo.visible = not st.arrow
+	var hq := QuadMesh.new()
+	hq.size = Vector2.ONE * r * 6.0
+	halo.mesh = hq
+	var hm := StandardMaterial3D.new()
+	hm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	hm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	hm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	hm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	hm.albedo_texture = Textures.glow_dot()
+	hm.albedo_color = Color(pal.mid.r, pal.mid.g, pal.mid.b, 0.28)
+	hm.disable_fog = true
+	halo.material_override = hm
+	halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	g.add_child(halo)
 	# Comet tail: a cone behind the projectile with a falling-off, noisy alpha.
 	var length := r * (16.0 if not st.arrow else 12.0)
 	var tail := MeshInstance3D.new()
@@ -460,7 +578,7 @@ func breath(x: float, z: float, dx: float, dz: float, r: float) -> void:
 		var pos := Vector3(x + dx * d, y, z + dz * d)
 		burst(pos, 34 + i * 8, 4.0 + i * 1.5, COL_FIRE, 0.55 + i * 0.1, 0.8 + i * 0.3, -1.0)
 		burst(pos, 14, 2.5, COL_HOT, 0.4, 0.6 + i * 0.2)
-		_flash_sphere(pos, "fire", 0.3 + i * 0.12, 0.35, 2.2)
+		_flash_sphere(pos, "fire", 0.3 + i * 0.12, 0.35, 2.2, 0.75)  # four of them overlap right in front of the caster
 	_light_flash(Vector3(x + dx * r * 0.5, y, z + dz * r * 0.5), COL_FIRE, 3.0, 0.4)
 	shake.emit(0.1, x, z)
 
@@ -549,35 +667,51 @@ func sync_powers(list: Array) -> void:
 func impact(school: String, pos: Vector3, scale := 1.0, ground_ring := true) -> void:
 	var pal := SpellSchools.palette(school)
 	var b := SpellSchools.burst(school, 1.0)
-	_flash_sphere(pos, school, 0.45 * scale, 0.3, 2.6 * scale)
-	burst(pos, int(b.n * scale), b.speed * scale, pal.mid, b.life, b.size * scale, b.gravity)
-	burst(pos, int(b.n * 0.5 * scale), b.speed * 0.55 * scale, pal.core, b.life * 0.6, b.size * 0.6 * scale, 0.0)
+	# A hit on a unit (small scale) happens several times a second in a melee pile: its flash is dim and its sparks are
+	# coloured, or the pile burns out to white. Only real explosions get the bright core.
+	var small := scale < 0.8
+	_flash_sphere(pos, school, 0.45 * scale, 0.3, 2.6 * scale, 0.8 if small else 1.6)
+	burst(pos, int(b.n * scale * (0.6 if small else 1.0)), b.speed * scale, pal.mid, b.life, b.size * scale, b.gravity)
+	burst(pos, int(b.n * (0.2 if small else 0.5) * scale), b.speed * 0.55 * scale, pal.mid.lerp(pal.core, 0.25 if small else 0.7), b.life * 0.6, b.size * 0.6 * scale, 0.0)
 	_light_flash(pos + Vector3(0, 0.6, 0), pal.mid, 3.0 * scale, 0.28)
+	_flare(pos, pal.mid.lerp(pal.core, 0.3), 1.1 * scale)  # tinted and small: an accent, it must not white out a melee pile
 	var floor_y := _y(pos.x, pos.z)
+	var big := scale >= 0.8  # a real explosion, not a hit on a unit: it gets smoke and a shockwave
+	if big:
+		_shock(Vector3(pos.x, floor_y + 0.1, pos.z), pal.mid, 2.0 * scale, 0.4)
 	match school:
 		"fire":
-			burst(pos, int(10 * scale), 2.0, COL_SMOKE, 1.1, 0.9 * scale, -1.2)
-			if scale >= 0.8:
+			sparks(pos, int(12 * scale) + 3, 9.0 * sqrt(scale), COL_HOT, 0.45)
+			if scale >= 0.6:
+				smoke(pos + Vector3(0, 0.2, 0), int(3 * scale) + 1, 0.9 * scale, Color(0.12, 0.09, 0.08), 1.4, 1.6)
+			if big:
 				_scorch(pos, 1.3 * scale)
 		"frost":
 			if ground_ring:
 				_flash_ground(Vector3(pos.x, floor_y + 0.12, pos.z), school, 0.5, 1.4 * scale)
-			burst(pos, int(14 * scale), 4.0, Color("#ffffff"), 0.5, 0.2 * scale, 9.0)  # falling shards
+			sparks(pos, int(12 * scale) + 3, 6.5 * sqrt(scale), Color("#eafaff"), 0.5, 14.0)  # ice shards that fall
+			if big:
+				smoke(pos, 2, 0.9 * scale, Color(0.55, 0.68, 0.8), 1.0, 0.3)  # cold mist: blue-grey, never white
 		"arcane":
 			if ground_ring:
 				_flash_ground(Vector3(pos.x, floor_y + 0.12, pos.z), school, 0.55, 1.6 * scale)
+			sparks(pos, int(8 * scale) + 2, 5.0, pal.core, 0.4, 0.0)
 		"holy":
 			_flash_column(Vector3(pos.x, floor_y, pos.z), school, 0.5, scale)
 			if ground_ring:
 				_flash_ground(Vector3(pos.x, floor_y + 0.12, pos.z), school, 0.6, 1.8 * scale)
+			sparks(pos, int(8 * scale) + 2, 4.5, pal.core, 0.55, -5.0, 1.0)  # light rising
 		"shadow":
-			burst(pos, int(14 * scale), 2.0, pal.edge, 1.0, 0.9 * scale, 0.0)
 			if ground_ring:
 				_flash_ground(Vector3(pos.x, floor_y + 0.12, pos.z), school, 0.6, 1.5 * scale)
+			if scale >= 0.6:
+				smoke(pos, int(3 * scale) + 1, 1.1 * scale, Color(0.2, 0.08, 0.32), 1.3, 0.8)
 		"nature":
 			burst(pos, int(12 * scale), 3.0, Color("#9cff7a"), 0.9, 0.3 * scale, 3.0)  # leaves
 		_:
-			burst(pos, int(8 * scale), 3.0, Color("#8a7a68"), 0.5, 0.6 * scale, -0.5)  # dust
+			sparks(pos, int(7 * scale) + 2, 7.0, Color("#ffe6c0"), 0.25, 12.0)
+			if big:
+				smoke(pos, 2, 0.7 * scale, Color(0.3, 0.26, 0.22), 0.9, 0.6)  # dust
 
 
 ## Small school-coloured flash where a spell lands on a unit.
@@ -630,8 +764,10 @@ func boom(x: float, z: float, r: float, kind: String) -> void:
 	impact("fire", Vector3(x, y + 0.6, z), 2.2 if meteor else clampf(r * 0.45, 0.5, 1.3), false)
 	_flash_ground(Vector3(x, y + 0.14, z), "fire", 0.45 if meteor else 0.3, r * (1.3 if meteor else 1.0))
 	if meteor:
-		burst(Vector3(x, y + 0.6, z), 70, 11.0, COL_FIRE, 0.7, 0.9, 9.0)
-		burst(Vector3(x, y + 0.4, z), 20, 2.0, COL_SMOKE, 1.4, 1.6, -1.0)
+		burst(Vector3(x, y + 0.6, z), 50, 11.0, COL_FIRE, 0.7, 0.9, 9.0)
+		sparks(Vector3(x, y + 0.5, z), 34, 15.0, COL_HOT, 0.7, 12.0)
+		smoke(Vector3(x, y + 0.6, z), 9, 2.6, Color(0.13, 0.1, 0.09), 2.2, 2.2, 3.0)
+		_shock(Vector3(x, y + 0.12, z), COL_FIRE, r * 1.8, 0.55)
 	shake.emit(0.7 if meteor else 0.15, x, z)
 
 
@@ -814,18 +950,18 @@ func hymn(x: float, z: float, r: float) -> void:
 
 
 func charge(x0: float, z0: float, x1: float, z1: float) -> void:
-	for i in 8:
-		var t := float(i) / 7.0
+	for i in 5:
+		var t := float(i) / 4.0
 		var x := lerpf(x0, x1, t)
 		var z := lerpf(z0, z1, t)
-		burst(Vector3(x, _y(x, z) + 0.3, z), 4, 2.0, Color("#8a6a50"), 0.7, 0.9, -0.5)
+		smoke(Vector3(x, _y(x, z) + 0.3, z), 2, 0.9, Color(0.3, 0.26, 0.22), 0.8, 0.5)
 
 
 ## Weapon slash: spark burst plus a crescent trail across the attacker's front (alternating sides for light swings).
 func slash(x: float, z: float, rot: float, heavy: bool, side := 1.0) -> void:
 	var pos := Vector3(x + sin(rot) * 1.2, _y(x, z) + 1.15 * UnitView.VS, z + cos(rot) * 1.2)
-	burst(pos, 18 if heavy else 10, 3.0, Color("#ffb060") if heavy else Color("#dfe6ff"), 0.25, 0.45 if heavy else 0.3)
-	_flash_sphere(pos, "physical", 0.2, 0.18, 2.0 if heavy else 1.3)
+	sparks(pos, 9 if heavy else 5, 6.0, Color("#ffb060") if heavy else Color("#dfe6ff"), 0.22, 10.0)
+	_flash_sphere(pos, "physical", 0.2, 0.18, 2.0 if heavy else 1.3, 0.9)
 	if not _fancy:
 		return
 	var m := MeshInstance3D.new()
@@ -843,21 +979,66 @@ func slash(x: float, z: float, rot: float, heavy: bool, side := 1.0) -> void:
 	_flashes.append({"mesh": m, "t": 0.0, "dur": 0.2 if not heavy else 0.26, "grow": 0.0, "mat": mat, "kind": "slash"})
 
 
+## Dust kicked up at the feet (landing from a jump, a dash).
 func dash(x: float, z: float) -> void:
-	burst(Vector3(x, _y(x, z) + 0.3, z), 14, 2.5, COL_SMOKE, 0.6, 0.8, -0.5)
+	smoke(Vector3(x, _y(x, z) + 0.25, z), 3, 0.6, Color(0.3, 0.26, 0.22), 0.7, 0.4, 1.4)
 
 
 func cast_spark(x: float, z: float, kind: String, rot := 0.0) -> void:
 	cast_glow(x, z, rot, kind)
 
 
+## A star glint that pops and is gone in a blink: the "hit" accent of an impact.
+func _flare(pos: Vector3, color: Color, size: float) -> void:
+	if not _fancy:
+		return
+	var m := MeshInstance3D.new()
+	var qm := QuadMesh.new()
+	qm.size = Vector2.ONE * size
+	m.mesh = qm
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.billboard_keep_scale = true
+	mat.no_depth_test = true
+	mat.disable_fog = true
+	mat.albedo_texture = Textures.flare()
+	mat.albedo_color = Color(color.r * 0.8, color.g * 0.8, color.b * 0.8, 1.0)
+	m.material_override = mat
+	m.position = pos
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(m)
+	_flashes.append({"mesh": m, "t": 0.0, "dur": 0.16, "grow": 0.0, "mat": null, "smat": mat, "kind": "flare"})
+
+
+## Shockwave: a thin ring racing out along the ground to radius `r`.
+func _shock(pos: Vector3, color: Color, r: float, dur: float) -> void:
+	if not _fancy:
+		return
+	var m := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(2, 2)
+	m.mesh = pm
+	var mat := ShaderMaterial.new()
+	mat.shader = SHOCK
+	mat.set_shader_parameter("color", color)
+	m.material_override = mat
+	m.position = pos
+	m.scale = Vector3(0.3, 1, 0.3)
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(m)
+	_flashes.append({"mesh": m, "t": 0.0, "dur": dur, "grow": r, "mat": mat, "kind": "shock"})
+
+
 ## Expanding glowing orb that dissolves.
-func _flash_sphere(pos: Vector3, school: String, r: float, dur: float, grow: float) -> void:
+func _flash_sphere(pos: Vector3, school: String, r: float, dur: float, grow: float, energy := 1.4) -> void:
 	if not _fancy:
 		return
 	var m := MeshInstance3D.new()
 	m.mesh = MeshBuilder.sphere(r, 12, 6)
-	var mat := _school_mat("orb", school, 1.8)
+	var mat := _school_mat("orb", school, energy)
 	m.material_override = mat
 	m.position = pos
 	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -934,6 +1115,13 @@ func update(dt: float, now_s: float) -> void:
 		var k: float = minf(1.0, f.t / f.dur)
 		var mat: ShaderMaterial = f.mat
 		match f.kind:
+			"flare":
+				f.mesh.scale = Vector3.ONE * (0.55 + 0.6 * sqrt(k))
+				(f.smat as StandardMaterial3D).albedo_color.a = 1.0 - k * k
+			"shock":
+				var sr: float = lerpf(0.3, f.grow, 1.0 - pow(1.0 - k, 2.5))
+				f.mesh.scale = Vector3(sr, 1, sr)
+				mat.set_shader_parameter("fade", (1.0 - k) * (1.0 - k))
 			"ground":
 				var r: float = lerpf(0.2, f.grow, 1.0 - pow(1.0 - k, 3.0))
 				f.mesh.scale = Vector3(r, 1, r)
@@ -948,7 +1136,7 @@ func update(dt: float, now_s: float) -> void:
 			_:
 				f.mesh.scale = Vector3.ONE * (1.0 + k * f.grow)
 				mat.set_shader_parameter("dissolve", k * 0.85)
-				mat.set_shader_parameter("fade", 1.0 - k * 0.6)
+				mat.set_shader_parameter("fade", (1.0 - k) * (1.0 - k * 0.5))  # gone by the time it is at full size
 		if k >= 1.0:
 			f.mesh.queue_free()
 			_flashes.remove_at(i)

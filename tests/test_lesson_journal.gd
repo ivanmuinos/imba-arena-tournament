@@ -154,7 +154,6 @@ func test_interrupts_and_cancels_are_logged() -> void:
 	eq(_of(m, "cast_cancel")[1].why, "moved", "moverse cancela")
 	a.input = Vector2.ZERO
 	a.cast = {"slot": slot, "start_at": NOW, "ends_at": NOW + 2000.0, "ax": 0.0, "az": 0.0, "target_id": -1, "lock": -1, "pushes": 0}
-	a.jump_at = 0.0
 	m.jump(a, NOW + 10.0)
 	eq(_of(m, "cast_cancel")[2].why, "jump", "saltar cancela")
 

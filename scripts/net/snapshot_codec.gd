@@ -4,7 +4,7 @@ extends RefCounted
 ## of one dictionary per entity, which keeps a snapshot far below one MTU (ENet fragments and
 ## drops large unreliable packets). pack() and unpack() are exact inverses up to float32.
 
-const U := 12  # id, x, z, rot, hp, alive, dashing, jump, cast slot/total/left/target id
+const U := 12  # id, x, z, rot, hp, alive, flags (1 dashing, 2 in the air), y, cast slot/total/left/target id
 const P := 6   # id, kind, x, z, vx, vz
 const A := 6   # id, x, z, r, left, kind (index into the ability ids)
 const T := 4   # id, x, z, armed
@@ -37,7 +37,7 @@ static func pack(s: Dictionary) -> Dictionary:
 	var effects := {}
 	for x in s.units:
 		var c = x.cast
-		u.append_array(PackedFloat32Array([x.id, x.x, x.z, x.rot, x.hp, 1.0 if x.alive else 0.0, 1.0 if x.dashing else 0.0, x.jump,
+		u.append_array(PackedFloat32Array([x.id, x.x, x.z, x.rot, x.hp, 1.0 if x.alive else 0.0, (1.0 if x.dashing else 0.0) + (2.0 if x.air else 0.0), x.y,
 			c.slot if c != null else -1.0, c.total if c != null else 0.0, c.left if c != null else 0.0, c.get("tid", -1) if c != null else -1.0]))
 		if not x.cc.is_empty() or not x.buffs.is_empty():
 			effects[int(x.id)] = [x.cc, x.buffs]
@@ -69,7 +69,7 @@ static func unpack(m: Dictionary) -> Dictionary:
 		var eff: Array = m.e.get(id, [{}, {}])
 		units.append({
 			"id": id, "x": u[i + 1], "z": u[i + 2], "rot": u[i + 3], "hp": int(u[i + 4]), "alive": u[i + 5] > 0.5,
-			"dashing": u[i + 6] > 0.5, "jump": int(u[i + 7]),
+			"dashing": (int(u[i + 6]) & 1) != 0, "air": (int(u[i + 6]) & 2) != 0, "y": u[i + 7],
 			"cast": null if u[i + 8] < 0 else {"slot": int(u[i + 8]), "total": u[i + 9], "left": u[i + 10], "tid": int(u[i + 11])},
 			"cc": eff[0], "buffs": eff[1],
 		})

@@ -187,6 +187,8 @@ func test_bind_mode_arranges_the_bar_by_dragging() -> void:
 
 
 func test_a_talent_swap_stays_on_the_arranged_button() -> void:
+	var was := Talents.enabled
+	Talents.enabled = true  # talents are switched off for now: the rule must still hold when they come back
 	var swaps := 0
 	for cls in GameData.playable_ids():
 		for spec in (GameData.spec_ids(cls) if not GameData.spec_ids(cls).is_empty() else [""]):
@@ -203,6 +205,7 @@ func test_a_talent_swap_stays_on_the_arranged_button() -> void:
 						var after: Array = Talents.apply(GameData.kit(cls, spec), cls, spec, picks).abilities
 						eq(str(after[ids.find(str(e.ability))].id), str(e.to), "%s: %s ocupa el lugar de %s" % [Talents.key(cls, spec), e.to, e.ability])
 						swaps += 1
+	Talents.enabled = was
 	check(swaps > 0, "hay talentos que cambian una habilidad")
 
 

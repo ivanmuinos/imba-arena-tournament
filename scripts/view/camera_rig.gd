@@ -12,6 +12,16 @@ var shoulder := 0.7
 var base_fov := 72.0
 
 var _focus := Vector3.ZERO
+## Distance actually used this frame (the wanted `dist`, shortened by walls and terrain).
+var _dist_now := 5.0
+const TERRAIN_STEPS := 10
+## With a wall right behind the player the camera comes this close rather than going through it.
+const MIN_DIST := 0.35
+
+
+## So close that the followed character would fill the screen: the view hides it (first person, in effect).
+func too_close() -> bool:
+	return _dist_now < 1.0
 var _shake := 0.0
 var _fov_kick := 0.0
 
@@ -47,20 +57,44 @@ func zoom(delta: float) -> void:
 	dist = clampf(dist + delta, 2.5, 10.0)
 
 
-func chase(x: float, z: float, dt: float, world: ArenaWorld, snap := false) -> void:
+## `y` is the height of the feet of whoever is followed (NAN = on the terrain). The camera follows a jump softly, so
+## hopping around does not shake the view.
+func chase(x: float, z: float, dt: float, world: ArenaWorld, snap := false, y := NAN) -> void:
 	var head := 1.2
-	var want := Vector3(x, world.h(x, z) + head, z)
-	_focus = want if snap else _focus.lerp(want, 1.0 - exp(-30.0 * dt))
+	var want := Vector3(x, (world.h(x, z) if is_nan(y) else y) + head, z)
+	if snap:
+		_focus = want
+	else:
+		var k := 1.0 - exp(-30.0 * dt)
+		_focus.x = lerpf(_focus.x, want.x, k)
+		_focus.z = lerpf(_focus.z, want.z, k)
+		_focus.y = lerpf(_focus.y, want.y, 1.0 - exp(-9.0 * dt))
 	var f := forward()
 	var right := Vector2(-f.y, f.x)
-	var pivot := Vector2(_focus.x, _focus.z) + right * shoulder
+	var head_pt := Vector2(_focus.x, _focus.z)
+	var pivot := head_pt + right * shoulder
+	# Hugging a wall on the right: the shoulder offset must not carry the camera through it.
+	var ts := Rules.obstacle_hit(world.map, head_pt.x, head_pt.y, pivot.x, pivot.y, 0.4)
+	if ts >= 0.0:
+		pivot = head_pt + right * shoulder * maxf(0.0, ts - 0.15)
 	var flat := cos(pitch)
 	var d := dist
-	# Pulled in when a wall or pillar blocks the view.
+	# Pulled in when a wall or pillar blocks the view...
 	var back := pivot - f * d * flat
 	var t := Rules.obstacle_hit(world.map, pivot.x, pivot.y, back.x, back.y, 0.35)
 	if t >= 0.0:
-		d = maxf(1.6, d * t * 0.9)
+		d = maxf(MIN_DIST, d * t * 0.9 - 0.15)
+	# ...or when the ground does (a cliff behind the player, the rim of the chasm).
+	if world.map.relief:
+		var rise := sin(pitch)
+		for i in range(1, TERRAIN_STEPS + 1):
+			var k := float(i) / TERRAIN_STEPS
+			var q := pivot - f * d * flat * k
+			if _focus.y + 0.25 + d * rise * k < world.h(q.x, q.y) + 0.35:
+				d = maxf(MIN_DIST, d * (float(i - 1) / TERRAIN_STEPS))
+				break
+	_dist_now = d if snap or d < _dist_now else lerpf(_dist_now, d, 1.0 - exp(-6.0 * dt))  # in at once, back out gently
+	d = _dist_now
 	var cam := pivot - f * d * flat
 	var pos := Vector3(cam.x, maxf(world.h(cam.x, cam.y) + 0.5, _focus.y + 0.25 + d * sin(pitch)), cam.y)
 	if _shake > 0.0:

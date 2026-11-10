@@ -36,6 +36,12 @@ var next_think := 0.0
 var strafe := 1.0
 var strafe_until := 0.0
 var wander = null  # Vector2 or null
+## Where the bot is running to break the line of sight of a cast aimed at it (INF: not juking).
+var juke := Vector2.INF
+## Off: bots never hide from casts (to compare balance or behaviour with and without line-of-sight play).
+static var cover_play := true
+var _juke_cast := ""  # the cast it already decided about ("<caster id>:<start>"), so it rolls once per cast
+var _juke_go := false
 
 
 func _init(p_diff := "normal") -> void:
@@ -51,6 +57,8 @@ func _blocked(map: GameMap, x: float, z: float, from_hazard := false) -> bool:
 		return true
 	if not from_hazard and Rules.in_pool(map, x, z) and Rules.hazard_at(map, x, z).get("dps", 0) > 0:
 		return true
+	if not from_hazard and map.relief and map.slope_at(x, z).length() > Rules.MAX_SLOPE * 0.5:
+		return true  # the rim of a cliff: one more step and it slips in
 	return Rules.sdf_all(map, x, z) < Rules.PLAYER_R + 0.3
 
 
@@ -196,7 +204,92 @@ func _priest_post(m: ArenaMatch, u: ArenaUnit, enemies: Array, now: float) -> Ve
 	return Vector2.INF
 
 
+## Casts a melee also hides from: losing control of the character costs more than a few seconds off the target.
+const JUKE_CC := ["poly", "fear", "cyclone", "blind", "confuse"]
+const JUKE_MIN_CAST := 1000.0   # shorter casts land before anyone gets behind anything
+const JUKE_RINGS := [1.5, 2.5, 3.5, 5.0, 6.5]
+
+
+## The enemy whose cast in progress is aimed at `u` (by target, or by a point on top of it) and can still be dodged.
+func _incoming_cast(u: ArenaUnit, enemies: Array, now: float) -> ArenaUnit:
+	var melee := u.cls in ["warrior", "rogue", "ronin", "ki", "paladin"]
+	for e in enemies:
+		if e.cast.is_empty():
+			continue
+		var spec: Dictionary = e.ability(int(e.cast.slot))
+		if spec.get("friendly", false) or float(e.cast.ends_at) - float(e.cast.start_at) < JUKE_MIN_CAST:
+			continue
+		if melee and not str(spec.id) in JUKE_CC:
+			continue
+		var at_me: bool = int(e.cast.target_id) == u.id or (int(e.cast.target_id) < 0 and Vector2(float(e.cast.ax) - u.x, float(e.cast.az) - u.z).length() < 3.0)
+		if at_me and now - float(e.cast.start_at) > (1300.0 - skill * 1000.0) * 0.5:
+			return e
+	return null
+
+
+## The nearest standable point within `reach` metres that `foe` cannot see, or INF.
+func _cover_from(m: ArenaMatch, u: ArenaUnit, foe: ArenaUnit, reach: float) -> Vector2:
+	var me := Vector2(u.x, u.z)
+	for ring in JUKE_RINGS:
+		if ring > reach:
+			break
+		var best := Vector2.INF
+		var best_d := INF
+		for k in 16:
+			var a := TAU * k / 16.0
+			var p: Vector2 = me + Vector2(sin(a), cos(a)) * ring
+			if _blocked(m.map, p.x, p.y) or Rules.has_los(m.map, foe, {"x": p.x, "z": p.y}):
+				continue
+			var d := p.distance_to(Vector2(foe.x, foe.z))  # of the hidden points on this ring, the one deepest behind the cover
+			if best == Vector2.INF or d > best_d:
+				best = p
+				best_d = d
+		if best != Vector2.INF:
+			return best
+	return Vector2.INF
+
+
+## Line-of-sight play: with a cast coming and cover it can reach before the cast ends, the bot runs behind it (the spell
+## then fails on completion). Decided once per cast, more often the better the bot. True while it is running.
+func _juke(m: ArenaMatch, u: ArenaUnit, enemies: Array, now: float) -> bool:
+	juke = Vector2.INF
+	if not cover_play:
+		return false
+	var foe := _incoming_cast(u, enemies, now)
+	if foe == null or not Rules.has_los(m.map, foe, u):
+		return false
+	var key := "%d:%d" % [foe.id, int(foe.cast.start_at)]
+	if key != _juke_cast:
+		_juke_cast = key
+		_juke_go = randf() < 0.2 + skill * 0.8
+	if not _juke_go:
+		return false
+	var left_s := (float(foe.cast.ends_at) - now) / 1000.0 - 0.1
+	juke = _cover_from(m, u, foe, u.spec().speed * left_s)
+	if juke == Vector2.INF:
+		return false
+	u.aim_x = foe.x
+	u.aim_z = foe.z
+	u.input = _steer(m.map, u, juke - Vector2(u.x, u.z))
+	return true
+
+
 func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
+	_think(m, u, now)
+	if not u.alive or m.phase != "fight" or not m.map.relief or u.air:
+		return
+	# In the chasm (or half way up a ramp) nothing matters more than getting out: the cliffs cannot be climbed, the
+	# lava burns, and stopping to cast or strafing on the ramp only drops the bot back in.
+	var burning: bool = m.map.is_low(u.x, u.z) and Rules.hazard_at(m.map, u.x, u.z).get("dps", 0) > 0
+	var on_ramp: bool = absf(u.x) > 20.0 and absf(u.z) >= 4.0 and absf(u.z) < 9.8 and u.y < 2.9
+	if not burning and not on_ramp:
+		return
+	var out := Vector2(0.0, (signf(u.z) if absf(u.z) > 1.0 else (1.0 if u.team == "red" else -1.0)) * 14.0)
+	var wp: Vector2 = m.map.waypoint(Vector2(u.x, u.z), out)
+	u.input = (wp - Vector2(u.x, u.z)).normalized()
+
+
+func _think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 	if not u.alive or m.phase != "fight":
 		u.input = Vector2.ZERO
 		u.aim_x = 0.0
@@ -246,6 +339,8 @@ func think(m: ArenaMatch, u: ArenaUnit, now: float) -> void:
 		return m.cast_ability(u, slot, p.x, p.z if p is ArenaUnit else p.y, now, lock_on.id if named and lock_on != null else -1)
 
 	var enemies := m.units.filter(func(e): return e.alive and e.team != u.team and m.team_can_see(u.team, e, now))
+	if _juke(m, u, enemies, now):
+		return
 	var mv := Vector2.ZERO
 	var target: ArenaUnit = null
 	var best_score := INF

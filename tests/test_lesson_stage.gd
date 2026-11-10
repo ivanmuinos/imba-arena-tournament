@@ -357,7 +357,7 @@ func test_a_rival_off_stage_has_no_frame_until_it_appears() -> void:
 	var roster := [{"id": 1, "team": "red", "cls": "mage", "spec": "fire", "name": "Yo", "bot": false}, {"id": 3, "team": "blue", "cls": "warrior", "spec": "", "name": "Rival", "bot": true}]
 	hud.setup(roster, 1, "mage", "red", "fire")
 	hud.hide_absent_frames = true
-	var unit := func(id: int) -> Dictionary: return {"id": id, "x": 0.0, "z": 0.0, "rot": 0.0, "hp": 100, "alive": true, "cast": null, "cc": {}, "buffs": {}, "dashing": false, "jump": -1}
+	var unit := func(id: int) -> Dictionary: return {"id": id, "x": 0.0, "z": 0.0, "rot": 0.0, "hp": 100, "alive": true, "cast": null, "cc": {}, "buffs": {}, "dashing": false, "y": 0.0, "air": false}
 	var state := func(units: Array) -> Dictionary: return {"phase": "fight", "phaseLeft": 0.0, "round": 1, "score": {"red": 0, "blue": 0}, "damp": 0.0, "gates": true, "ft": 0.0, "units": units, "projs": [], "aoes": [], "traps": [], "powers": [], "you": {"cds": [0, 0, 0, 0, 0], "trinket": 0, "ult": 0, "auto": false, "inBush": false, "practice": true, "nocd": false, "meter": {}}}
 	hud.on_state(state.call([unit.call(1)]), unit.call(1), 0.0)
 	check(not hud._frames[3].root.visible, "fuera de escena no se ve su marco")

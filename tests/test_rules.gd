@@ -4,8 +4,11 @@ extends TestBase
 class M:
 	var x := 0.0
 	var z := 0.0
+	var y := 0.0
 	var vx := 0.0
 	var vz := 0.0
+	var vy := 0.0
+	var air := false
 	var dash_left := 0.0
 	var dash_vx := 0.0
 	var dash_vz := 0.0

@@ -469,8 +469,11 @@ func test_enet_loopback_full_flow() -> void:
 		return
 	var c := GameClient.new()
 	c.attach(tc, {"name": "Red", "cls": "hunter", "pref": "red"})
-	var deadline := Time.get_ticks_msec() + 5000
-	while c.lobby.is_empty() and Time.get_ticks_msec() < deadline:
+	# Bounded by turns of the loop, not by the clock: a headless process can be put to sleep for far longer than the
+	# 10 ms it asks for (about 90 ms on macOS), and a wall-clock deadline then cuts the exchange short.
+	for i in 500:
+		if not c.lobby.is_empty():
+			break
 		s.process(10.0)
 		c.poll(10.0)
 		OS.delay_msec(10)
@@ -479,8 +482,9 @@ func test_enet_loopback_full_flow() -> void:
 	check(s.start_match(), "inicia")
 	var states := [0]
 	c.state_received.connect(func(_x): states[0] += 1)
-	deadline = Time.get_ticks_msec() + 3000
-	while states[0] < 10 and Time.get_ticks_msec() < deadline:
+	for i in 300:  # 3 s of server time: about 90 snapshots are sent, 10 must arrive
+		if states[0] >= 10:
+			break
 		s.process(10.0)
 		c.poll(10.0)
 		OS.delay_msec(10)

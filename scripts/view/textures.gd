@@ -29,7 +29,7 @@ static func _tex(img: Image) -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
-## [albedo, glow] for the arena floor.
+## [albedo, glow, normal] for the arena floor.
 static func ground(moon: bool) -> Array:
 	var key := "ground_moon" if moon else "ground_magma"
 	if _cache.has(key):
@@ -40,12 +40,15 @@ static func ground(moon: bool) -> Array:
 	var cells := _field(_noise(FastNoiseLite.TYPE_CELLULAR, 0.035, 13, true), size)
 	var albedo := Image.create(size, size, true, Image.FORMAT_RGB8)
 	var glow := Image.create(size, size, true, Image.FORMAT_RGB8)
+	var height := Image.create(size, size, true, Image.FORMAT_L8)
 	for y in size:
 		for x in size:
 			var s := speck.get_pixel(x, y).r
 			var g := grain.get_pixel(x, y).r
 			var c := cells.get_pixel(x, y).r
 			var crack := 1.0 - smoothstep(0.0, 0.11, c)
+			var hh := 0.55 + (s - 0.5) * 0.35 + (g - 0.5) * 0.2 - crack * 0.5
+			height.set_pixel(x, y, Color(hh, hh, hh))
 			var col: Color
 			var gl := Color.BLACK
 			if moon:
@@ -56,14 +59,27 @@ static func ground(moon: bool) -> Array:
 				if g > 0.93:
 					gl = Color(0.25, 0.85, 1.0) if s > 0.5 else Color(0.7, 0.4, 1.0)
 			else:
-				col = Color(0.27, 0.17, 0.13).lerp(Color(0.44, 0.29, 0.22), smoothstep(0.3, 0.8, s))
-				col = col * (0.94 + g * 0.12)
-				col = col.lerp(Color(0.05, 0.025, 0.015), crack * 0.5)
+				# Dark volcanic basalt with a warm cast: a neutral floor lets the lava, torches and spells carry the colour.
+				col = Color(0.19, 0.155, 0.15).lerp(Color(0.36, 0.29, 0.26), smoothstep(0.3, 0.8, s))
+				col = col * (0.92 + g * 0.16)
+				col = col.lerp(Color(0.04, 0.025, 0.02), crack * 0.6)
 				gl = Color(1.0, 0.3, 0.0) * crack
 			albedo.set_pixel(x, y, col)
 			glow.set_pixel(x, y, gl)
-	_cache[key] = [_tex(albedo), _tex(glow)]
+	_cache[key] = [_tex(albedo), _tex(glow), _normal(height, 6.0)]
 	return _cache[key]
+
+
+static func _normal(height: Image, strength: float) -> ImageTexture:
+	height.bump_map_to_normal_map(strength)
+	height.convert(Image.FORMAT_RGB8)
+	return _tex(height)
+
+
+## Normal map that goes with rock().
+static func rock_normal() -> ImageTexture:
+	rock()
+	return _cache["rock_n"]
 
 
 ## Basalt strata for cliffs and slopes (tiling, triplanar in the terrain shader).
@@ -75,13 +91,17 @@ static func rock() -> ImageTexture:
 	var b := _field(_noise(FastNoiseLite.TYPE_SIMPLEX_SMOOTH, 0.18, 42), size)
 	var c := _field(_noise(FastNoiseLite.TYPE_CELLULAR, 0.05, 43, true), size)
 	var img := Image.create(size, size, true, Image.FORMAT_RGB8)
+	var height := Image.create(size, size, true, Image.FORMAT_L8)
 	for y in size:
 		for x in size:
 			var v := a.get_pixel(x, y).r * 0.5 + b.get_pixel(x, y).r * 0.3
 			var edge := 1.0 - smoothstep(0.0, 0.14, c.get_pixel(x, y).r)
 			var col := Color(0.2, 0.17, 0.15).lerp(Color(0.42, 0.36, 0.32), v)
 			img.set_pixel(x, y, col.lerp(Color(0.05, 0.04, 0.04), edge * 0.7))
+			var hh := 0.2 + v * 0.8 - edge * 0.6
+			height.set_pixel(x, y, Color(hh, hh, hh))
 	_cache["rock"] = _tex(img)
+	_cache["rock_n"] = _normal(height, 8.0)
 	return _cache["rock"]
 
 
@@ -147,16 +167,19 @@ static func ground_calm() -> Array:
 	var cells := _field(_noise(FastNoiseLite.TYPE_CELLULAR, 0.016, 63, true), size)
 	var albedo := Image.create(size, size, true, Image.FORMAT_RGB8)
 	var glow := Image.create(size, size, true, Image.FORMAT_RGB8)
+	var height := Image.create(size, size, true, Image.FORMAT_L8)
 	for y in size:
 		for x in size:
 			var d := drift.get_pixel(x, y).r
 			var m := mid.get_pixel(x, y).r
 			var seam := 1.0 - smoothstep(0.0, 0.06, cells.get_pixel(x, y).r)
+			var hh := 0.6 + (m - 0.5) * 0.25 - seam * 0.5
+			height.set_pixel(x, y, Color(hh, hh, hh))
 			var col := Color(0.16, 0.175, 0.2).lerp(Color(0.25, 0.265, 0.3), d * 0.8 + m * 0.2)
 			col = col.lerp(col * 0.62, seam * 0.5)
 			albedo.set_pixel(x, y, col)
 			glow.set_pixel(x, y, Color.BLACK)
-	_cache["ground_calm"] = [_tex(albedo), _tex(glow)]
+	_cache["ground_calm"] = [_tex(albedo), _tex(glow), _normal(height, 5.0)]
 	return _cache["ground_calm"]
 
 
@@ -210,3 +233,58 @@ static func spell_noise() -> ImageTexture:
 	img.convert(Image.FORMAT_L8)
 	_cache["spell_noise"] = _tex(img)
 	return _cache["spell_noise"]
+
+
+## A star glint for impacts: a hot centre with four long thin rays and four short ones.
+static func flare() -> ImageTexture:
+	if _cache.has("flare"):
+		return _cache["flare"]
+	var size := 128
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in size:
+		for x in size:
+			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / size * 2.0 - Vector2.ONE
+			var d := p.length()
+			var core := exp(-d * d * 28.0)
+			var rays := exp(-absf(p.y) * 34.0) * exp(-absf(p.x) * 2.6) + exp(-absf(p.x) * 34.0) * exp(-absf(p.y) * 2.6)
+			var q := Vector2(p.x + p.y, p.x - p.y) * 0.7071
+			var diag := (exp(-absf(q.y) * 40.0) * exp(-absf(q.x) * 5.5) + exp(-absf(q.x) * 40.0) * exp(-absf(q.y) * 5.5)) * 0.5
+			var a := clampf(core + (rays * 0.8 + diag) * (1.0 - smoothstep(0.75, 1.0, d)), 0.0, 1.0)
+			img.set_pixel(x, y, Color(1, 1, 1, a))
+	_cache["flare"] = ImageTexture.create_from_image(img)
+	return _cache["flare"]
+
+
+## A soft, lumpy puff for smoke and dust (white: tinted per particle).
+static func smoke_puff() -> ImageTexture:
+	if _cache.has("smoke"):
+		return _cache["smoke"]
+	var size := 128
+	var lump := _field(_noise(FastNoiseLite.TYPE_SIMPLEX_SMOOTH, 0.018, 97), size)  # broad lumps: fine ones look like spots
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in size:
+		for x in size:
+			var d := ((Vector2(x, y) + Vector2(0.5, 0.5)) / size * 2.0 - Vector2.ONE).length()
+			var n := lump.get_pixel(x, y).r
+			var a := clampf(pow(clampf(1.0 - d, 0.0, 1.0), 1.9) * (0.55 + n * 0.6), 0.0, 1.0)  # a soft edge all round: lumps only inside
+			var v := 0.75 + n * 0.25
+			img.set_pixel(x, y, Color(v, v, v, a))
+	_cache["smoke"] = ImageTexture.create_from_image(img)
+	return _cache["smoke"]
+
+
+## A spark streak: a bright line along the texture's height that tapers to both ends.
+static func spark() -> ImageTexture:
+	if _cache.has("spark"):
+		return _cache["spark"]
+	var w := 16
+	var h := 64
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	for y in h:
+		for x in w:
+			var px := absf((x + 0.5) / w * 2.0 - 1.0)
+			var py := absf((y + 0.5) / h * 2.0 - 1.0)
+			var a := pow(clampf(1.0 - px, 0.0, 1.0), 2.0) * pow(clampf(1.0 - py, 0.0, 1.0), 0.8)
+			img.set_pixel(x, y, Color(1, 1, 1, clampf(a * 1.6 if px < 0.9 and py < 0.95 else 0.0, 0.0, 1.0)))
+	_cache["spark"] = ImageTexture.create_from_image(img)
+	return _cache["spark"]

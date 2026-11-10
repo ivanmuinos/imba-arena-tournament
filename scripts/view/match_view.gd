@@ -75,7 +75,6 @@ var _ground_point := Vector2.ZERO
 var _sent_target := -2
 var _last_target_sync := 0.0
 var _last_sent := {"dx": 0.0, "dz": 0.0, "ax": 0.0, "az": 0.0, "at": 0.0}
-var _last_jump := 0.0
 var _prev_casting := {}
 var _pending_end := {}
 var _end_at := 0.0
@@ -136,6 +135,8 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 		v.landed.connect(func(pos: Vector3):
 			audio.play("land", Vector2(pos.x, pos.z), 30.0)
 			fx.dash(pos.x, pos.z))
+		v.stepped.connect(func(pos: Vector3): audio.play("step", Vector2(pos.x, pos.z), 22.0))
+		v.jumped.connect(func(pos: Vector3): audio.play("jump", Vector2(pos.x, pos.z), 22.0))
 	hud = Hud.new()
 	add_child(hud)
 	hud.setup(_roster, my_id, my_cls, my_team, my_spec, my_talents)
@@ -154,11 +155,12 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	_build_game_menu()
 	controller.setup(my_cls, my_team, my_spec, my_talents)
 	controller.ready_at = hud.ready_at
-	predictor.place(mine_spawn().x, mine_spawn().y)
+	predictor.place(mine_spawn().x, mine_spawn().y, world.map)
 	_face_enemy()
 	audio = AudioBank.new()
 	audio.gain_db = linear_to_db(maxf(0.001, SettingsStore.shared().get_value("sfx")))
 	add_child(audio)
+	audio.start_ambience()
 	client.state_received.connect(_on_state)
 	client.fx_received.connect(_on_fx)
 	client.kill_received.connect(func(m): hud.kill(m))
@@ -969,16 +971,11 @@ func _cycle_target() -> void:
 
 
 func _jump() -> void:
-	var t := _now_ms()
-	if me.is_empty() or not me.alive or t - _last_jump < JUMP_COOLDOWN_MS or me.cc.has("stun") or me.cc.has("incap") or me.cc.has("root"):
+	# The jump is real physics (Rules.step_mover): it starts here at once and the server runs the same arc.
+	if me.is_empty() or last_state.is_empty() or not Rules.can_walk_in(str(last_state.phase)) or not predictor.jump(me):
 		return
-	_last_jump = t
 	client.send_jump()
-	views[my_id].jump_now(t / 1000.0)
 	gameplay_event.emit("jumped")
-
-
-const JUMP_COOLDOWN_MS := 650.0
 
 
 # ---------------------------------------------------------------- macros (see Macro)
@@ -1228,21 +1225,24 @@ func _process(delta: float) -> void:
 		if not me.alive:
 			input = Vector2.ZERO
 		var age := minf(0.1, (now - _state_ms) / 1000.0)
-		predictor.step(dt, input, me, my_cls, str(last_state.phase), world.map, age, now)
-		my_view.drive(predictor.m.x, predictor.m.z, predictor.m.vx, predictor.m.vz)
+		predictor.step(dt, input, me, my_cls, str(last_state.phase), world.map, age, now, _face)
+		my_view.drive(predictor.m.x, predictor.m.z, predictor.m.vx, predictor.m.vz, predictor.m.y, predictor.m.air)
 		my_view.apply({"x": predictor.m.x, "z": predictor.m.z, "rot": _face, "unit": me})
 		my_view.facing_override = _face if (me.alive and not me.cc.has("stun") and not me.cc.has("incap")) else NAN
 
 		# Spectate a living ally while dead.
 		var focus := Vector2(predictor.m.x, predictor.m.z)
+		var focus_y: float = predictor.m.y
 		var observed := ""
 		if not me.alive and views.has(_spectating):
 			var v: UnitView = views[_spectating]
 			if v.is_alive() and v.shown:
 				focus = Vector2(v.position.x, v.position.z)
+				focus_y = v.position.y
 				observed = v.entry.name
 		hud.set_spectator(not me.alive, observed)
-		cam.chase(focus.x, focus.y, dt, world)
+		cam.chase(focus.x, focus.y, dt, world, false, focus_y)
+		my_view.set_near_hidden(cam.too_close() and me.alive)
 		audio.listener = focus
 		_aim_and_target(focus, now)
 		_send_input(input, now)

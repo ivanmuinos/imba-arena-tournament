@@ -9,8 +9,11 @@ var now := 0.0
 class M:
 	var x := 0.0
 	var z := 0.0
+	var y := 0.0
 	var vx := 0.0
 	var vz := 0.0
+	var vy := 0.0
+	var air := false
 	var dash_left := 0.0
 	var dash_vx := 0.0
 	var dash_vz := 0.0
@@ -232,6 +235,7 @@ func test_random_pick_is_deterministic_and_covers_all_maps() -> void:
 func test_bots_finish_matches_on_every_map() -> void:
 	for id in GameMap.IDS:
 		var m := _bots_match(id, ["mage", "warrior", "priest", "rogue"])
+		var began := now
 		var limit := now + 20 * 60_000
 		var crossed := false
 		var lava := 0.0
@@ -248,4 +252,8 @@ func test_bots_finish_matches_on_every_map() -> void:
 		eq(maxi(m.score.red, m.score.blue), int(GameData.C.ROUNDS_TO_WIN), "%s: hay ganador" % id)
 		if id == "bridge":
 			check(crossed or m.units.any(func(u): return u.dmg > 0), "bridge: pelean")
-			check(lava < 120.0, "bridge: los bots esquivan la lava (%s s en lava)" % lava)
+			# As a share of the match, not a fixed number of seconds: a long match (bots that hide from casts make them
+			# longer) is not bots walking into lava more. 0.9 unit-seconds per second is 4 bots spending under a quarter
+			# of their time in it, what the old 120 s limit meant for a typical 130 s match.
+			var secs := (now - began) / 1000.0
+			check(lava < 0.9 * secs, "bridge: los bots esquivan la lava (%.0f s en lava en %.0f s de partida)" % [lava, secs])

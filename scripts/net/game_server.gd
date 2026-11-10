@@ -12,7 +12,7 @@ signal match_ended
 signal player_joined(name: String)
 signal player_left(name: String)
 
-const PROTO := 6
+const PROTO := 7
 
 
 ## Game version from project.godot (config/version): client and server must match exactly.

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Builds assets/third_party/oga_sfx/*.wav from the CC0 OpenGameArt downloads (see SOURCE.txt there).
-Usage: python3 tools/audio/build_sfx.py <download_dir>   (the directory holding the unpacked packs, see SOURCES below)
+Usage: python3 tools/audio/build_sfx.py <download_dir> [clip ...]   (the directory holding the unpacked packs, see SOURCES
+below; with clip names, only those are built)
 Each clip is trimmed, band-limited (no harsh highs), faded, mono, and normalised to a mean level of -22 dB (peak <= -3 dB),
 which keeps every effect within ~7 dB of the Kenney UI clicks (-14.6 dB mean)."""
 import os, subprocess, sys, tempfile, re
@@ -36,7 +37,14 @@ CLIPS = {
     "chain_1": (R80 + "chain_01.ogg", 0.5, 0),
     "stone_1": (R80 + "stones_01.ogg", 0.7, 0), "stone_2": (R80 + "stones_02.ogg", 0.7, 0), "earth_big": ("Earth%20Element%20Magic%20Spell_3.ogg", 1.6, 0),
     "wood_1": (R80 + "wood_01.ogg", 0.4, 0), "death_1": (R80 + "creature_die_01.ogg", 1.0, 0),
+    # movement and round cues (footsteps on stone, arena gong, brass win jingle)
+    "step_1": ("x_steps/stone01.ogg", 0.29, 0), "step_2": ("x_sfx_100_v2/sfx100v2_footstep_01.ogg", 0.4, 0),
+    "step_3": ("x_sfx_100_v2/sfx100v2_footstep_02.ogg", 0.35, 0),
+    "gong_1": ("x_100-CC0-SFX_0/gong_01.ogg", 1.42, 0), "gong_2": ("x_100-CC0-SFX_0/gong_02.ogg", 1.19, 0),
+    "win_brass": ("x_winjingle/WinBrass.ogg", 3.78, 0),
 }
+# amb_rumble.ogg (the arena's ambience bed) is x_sfx_100_v2/sfx100v2_loop_ambient_03.ogg copied unmodified: trimming or
+# fading it would break the loop.
 
 
 def run(*a):
@@ -62,6 +70,9 @@ def build(name, src, dur, start):
 
 
 os.makedirs(OUT, exist_ok=True)
+ONLY = sys.argv[2:]
 for n, (s, d, st) in CLIPS.items():
+    if ONLY and n not in ONLY:
+        continue
     m, p = build(n, s, d, st)
     print(f"{n:14s} mean {m:6.1f} dB  peak {p:5.1f} dB")
