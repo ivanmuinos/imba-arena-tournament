@@ -322,6 +322,19 @@ func test_direction_spells_use_facing_or_the_target() -> void:
 	near(v.msg.az, 10.0, 0.5, "la andanada sale hacia el objetivo seleccionado")
 
 
+func test_frost_blink_goes_forward_even_with_an_enemy_selected() -> void:
+	var pc := PlayerController.new()
+	pc.setup("mage", "red", "frost")
+	eq(pc.ability(2).id, "frostblink", "la Traslación helada está en la barra de Escarcha")
+	for enemy_at: Vector2 in [Vector2(-8, 0), Vector2(0, 8), Vector2(0, -8)]:
+		var foe := _unit(2, "blue", enemy_at.x, enemy_at.y)
+		pc.select(2, _ctx(1000.0, [foe], {"fwd": Vector2(1, 0)}))
+		pc.cast_lock[2] = 0.0
+		var r := pc.try_cast(2, _ctx(1000.0, [foe], {"fwd": Vector2(1, 0)}))
+		check(r.msg.ax > 5.0 and absf(r.msg.az) < 0.01, "va hacia adelante con el enemigo en %s" % enemy_at)
+		check(r.aim_dir.normalized().is_equal_approx(Vector2(1, 0)), "la dirección sale de tu frente, no del objetivo")
+
+
 func test_ground_spells_enter_placement_mode_and_confirm_with_the_cursor_point() -> void:
 	var pc := _pc("mage")
 	pc.ready_at[4] = 0.0
