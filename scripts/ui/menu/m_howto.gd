@@ -1,6 +1,6 @@
 class_name MHowTo
 extends MenuView
-## "Cómo jugar": the interactive tutorial entry plus a static reference (controls, rules, champions).
+## "Cómo jugar": the way back to the Academia plus a static reference (controls, rules, champions).
 
 var _text: RichTextLabel
 var _tabs: Segmented
@@ -8,13 +8,13 @@ var _tabs: Segmented
 
 func _ready() -> void:
 	header("Cómo jugar", "Aprendé jugando o consultá lo básico.")
-	var go := MButton.new("Empezar el tutorial", "primary", "ui_play")
+	var go := MButton.new("Ir a la Academia", "primary", "ui_play")
 	go.position = Vector2(72, 188)
 	go.custom_minimum_size = Vector2(380, 62)
 	go.add_theme_font_size_override("font_size", 24)
-	go.pressed.connect(func(): menu.launch_tutorial())
+	go.pressed.connect(func(): menu.go_tab("academy"))
 	add_child(go)
-	var note := UiKit.label("Dura unos minutos, usa tu campeón y los pasos se completan haciendo cada acción.", 14, UiKit.MUTED)
+	var note := UiKit.label("Lecciones cortas con tu campeón: los pasos se completan haciendo cada acción.", 14, UiKit.MUTED)
 	note.position = Vector2(72, 256)
 	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(note)

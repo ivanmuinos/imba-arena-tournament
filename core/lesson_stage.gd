@@ -10,14 +10,19 @@ var pressed := 0  # plates stepped on
 var active := 0   # plates that count right now
 ## Stopped by a failed attempt: triggers no longer fire.
 var halted := false
+## Its units never build diminishing returns (a lesson that needs many tries at one control).
+var fresh_dr := false
 var _fired := {}  # trigger index -> true
 var _by_key := {}  # unit key -> ArenaUnit
 var _actors := {}  # unit key -> LessonActor
+var _hidden_ms := {}  # watch index -> how long the player has been out of that unit's sight
+var _last := -1.0
 
 
 func _init(p_scenario: Dictionary) -> void:
 	scenario = p_scenario
 	damp = bool(scenario.get("damp", false))
+	fresh_dr = bool(scenario.get("fresh_dr", false))
 
 
 func setup(m: ArenaMatch, now: float) -> void:
@@ -49,8 +54,14 @@ func step(m: ArenaMatch, now: float) -> void:
 	if halted:
 		return
 	var player := _player(m)
+	var dt := 0.0 if _last < 0.0 else now - _last
+	_last = now
 	for key in _actors:
 		(_actors[key] as LessonActor).tick(m, player, now)
+	_watch(m, player, now, dt)
+	if fresh_dr:
+		for key in _by_key:
+			(_by_key[key] as ArenaUnit).dr.clear()
 	for u in m.units:
 		if u.peer == 0 or not u.alive:
 			continue
@@ -64,6 +75,25 @@ func step(m: ArenaMatch, now: float) -> void:
 		var on := str(triggers[i].on)
 		if not _fired.has(i) and on.begins_with("dead:") and _all_down(on.substr(5)):
 			_run(m, i, now)
+
+
+## Standing rules of the scenario: {hidden_from: unit key, ms, note} tells the lesson once the player has stayed out of that
+## unit's line of sight for `ms`. It fires again only after being seen.
+func _watch(m: ArenaMatch, player: ArenaUnit, now: float, dt: float) -> void:
+	var watches: Array = scenario.get("watch", [])
+	for i in watches.size():
+		var w: Dictionary = watches[i]
+		var u: ArenaUnit = _by_key.get(str(w.get("hidden_from", "")))
+		if u == null or player == null or not u.alive or not player.alive:
+			continue
+		if Rules.has_los(m.map, player, u):
+			_hidden_ms[i] = 0.0
+			continue
+		var before := float(_hidden_ms.get(i, 0.0))
+		_hidden_ms[i] = before + dt
+		var need := float(w.get("ms", 800.0))
+		if before < need and before + dt >= need:
+			m._ev("note", now, {"k": str(w.get("note", "hidden"))})
 
 
 ## The client told us the player reached a step of the lesson. Unknown numbers do nothing.
@@ -102,7 +132,8 @@ func _fire(m: ArenaMatch, on: String, now: float) -> void:
 
 
 func _run(m: ArenaMatch, i: int, now: float) -> void:
-	_fired[i] = true
+	if not bool(scenario.triggers[i].get("again", false)):  # a quest can be taken again: its cues fire every time
+		_fired[i] = true
 	for a in scenario.triggers[i].do:
 		_action(m, a, now)
 
@@ -118,6 +149,18 @@ func _action(m: ArenaMatch, a: Array, now: float) -> void:
 			m._ev("door", now, {"i": int(a[1]), "open": false})
 		"activate":
 			active |= 1 << int(a[1])
+		"despawn":
+			var gone: ArenaUnit = _by_key.get(str(a[1]))
+			if gone != null:
+				gone.dormant = true
+				gone.alive = false
+				gone.cast = {}
+		"fresh_dr":
+			fresh_dr = bool(a[1])
+		"reset_plates":
+			for p in a[1]:
+				active &= ~(1 << int(p))
+				pressed &= ~(1 << int(p))
 		"spawn":
 			_spawn(m, str(a[1]), now)
 		"stun":
@@ -130,6 +173,12 @@ func _action(m: ArenaMatch, a: Array, now: float) -> void:
 			m.spawn_power(str(a[1]), float(a[2]), float(a[3]))
 		"nocd":
 			m.nocd = bool(a[1])
+		"note":
+			m._ev("note", now, {"k": str(a[1])})
+		"hurt":
+			var hurt: ArenaUnit = _by_key.get(str(a[1]))
+			if hurt != null:
+				hurt.hp = maxf(1.0, hurt.max_hp * float(a[2]))
 		"cast":
 			if _actors.has(str(a[1])):
 				(_actors[str(a[1])] as LessonActor).order_cast(m, str(a[2]), player, now)
@@ -145,6 +194,12 @@ func _spawn(m: ArenaMatch, key: String, now: float) -> void:
 	u.x = u.home.x
 	u.z = u.home.y
 	u.reset_effects()
+	u.dr.clear()
+	var triggers: Array = scenario.get("triggers", [])
+	for i in triggers.size():  # back in the fight: "when it falls" can happen again
+		var on := str(triggers[i].on)
+		if on.begins_with("dead:") and (on.substr(5) == key or (on.ends_with("*") and key.begins_with(on.substr(5).trim_suffix("*")))):
+			_fired.erase(i)
 	m._ev("spawn", now, {"key": key, "id": u.id})
 
 

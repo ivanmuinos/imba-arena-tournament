@@ -48,6 +48,8 @@ var practice := false
 var practice_title := "Arena de práctica"
 ## Academia: a rival off stage has no frame until a trigger calls it (elsewhere, someone absent is just out of sight).
 var hide_absent_frames := false
+## Names over units are only drawn this close to the camera (0: always). The target's is always drawn.
+var plate_range := 0.0
 var damp := 0.0  # fraction of healing removed by Dampening, shown as a debuff on everyone
 var round_label: Label
 var ping_label: Label
@@ -126,10 +128,45 @@ func add_overlay(c: Control, top: float, margin := 12.0, from_right := true) -> 
 	_root.add_child(c)
 	_overlays.append(c)
 	var place := func():
+		if c.has_meta("centered"):  # see center_overlay
+			c.position = ((_root.size - c.size) / 2.0).floor()
+			return
 		c.position = Vector2(_root.size.x - c.size.x - margin if from_right else margin, top)
 	place.call()
 	_root.resized.connect(place)
 	c.resized.connect(place)
+
+
+## Something drawn over the match that takes no clicks (a banner): it only needs to live in the scaled root.
+func add_plain(c: Control) -> void:
+	_root.add_child(c)
+
+
+## Lowers the enemies' frames, to leave the top right corner to something else (the valley's minimap).
+func shift_enemy_frames(top: float) -> void:
+	_frames_enemy.position.y = top
+
+
+## Hides the column of enemy frames: in an open map the roster is everyone in the valley, not who you are fighting.
+func hide_enemy_frames() -> void:
+	_frames_enemy.visible = false
+
+
+## Moves an overlay to the middle of the screen and keeps it there (the closing card of a lesson), over a dark veil.
+func center_overlay(c: Control) -> void:
+	if c.has_meta("centered"):
+		return
+	c.set_meta("centered", true)
+	var veil := ColorRect.new()
+	veil.color = Color(0.02, 0.01, 0.01, 0.0)
+	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(veil)
+	_root.move_child(veil, c.get_index())
+	c.tree_exiting.connect(veil.queue_free)
+	veil.create_tween().tween_property(veil, "color:a", 0.55, 0.35)
+	c.position = ((_root.size - c.size) / 2.0).floor()
+	c.resized.emit()
 
 
 ## True when a screen position is over one of the interactive overlays (practice panel, tutorial card): the world ignores that click.
@@ -1085,6 +1122,9 @@ func update_plate(id: int, view: UnitView, cam: Camera3D, targeted: bool, hovere
 	var s: Dictionary = view.snap
 	if not view.shown or s.is_empty() or not s.alive or cam.is_position_behind(view.head_position()):
 		plate.visible = false
+		return
+	if plate_range > 0.0 and not targeted and cam.global_position.distance_to(view.head_position()) > plate_range:
+		plate.visible = false  # an open map: names of whoever is far away would litter the horizon
 		return
 	var p := screen_to_ui(cam.unproject_position(view.head_position()), ui_scale)
 	plate.visible = true

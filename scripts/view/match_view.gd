@@ -142,10 +142,10 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	hud.setup(_roster, my_id, my_cls, my_team, my_spec, my_talents)
 	hud.frame_clicked.connect(_on_frame_clicked)
 	hud.macro_pressed.connect(run_macro)
-	practice = str(msg.map) == GameMap.PRACTICE_ID or str(msg.map) == GameMap.ACADEMY_ID
+	practice = str(msg.map) == GameMap.PRACTICE_ID or GameMap.is_lesson_map(str(msg.map))
 	hud.practice = practice
-	if str(msg.map) == GameMap.ACADEMY_ID:
-		hud.practice_title = "Academia"
+	if GameMap.is_lesson_map(str(msg.map)):
+		hud.practice_title = "Academia" if str(msg.map) == GameMap.ACADEMY_ID else GameMap.VALLEY_NAME
 		hud.hide_absent_frames = true
 		var at = msg.get("spawn")
 		if typeof(at) == TYPE_DICTIONARY and at.has("x") and at.has("z"):
@@ -1066,7 +1066,8 @@ func _toggle_focus() -> void:
 func _cast_on_focus(slot: int) -> bool:
 	if me.is_empty() or controller.focus < 0 or controller.focus_unit(_ctx()).is_empty():
 		return false
-	_cast_on(slot, controller.focus)
+	if _cast_on(slot, controller.focus):
+		gameplay_event.emit("focus_cast")
 	return true
 
 

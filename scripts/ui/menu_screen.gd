@@ -9,6 +9,7 @@ signal play_offline(cfg: Dictionary)
 signal play_practice(cfg: Dictionary)
 signal start_tutorial(cfg: Dictionary)
 signal start_lesson(cfg: Dictionary, id: String)
+signal start_valley(cfg: Dictionary)
 signal host(cfg: Dictionary, port: int)
 signal join(cfg: Dictionary, address: String, port: int)
 signal map_changed(map_id: String)
@@ -391,6 +392,15 @@ func launch_lesson(id: String) -> void:
 		return
 	_launching = true
 	start_lesson.emit(_cfg(), id)
+	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
+
+
+## Academia -> its open valley, with the saved champion.
+func launch_valley() -> void:
+	if _launching:
+		return
+	_launching = true
+	start_valley.emit(_cfg())
 	get_tree().create_timer(0.5).timeout.connect(func(): _launching = false)
 
 

@@ -12,7 +12,13 @@ static func keys(ev: Dictionary, me: int) -> Array:
 		"cast":
 			return ["cast", "cast:%s" % str(ev.get("ability", ""))] if int(ev.get("u", -1)) == me else []
 		"dmg":
+			if int(ev.get("t", -1)) == me:  # nobody behind it: the floor (lava) did it
+				return ["hurt", "burned"] if int(ev.get("by", -1)) < 0 else ["hurt"]
 			return ["dmg"] if int(ev.get("by", -1)) == me else []
+		"heal":
+			return ["heal"] if int(ev.get("by", -1)) == me else []
+		"note":
+			return ["note:%s" % str(ev.get("k", ""))]
 		"cc":
 			var cat := str(ev.get("cat", ""))
 			if int(ev.get("t", -1)) == me:

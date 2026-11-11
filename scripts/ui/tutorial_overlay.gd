@@ -71,6 +71,7 @@ func _refresh() -> void:
 			mv.client.send_practice(s.on_enter)
 		_step_entered(s)
 	_card.show_step("Paso %d de %d" % [flow.index + 1, flow.steps.size()], str(s.title), str(s.text), s.objectives)
+	_decorate(s)
 	if s.get("final", false):
 		_final_card(s)
 		return
@@ -83,6 +84,27 @@ func _refresh() -> void:
 			flow.next()
 			_after_change())
 	_card.add_button("Salir", "ghost", func(): finished.emit("menu"))
+
+
+## Takes the card and the arrow away, leaving the match as it was (a quest that ended while the map goes on).
+func close() -> void:
+	if is_instance_valid(_card):
+		_card.queue_free()
+	queue_free()
+
+
+## The card was just filled with this step: what a lesson adds to it.
+func _decorate(_s: Dictionary) -> void:
+	pass
+
+
+## A unit of the scenario by the name it shows ("" or unknown: none). Crates share a name: the first one still standing.
+func _named_view(unit_name: String) -> UnitView:
+	for id in mv.views:
+		var v: UnitView = mv.views[id]
+		if str(v.entry.get("name", "")) == unit_name and v.shown and not v.snap.is_empty():
+			return v
+	return null
 
 
 ## A new step just became current.
@@ -165,6 +187,13 @@ func arrow_anchor() -> Dictionary:
 		var pos := mv.cam.unproject_position(at + Vector3(0, 1.2, 0))
 		var edge := pos.clamp(Vector2(60, 60), screen - Vector2(60, 60))  # off screen it stays at the edge, on that side
 		return {"pos": clear_of(edge, _card.get_global_rect()), "dir": Vector2.DOWN}
+	if key.begins_with("unit:"):
+		var named := _named_view(key.substr(5))
+		if named == null or mv.cam.is_position_behind(named.position + Vector3(0, 2.0, 0)):
+			return {}
+		var area := mv.get_viewport().get_visible_rect().size
+		var over := mv.cam.unproject_position(named.position + Vector3(0, 3.1, 0)).clamp(Vector2(60, 60), area - Vector2(60, 60))
+		return {"pos": clear_of(over, _card.get_global_rect()), "dir": Vector2.DOWN}
 	if key.begins_with("dummy:"):
 		var v := _dummy_view(key.substr(6))
 		if v == null or not v.shown or mv.cam.is_position_behind(v.position + Vector3(0, 2.0, 0)):
