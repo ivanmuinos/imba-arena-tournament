@@ -281,7 +281,7 @@ static func _camp(w: ArenaWorld) -> void:
 		return
 	var tizon := scene.instantiate() as Node3D
 	tizon.name = "Tizon"
-	tizon.position = Vector3(2.8, w.h(2.8, 53.2), 53.2)
+	tizon.position = Vector3(GameMap.TIZON_AT.x, w.h(GameMap.TIZON_AT.x, GameMap.TIZON_AT.y), GameMap.TIZON_AT.y)
 	tizon.rotation.y = deg_to_rad(-25.0)
 	tizon.scale = Vector3.ONE * 1.5
 	w.add_child(tizon)

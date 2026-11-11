@@ -13,7 +13,8 @@ extends RefCounted
 ##   actor   a real fighter with no AI, driven by its `script`; cls, spec, name, hp_mult
 ##   bot     a real fighter with the normal AI; cls, spec, name, skill, diff, hp_mult, dmg_mult
 ## Triggers (see LessonStage): {on: "plate:N" | "dead:key" | "dead:prefix*" | "cue:N" | "start", do: [[action, args...]...]}.
-## Actions: open/close door, activate plate, spawn key, stun ms, ult, gem kind x z, nocd bool, cast key ability,
+## A trigger with `again: true` fires every time (cues of quests that can be repeated).
+## Actions: reset_plates [n...] (not active nor stepped on), open/close door, activate plate, spawn key, stun ms, ult, gem kind x z, nocd bool, cast key ability,
 ## note name (tells the lesson "note:name"), hurt key fraction.
 ## `fresh_dr`: its units never build diminishing returns (a lesson that needs many tries at one control).
 ## `watch`: [{hidden_from: key, ms, note}] tells the lesson once the player hid from that unit for that long.
@@ -118,7 +119,15 @@ const SCENARIOS := {
 			{"key": "c2", "kind": "crate", "x": -31.0, "z": 24.0, "hp": 45.0},
 			{"key": "c3", "kind": "crate", "x": -45.0, "z": 28.0, "hp": 45.0},
 		],
-		"triggers": [],
+		# Cues of the valley's quests (AcademyValley). `again`: a quest can be repeated in the same visit.
+		"triggers": [
+			{"on": "cue:1", "again": true, "do": [["reset_plates", [7, 8, 9, 11]], ["activate", 7]]},
+			{"on": "cue:2", "again": true, "do": [["activate", 8]]},
+			{"on": "cue:3", "again": true, "do": [["activate", 9]]},
+			{"on": "cue:4", "again": true, "do": [["activate", 11]]},
+			{"on": "cue:5", "again": true, "do": [["reset_plates", [10]], ["activate", 10]]},
+			{"on": "cue:6", "again": true, "do": [["reset_plates", [1]], ["activate", 1], ["spawn", "c1"], ["spawn", "c2"], ["spawn", "c3"]]},
+		],
 	},
 	"duel_1": {
 		"id": "duel_1", "start": [0.0, -42.5], "doors": 0, "active": [],

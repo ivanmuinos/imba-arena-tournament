@@ -27,6 +27,9 @@ func run(p_main: Node, cls: String, prefix: String, p_spec := "") -> void:
 	spec = GameData.normalize_spec(cls, p_spec)
 	shot_prefix = prefix
 	print("PLAYTEST start lesson class=", cls)
+	if main.args.has("valley"):
+		await _run_valley()
+		return
 	if str(main.args.get("lesson", "moverse")) == "objetivo":
 		await _run_objetivo()
 		return
@@ -159,6 +162,86 @@ func _run_objetivo() -> void:
 	await _wait(0.6)
 	await _shot("academy")
 	finish()
+
+
+## The valley: Tizón offers a quest, the card and the minimap follow it, handing it in gives the medal and the next one.
+## The buttons are real clicks; the walking is done by moving the champion on the server, to keep it short.
+func _run_valley() -> void:
+	for i in 200:
+		mv = main._match
+		if mv != null and mv.last_state.get("phase", "") == "fight" and not mv.me.is_empty():
+			break
+		await _wait(0.25)
+	_check(mv != null and mv.world.map.id == GameMap.VALLEY_ID, "el valle está abierto")
+	if mv == null:
+		return finish()
+	var quests: ValleyQuests = null
+	var hud_v: ValleyHud = null
+	for c in mv.get_children():
+		if c is ValleyQuests:
+			quests = c
+		if c is ValleyHud:
+			hud_v = c
+	_check(quests != null and hud_v != null, "con su minimapa y sus misiones")
+	if quests == null:
+		return finish()
+	await _wait(1.0)
+	_check(quests.mark.text == "!", "Tizón tiene un «!» (%s)" % quests.mark.text)
+	_check(hud_v.zone_id == "camp" and hud_v.minimap.place.contains("Campamento"), "el minimapa dice dónde estás (%s)" % hud_v.minimap.place)
+	_check(quests.offer != null and quests.offered == "moverse", "al llegar, ofrece la primera misión (%s)" % quests.offered)
+	await _shot("offer")
+	var accept: Button = null
+	for b in quests.offer.buttons.get_children():
+		if (b as Button).text == "Aceptar":
+			accept = b
+	await _click_control(accept)
+	await _wait(0.5)
+	ov = quests.overlay
+	_check(ov != null and _step_id() == "walk", "Aceptar empieza la misión")
+	if ov == null:
+		return finish()
+	_check(quests.mark.text == "?", "Tizón pasa a esperar con un «?»")
+	_check(hud_v.minimap.goal.distance_to(Vector2(-8, 45)) < 0.1, "el minimapa marca la primera placa (%s)" % str(hud_v.minimap.goal))
+	await _shot("quest")
+	var hero: ArenaUnit = main.server.game.unit_for_peer(main.client.peer_id)
+	for plate in [7, 8]:
+		await _hop(hero, Vector2(mv.world.map.plates[plate].x, mv.world.map.plates[plate].z))
+	_check(_step_id() == "look", "las placas avanzan la misión (%s)" % _step_id())
+	ov.push("cam_rmb")
+	await _hop(hero, Vector2(mv.world.map.plates[9].x, mv.world.map.plates[9].z))
+	ov.push("jumped")
+	await _hop(hero, Vector2(mv.world.map.plates[11].x, mv.world.map.plates[11].z))
+	_check(_step_id() == "back", "queda volver con Tizón (%s)" % _step_id())
+	_check(hud_v.minimap.goal == GameMap.TIZON_AT, "y el minimapa lo marca a él")
+	await _hop(hero, GameMap.TIZON_AT + Vector2(1.5, 2.0))
+	await _wait(1.2)
+	_check(_step_id() == "done", "al llegar se entrega (%s)" % _step_id())
+	_check(AcademyStore.shared().medal("moverse") >= AcademyMedals.BRONZE, "con su medalla guardada")
+	await _shot("result")
+	_check(await _click_button_named("Siguiente misión"), "botón Siguiente misión")
+	await _wait(0.8)
+	ov = quests.overlay
+	_check(ov != null and (ov.flow as LessonFlow).id == "camara", "sigue la misión de la cámara")
+	await _shot("next")
+	_check(await _click_button_named("Abandonar"), "botón Abandonar")
+	await _wait(0.5)
+	_check(quests.overlay == null and main._state == "match", "abandonar deja el valle abierto")
+	await _hop(hero, Vector2(0, 30))
+	await _wait(0.5)
+	_check(hud_v.zone_id == "" and quests.mark.text == "!", "lejos de él, Tizón vuelve a tener un «!»")
+	await _hop(hero, GameMap.TIZON_AT + Vector2(1.5, 2.0))
+	await _wait(0.8)
+	_check(quests.offer != null and quests.offered == "camara", "y al volver ofrece la que quedó pendiente (%s)" % quests.offered)
+	finish()
+
+
+## Puts the champion somewhere on the server and waits for the client to see it there.
+func _hop(hero: ArenaUnit, to: Vector2) -> void:
+	hero.x = to.x
+	hero.z = to.y
+	mv.predictor.m.x = to.x
+	mv.predictor.m.z = to.y
+	await _wait(0.5)
 
 
 func _find_overlay() -> void:

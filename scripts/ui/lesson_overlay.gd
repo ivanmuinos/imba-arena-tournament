@@ -74,6 +74,11 @@ func _final_card(_s: Dictionary) -> void:
 	if last_medal > AcademyMedals.NONE and badge != null:
 		mv.audio.play("win")
 	mv.hud.center_overlay(_card)
+	_final_buttons(f)
+
+
+## What can be done after the result.
+func _final_buttons(f: LessonFlow) -> void:
 	var has_next := AcademyCatalog.after(f.id) != ""
 	if has_next:
 		_card.add_button("Siguiente lección", "primary", func(): finished.emit("next"))

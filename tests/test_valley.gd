@@ -102,7 +102,7 @@ func test_the_scenery_is_the_same_every_time_and_leaves_room() -> void:
 	for o in a.statics:
 		check(absf(o.x) < a.half_x and absf(o.z) < a.half_z, "todo queda dentro")
 	check(not _blocked(a, 0.0, 57.0), "el punto de inicio está libre")
-	eq(a.plates.size(), a.zones.size(), "una placa por zona, para las misiones")
+	eq(a.plates.size(), a.zones.size() + GameMap.VALLEY_QUEST_PLATES.size(), "una placa por zona y las de las primeras misiones")
 	for p in a.plates:
 		check(not _blocked(a, p.x, p.z, 0.3), "placa libre en %s, %s" % [p.x, p.z])
 

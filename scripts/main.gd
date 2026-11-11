@@ -846,7 +846,9 @@ func _on_match_started(msg: Dictionary) -> void:
 			ov.attach(_match, _lesson_next)
 			ov.finished.connect(_on_lesson_finished)
 	if _match.world.map.id == GameMap.VALLEY_ID:
-		ValleyHud.new().attach(_match)
+		var valley_hud := ValleyHud.new()
+		valley_hud.attach(_match)
+		ValleyQuests.new().attach(_match, valley_hud)
 		if str(args.get("valley", "")).contains(",") and server != null:  # --valley=x,z[,yaw]: start there (screenshots)
 			var at := str(args.valley).split(",")
 			var hero := server.game.unit_for_peer(client.peer_id)

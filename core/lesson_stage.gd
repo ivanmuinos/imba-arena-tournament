@@ -129,7 +129,8 @@ func _fire(m: ArenaMatch, on: String, now: float) -> void:
 
 
 func _run(m: ArenaMatch, i: int, now: float) -> void:
-	_fired[i] = true
+	if not bool(scenario.triggers[i].get("again", false)):  # a quest can be taken again: its cues fire every time
+		_fired[i] = true
 	for a in scenario.triggers[i].do:
 		_action(m, a, now)
 
@@ -145,6 +146,10 @@ func _action(m: ArenaMatch, a: Array, now: float) -> void:
 			m._ev("door", now, {"i": int(a[1]), "open": false})
 		"activate":
 			active |= 1 << int(a[1])
+		"reset_plates":
+			for p in a[1]:
+				active &= ~(1 << int(p))
+				pressed &= ~(1 << int(p))
 		"spawn":
 			_spawn(m, str(a[1]), now)
 		"stun":

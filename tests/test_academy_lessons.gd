@@ -28,8 +28,8 @@ func _pump(ms := 100.0) -> void:
 		left -= 16.0
 
 
-func _start(id: String, cls: String, spec: String) -> void:
-	flow = AcademyCatalog.lesson(id, cls, spec)
+func _start(id: String, cls: String, spec: String, valley := false) -> void:
+	flow = AcademyValley.quest(id, cls, spec) if valley else AcademyCatalog.lesson(id, cls, spec)
 	server = GameServer.new({"lesson": flow.scenario})
 	var link := LoopbackTransport.pair()
 	server.attach(link[0], true)
@@ -101,6 +101,11 @@ func _solve(event: String) -> void:
 	var m: ArenaMatch = server.game
 	if VIEW_EVENTS.has(event):
 		flow.push(event)
+	elif event == "tizon":  # walking up to him is seen by the view
+		me.x = GameMap.TIZON_AT.x + 1.5
+		me.z = GameMap.TIZON_AT.y + 1.5
+		_pump(80.0)
+		flow.push(event)
 	elif event.begins_with("plate:"):
 		var p: Dictionary = m.map.plates[int(event.substr(6))]
 		me.x = p.x
@@ -154,8 +159,8 @@ func _solve(event: String) -> void:
 
 
 ## Plays the lesson. Returns "" when it reached the final card, or what it got stuck on.
-func _play(id: String, cls: String, spec: String) -> String:
-	_start(id, cls, spec)
+func _play(id: String, cls: String, spec: String, valley := false) -> String:
+	_start(id, cls, spec, valley)
 	var entered := -1
 	var guard := 0
 	while not flow.current().get("final", false) and guard < 60:
@@ -245,7 +250,7 @@ func test_scenarios_only_use_what_exists() -> void:
 				eq(LessonActor.problems(u), [], "%s: guion de %s" % [id, u.key])
 		for t in sc.triggers:
 			for a in t.do:
-				check(["open", "close", "activate", "spawn", "stun", "ult", "gem", "nocd", "cast", "note", "hurt"].has(str(a[0])), "%s: acción conocida %s" % [id, a[0]])
+				check(["open", "close", "activate", "spawn", "stun", "ult", "gem", "nocd", "cast", "note", "hurt", "reset_plates"].has(str(a[0])), "%s: acción conocida %s" % [id, a[0]])
 				if str(a[0]) in ["spawn", "hurt"]:
 					check(keys.has(str(a[1])), "%s: %s nombra una unidad que existe" % [id, a[1]])
 		for w in sc.get("watch", []):
@@ -277,3 +282,82 @@ func test_the_rank_follows_what_you_earned() -> void:
 	eq(AcademyCatalog.rank(7, 2, 13), "Gladiador en formación", "la mitad")
 	eq(AcademyCatalog.rank(13, 5, 13), "Graduado", "todas")
 	eq(AcademyCatalog.rank(13, 13, 13), "Maestro de la arena", "todas de oro")
+
+
+# ---------------------------------------------------------------- the valley's quests
+
+func test_every_valley_quest_can_be_finished_with_every_kit() -> void:
+	for id in AcademyValley.QUESTS:
+		for k in _kits():
+			var problem := _play(str(id), k[0], k[1], true)
+			eq(problem, "", "misión %s con %s %s" % [id, k[0], k[1]])
+			eq(flow.skipped, 0, "misión %s con %s %s: sin saltear nada" % [id, k[0], k[1]])
+			eq(server.game.map.id, GameMap.VALLEY_ID, "se juega en el valle")
+			eq(flow.steps[flow.index - 1].id, "back", "termina volviendo con Tizón")
+
+
+func test_valley_quests_are_the_same_lessons_with_the_same_medals() -> void:
+	for id in AcademyValley.QUESTS:
+		check(AcademyCatalog.lesson_ids().has(id), "%s es una lección del catálogo" % id)
+		check(AcademyValley.pitch(str(id)) != "", "%s: Tizón tiene cómo ofrecerla" % id)
+		for k in _kits():
+			var f := AcademyValley.quest(str(id), k[0], k[1])
+			eq(f.id, str(id), "mismo id: la medalla es la misma")
+			eq(f.scenario, AcademyValley.SCENARIO, "en el escenario del valle")
+			eq(AcademyMedals.grade(f.medal_rule, f.stats(1.0)), AcademyMedals.GOLD, "%s: el oro se puede" % id)
+			check(f.steps.back().get("final", false), "%s termina en su tarjeta final" % id)
+			for s in f.steps:
+				check(not str(s.text).contains("%s"), "%s: texto armado en %s" % [id, s.id])
+	eq(AcademyValley.quest("no_existe", "mage", "fire"), null, "desconocida")
+	eq(AcademyValley.quest("duelo", "mage", "fire"), null, "una lección que todavía no es misión")
+
+
+func test_tizon_gives_the_quests_in_order() -> void:
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_valley_academy.json"))
+	var store := AcademyStore.new("user://test_valley_academy.json")
+	eq(AcademyValley.next_quest(store), "moverse", "primero, moverse")
+	store.record("moverse", AcademyMedals.BRONZE, 1.0)
+	eq(AcademyValley.next_quest(store), "camara", "después la cámara")
+	store.record("camara", AcademyMedals.NONE, 1.0)
+	eq(AcademyValley.next_quest(store), "camara", "salteada no cuenta")
+	store.record("camara", AcademyMedals.GOLD, 1.0)
+	store.record("objetivo", AcademyMedals.SILVER, 1.0)
+	eq(AcademyValley.next_quest(store), "", "sin misiones nuevas")
+	eq(AcademyValley.after("moverse"), "camara", "la que sigue")
+	eq(AcademyValley.after("objetivo"), "", "la última no tiene siguiente")
+
+
+func test_a_quest_can_be_taken_again_in_the_same_visit() -> void:
+	eq(_play("moverse", "mage", "fire", true), "", "primera vez")
+	var stage: LessonStage = server.game.stage
+	check(stage.pressed & (1 << 7) != 0, "la placa quedó pisada")
+	client.send_cue(1)
+	_pump()
+	check(stage.pressed & (1 << 7) == 0 and stage.active & (1 << 7) != 0, "al retomarla, la placa vuelve a contar")
+	check(stage.active & (1 << 8) == 0, "y las siguientes esperan su turno")
+	_start("objetivo", "mage", "fire", true)
+	client.send_cue(6)
+	_pump()
+	for u in server.game.units:
+		if u.dummy == "crate":
+			server.game._damage(u, 999.0, me, server.sim_now, "x")
+	_pump()
+	eq(server.game.units.filter(func(u): return u.dummy == "crate" and u.alive).size(), 0, "cajas rotas")
+	client.send_cue(6)
+	_pump()
+	eq(server.game.units.filter(func(u): return u.dummy == "crate" and u.alive).size(), 3, "repetir la misión trae cajas nuevas")
+
+
+func test_the_minimap_goal_and_tizons_mark_follow_the_quest() -> void:
+	var map := GameMap.create(GameMap.VALLEY_ID)
+	var nowhere := func(_n: String) -> Vector2: return Vector2.INF
+	var f := AcademyValley.quest("moverse", "mage", "fire")
+	eq(QuestOverlay.goal_of(f.steps[0], map, nowhere), Vector2(map.plates[7].x, map.plates[7].z), "una placa")
+	eq(QuestOverlay.goal_of(f.steps[f.steps.size() - 2], map, nowhere), GameMap.TIZON_AT, "volver con Tizón")
+	eq(QuestOverlay.goal_of(f.steps.back(), map, nowhere), Vector2.INF, "al final, nada")
+	var g := AcademyValley.quest("objetivo", "mage", "fire")
+	eq(QuestOverlay.goal_of(g.steps[1], map, func(n: String) -> Vector2: return Vector2(-32, 28) if n == "Caja" else Vector2.INF), Vector2(-32, 28), "una unidad por su nombre")
+	eq(ValleyQuests.mark_for(true, false, {}), "!", "tiene una misión")
+	eq(ValleyQuests.mark_for(false, false, {}), "", "no tiene")
+	eq(ValleyQuests.mark_for(true, true, f.steps[0]), "?", "te espera")
+	eq(ValleyQuests.mark_for(true, true, f.steps.back()), "", "en el resultado, nada")

@@ -47,6 +47,10 @@ const VALLEY_PATHS := [
 	[[28, -28], [46, -40]],
 ]
 const PATH_HW := 1.7
+## Plates of the first quests, after the one of each zone (so they are 7, 8, 9...): left and right of the camp's yard,
+## the way out, behind where you arrive, and the crossroads.
+const VALLEY_QUEST_PLATES := [[-8.0, 45.0], [8.0, 45.0], [0.0, 40.0], [-6.0, 61.5], [0.0, 34.0]]
+const TIZON_AT := Vector2(2.8, 53.2)
 const ACADEMY_HX := 18.0
 const ACADEMY_HZ := 54.0
 const ROOM_DEPTH := 18.0
@@ -347,6 +351,8 @@ func _build_valley() -> void:
 	# lesson plates: one in front of each zone's centre, toward the camp
 	for zn in zones:
 		plates.append({"x": float(zn.x), "z": float(zn.z) + (0.0 if str(zn.id) == "camp" else 4.0), "r": 2.2})
+	for p in VALLEY_QUEST_PLATES:
+		plates.append({"x": float(p[0]), "z": float(p[1]), "r": 1.8})
 
 
 ## Room for something of that radius: off the paths, the zones, the river, the pond and what is already there.

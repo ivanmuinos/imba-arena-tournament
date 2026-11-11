@@ -86,6 +86,13 @@ func _refresh() -> void:
 	_card.add_button("Salir", "ghost", func(): finished.emit("menu"))
 
 
+## Takes the card and the arrow away, leaving the match as it was (a quest that ended while the map goes on).
+func close() -> void:
+	if is_instance_valid(_card):
+		_card.queue_free()
+	queue_free()
+
+
 ## The card was just filled with this step: what a lesson adds to it.
 func _decorate(_s: Dictionary) -> void:
 	pass
