@@ -212,8 +212,8 @@ func try_cast(slot: int, ctx: Dictionary) -> Dictionary:
 		"direction":
 			var tu := target_unit(ctx)
 			var aim: Vector2 = pos + ctx.fwd * 12.0
-			# Movement abilities (Blink, Disengage) follow your facing, like WoW; only Volley aims at the target.
-			if not tu.is_empty() and not is_friend(tu) and not spec.id in ["blink", "disengage"]:
+			# Movement abilities (Blink, Frost Blink, Disengage) follow your facing, like WoW; only Volley aims at the target.
+			if not tu.is_empty() and not is_friend(tu) and not spec.id in ["blink", "frostblink", "disengage"]:
 				aim = Vector2(tu.x, tu.z)
 			res.msg = {"slot": slot, "ax": aim.x, "az": aim.y, "target": -1}
 			res.aim_dir = aim - pos

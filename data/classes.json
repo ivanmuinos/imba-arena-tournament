@@ -35,11 +35,11 @@
         "id": "poly",
         "name": "Polimorfia",
         "icon": "poly",
-        "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 4 s: no puede actuar pero recupera 10% de vida por segundo. Se rompe con daño.",
+        "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 6 s: no puede actuar pero recupera 10% de vida por segundo. Se rompe con daño.",
         "cd": 16000,
         "cast": 1300,
         "range": 18,
-        "ccMs": 4000,
+        "ccMs": 6000,
         "targeted": true
       },
       {
@@ -126,11 +126,11 @@
             "id": "poly",
             "name": "Polimorfia",
             "icon": "poly",
-            "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 4 s: no puede actuar pero recupera 10% de vida por segundo. Se rompe con daño.",
+            "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 6 s: no puede actuar pero recupera 10% de vida por segundo. Se rompe con daño.",
             "cd": 16000,
             "cast": 1300,
             "range": 18,
-            "ccMs": 4000,
+            "ccMs": 6000,
             "targeted": true
           },
           "3": {
@@ -235,25 +235,25 @@
             "id": "frostblink",
             "name": "Traslación helada",
             "icon": "blink",
-            "desc": "Te teletransportás 8 m hacia adelante y donde estabas estalla una nova: enraíza 2 s a los enemigos cercanos. Rompe raíces. 2 cargas: cada una vuelve a los 12 s, de a una.",
+            "desc": "Te teletransportás 8 m hacia adelante y donde estabas estalla una nova: enraíza 3 s a los enemigos cercanos. Rompe raíces. 2 cargas: cada una vuelve a los 12 s, de a una.",
             "cd": 12000,
             "cast": 0,
             "range": 8,
             "dist": 8,
             "aoe": 4.5,
             "dmg": 18,
-            "ccMs": 2000,
+            "ccMs": 3000,
             "charges": 2
           },
           "3": {
             "id": "poly",
             "name": "Polimorfia",
             "icon": "poly",
-            "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 4 s: no puede actuar pero recupera 10% de vida por segundo. Se rompe con daño.",
+            "desc": "Lanzamiento de 1,3 s: convierte al enemigo en oveja 6 s: no puede actuar pero recupera 10% de vida por segundo. Se rompe con daño.",
             "cd": 16000,
             "cast": 1300,
             "range": 18,
-            "ccMs": 4000,
+            "ccMs": 6000,
             "targeted": true
           },
           "4": {
