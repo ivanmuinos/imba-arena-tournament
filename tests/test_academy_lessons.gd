@@ -239,7 +239,8 @@ func test_scenarios_only_use_what_exists() -> void:
 		for u in sc.units:
 			check(not keys.has(u.key), "%s: clave repetida %s" % [id, u.key])
 			keys[u.key] = true
-			check(absf(float(u.x)) < GameMap.ACADEMY_HX - 1.0 and absf(float(u.z)) < GameMap.ACADEMY_HZ - 1.0, "%s: %s está dentro de la arena" % [id, u.key])
+			var ground := GameMap.create(LessonScenarios.map_of(sc))
+			check(absf(float(u.x)) < ground.half_x - 1.0 and absf(float(u.z)) < ground.half_z - 1.0, "%s: %s está dentro de la arena" % [id, u.key])
 			if str(u.kind) == "actor":
 				eq(LessonActor.problems(u), [], "%s: guion de %s" % [id, u.key])
 		for t in sc.triggers:

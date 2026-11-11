@@ -13,6 +13,7 @@ const TALK := {
 
 var reference_button: MButton
 var continue_button: MButton
+var valley_button: MButton
 var _tiles := {}  # lesson id -> {tile, badge, detail, tag}
 var _chapter_labels := {}  # chapter id -> Label
 var _chapter_bars := {}  # chapter id -> StatBar
@@ -31,6 +32,13 @@ func _ready() -> void:
 	header("Academia", "De cero a tu primer duelo, con medallas en cada lección.")
 	_build_coach()
 	_build_chapters()
+	valley_button = MButton.new("Explorar el valle", "secondary", "ui_play")
+	valley_button.position = Vector2(968, 96)
+	valley_button.custom_minimum_size = Vector2(240, 42)
+	valley_button.add_theme_font_size_override("font_size", 16)
+	valley_button.tooltip_text = "Adelanto: el mapa abierto donde vas a hacer las lecciones como misiones."
+	valley_button.pressed.connect(func(): menu.launch_valley())
+	add_child(valley_button)
 
 
 func _build_coach() -> void:

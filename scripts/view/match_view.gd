@@ -142,10 +142,10 @@ func start(p_client: GameClient, msg: Dictionary) -> void:
 	hud.setup(_roster, my_id, my_cls, my_team, my_spec, my_talents)
 	hud.frame_clicked.connect(_on_frame_clicked)
 	hud.macro_pressed.connect(run_macro)
-	practice = str(msg.map) == GameMap.PRACTICE_ID or str(msg.map) == GameMap.ACADEMY_ID
+	practice = str(msg.map) == GameMap.PRACTICE_ID or GameMap.is_lesson_map(str(msg.map))
 	hud.practice = practice
-	if str(msg.map) == GameMap.ACADEMY_ID:
-		hud.practice_title = "Academia"
+	if GameMap.is_lesson_map(str(msg.map)):
+		hud.practice_title = "Academia" if str(msg.map) == GameMap.ACADEMY_ID else GameMap.VALLEY_NAME
 		hud.hide_absent_frames = true
 		var at = msg.get("spawn")
 		if typeof(at) == TYPE_DICTIONARY and at.has("x") and at.has("z"):

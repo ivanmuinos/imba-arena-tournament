@@ -8,6 +8,7 @@ extends Node
 ##   --offline | --host | --join=IP[:PORT]   skip the menu   (+ --name= --cls= --team= --mode= --map= --diff=)
 ##   --practice[=tutorial]   the training yard (or the guided tutorial in it)
 ##   --lesson=<id>           an Academia lesson (AcademyCatalog)
+##   --valley                the Academia's open valley, to walk around
 ##   --tournament=<mode>:<tier>   start a cup offline (mode 1-3, tier bronze|silver|gold|gladiator; resumes a run in progress
 ##                       of the same mode and tier); unlocks are ignored here (smoke tests, screenshots)
 ##   --save-dir=PATH    keep tournament.json and profile.json in this folder instead of user:// (smoke tests)
@@ -70,6 +71,7 @@ var _last_error := ""
 var _tutorial_next := false
 var _lesson_next: LessonFlow = null
 var _lesson_id := ""
+var _valley_next := false
 var _forfeited := false
 var _tresult := {}  # TournamentSession.finish() result of the match on the end screen
 var _state := "menu"
@@ -142,6 +144,7 @@ func _ready() -> void:
 	_menu.play_practice.connect(func(cfg): _start_practice(cfg))
 	_menu.start_tutorial.connect(func(cfg): _start_practice(cfg, true))
 	_menu.start_lesson.connect(_start_lesson)
+	_menu.start_valley.connect(_start_valley)
 	_menu.offer_tutorial = not (args.has("menu") or args.has("shot-times") or args.has("playtest") or args.has("menu-script") or args.has("offline") or args.has("tournament"))
 	_menu.host.connect(_start_host)
 	_menu.join.connect(_start_join)
@@ -220,6 +223,8 @@ func _ready() -> void:
 		_lobby.show_connect_info(["192.168.0.23"], 7777)
 		_lobby._http.cancel_request()  # the demo must not look up (or show) the real public IP
 		_lobby._refresh_info("203.0.113.7")
+	elif args.has("valley"):  # --valley: the Academia's open map (see also --cls= --spec=)
+		_start_valley(cfg)
 	elif args.has("lesson"):  # --lesson=<id>: an Academia lesson (see also --cls= --spec=)
 		_start_lesson(cfg, str(args.lesson))
 	elif args.has("practice"):  # --practice[=tutorial]: the training yard (see also --cls= --spec=)
@@ -261,7 +266,7 @@ func _save_path(file: String) -> String:
 
 func _cfg_from_args() -> Dictionary:
 	var base := {"name": "Jugador", "cls": "mage", "mode": 2, "diff": "normal", "map": "random", "pref": "any"}
-	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join") and not args.has("practice") and not args.has("lesson") and not args.has("tournament"):
+	if _menu != null and not args.has("offline") and not args.has("host") and not args.has("join") and not args.has("practice") and not args.has("lesson") and not args.has("valley") and not args.has("tournament"):
 		return _menu._cfg()
 	for k in ["name", "cls", "spec", "mode", "diff", "map"]:
 		if args.has(k):
@@ -638,6 +643,21 @@ func _start_lesson(cfg: Dictionary, id: String) -> void:
 	_show("none")
 
 
+## The Academia's valley, offline: walk around it freely (its quests come next).
+func _start_valley(cfg: Dictionary) -> void:
+	_teardown_session()
+	last_cfg = cfg
+	offline = true
+	_auto_start = true
+	_valley_next = true
+	server = GameServer.new({"mode": 2, "diff": "normal", "dedicated": false, "autopilot": false, "lesson": "valley_free"})
+	var link := LoopbackTransport.pair()
+	server.attach(link[0], true)
+	client = _new_client(cfg)
+	client.attach(link[1], {"name": cfg.name, "cls": cfg.cls, "spec": cfg.get("spec", ""), "talents": [], "pref": "red"})
+	_show("none")
+
+
 func _on_lesson_finished(action: String) -> void:
 	match action:
 		"retry": _start_lesson.call_deferred(last_cfg, _lesson_id)
@@ -805,7 +825,7 @@ func _on_match_started(msg: Dictionary) -> void:
 	_match.drive_bot = args.has("drive")
 	_match.demo_target = args.has("target")
 	_match.gfx_choice = gfx_choice
-	_match.tutorial = _tutorial_next or _lesson_next != null
+	_match.tutorial = _tutorial_next or _lesson_next != null or _valley_next
 	_match.forfeit_enabled = offline
 	_match.forfeit_tournament = tsession != null
 	_match.chat = _chat
@@ -825,8 +845,21 @@ func _on_match_started(msg: Dictionary) -> void:
 			var ov := LessonOverlay.new()
 			ov.attach(_match, _lesson_next)
 			ov.finished.connect(_on_lesson_finished)
+	if _match.world.map.id == GameMap.VALLEY_ID:
+		ValleyHud.new().attach(_match)
+		if str(args.get("valley", "")).contains(",") and server != null:  # --valley=x,z[,yaw]: start there (screenshots)
+			var at := str(args.valley).split(",")
+			var hero := server.game.unit_for_peer(client.peer_id)
+			hero.x = float(at[0])
+			hero.z = float(at[1])
+			_match.predictor.m.x = hero.x
+			_match.predictor.m.z = hero.z
+			if at.size() > 2:
+				_match._face = deg_to_rad(float(at[2]))
+				_match.cam.yaw = _match._face
 	_tutorial_next = false
 	_lesson_next = null
+	_valley_next = false
 	_update_presence()
 
 

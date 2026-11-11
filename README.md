@@ -279,6 +279,12 @@ Sexta clase, sin mascota: Descarga de sombras, Corrupción y Agonía (maldicione
 - Línea de comandos: `--lesson=<id>` (por ejemplo `--lesson=control --cls=warrior`).
 - Tests: `./run_tests.sh academy lesson` juega cada lección hasta el final con los 10 kits. Con entradas reales: `tools/playtest.sh lesson objetivo`.
 
+### Valle de Brasas (adelanto)
+
+- **Academia > Explorar el valle** (o `--valley`): un mapa abierto de 144 × 144 m con zonas (campamento de Tizón, patio de práctica, ruinas, río de lava con dos vados, bosque con laguna, cantera y arena del duelo), senderos y **minimapa** redondo arriba a la derecha (la rueda del mouse sobre él acerca y aleja). Por ahora se recorre libre; las lecciones como misiones vienen después.
+- El mapa es `GameMap.VALLEY_ID` (`core/game_map.gd`): fuera del catálogo, solo en partidas locales. Lo dibuja `ValleyScenery`; el minimapa sale de `MinimapImage` y `Minimap`.
+- Tests: `./run_tests.sh valley`.
+
 ## Cómo jugar y tutorial (0.6.0)
 
 - **Menú principal > Cómo jugar**: referencia estática (Controles, Reglas, Campeones con vida, velocidad, armadura e identidad de cada clase, generada desde `data/classes.json` por `HowToContent`) y el botón **Empezar el tutorial**.

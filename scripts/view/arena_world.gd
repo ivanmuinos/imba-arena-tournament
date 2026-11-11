@@ -13,6 +13,8 @@ const THEMES := {
 		"torch": 0xffb860, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf0e8e0},
 	"academy": {"sky_top": 0x2a1f2a, "sky_horizon": 0xe08f52, "fog": 0x6a4c40, "fog_density": 0.0012, "ambient": 0xf4e6d6, "ambient_energy": 1.1, "sun": 0xfff0d8, "sun_energy": 2.1,
 		"torch": 0xffb050, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf4ece4},
+	"valley": {"sky_top": 0x24406e, "sky_horizon": 0xf4bd78, "fog": 0xc8b894, "fog_density": 0.0007, "ambient": 0xf2f0de, "ambient_energy": 1.15, "sun": 0xffeec4, "sun_energy": 2.2,
+		"torch": 0xffb050, "glow": 0xff7a30, "ember": 0xfff0a0, "tint": 0xffffff},
 	"yard": {"sky_top": 0x2a2a3a, "sky_horizon": 0xd8a070, "fog": 0x6a5248, "fog_density": 0.0016, "ambient": 0xf4e6d6, "ambient_energy": 1.05, "sun": 0xfff0d8, "sun_energy": 2.1,
 		"torch": 0xffb860, "glow": 0xff7a30, "ember": 0xffc880, "tint": 0xf0e8e0},
 	"tomb": {"sky_top": 0x182848, "sky_horizon": 0x5a78b8, "fog": 0x34466a, "fog_density": 0.0024, "ambient": 0xc8d8ff, "ambient_energy": 1.0, "sun": 0xe0ecff, "sun_energy": 1.9,
@@ -53,6 +55,8 @@ var _doors: Array = []  # academy: {root, left, right, grate, t, goal}
 var _plates: Array = []  # academy: one ring per map plate, hidden until a lesson uses it
 var _floaters: Array = []  # {node, base_y, phase}: crystals that bob and turn (elven plaza)
 var _terrain_mat: ShaderMaterial
+var _grass: MultiMeshInstance3D  # valley: the meadow's tufts, thinned on low quality
+var tizon: Node3D  # valley: the coach, standing in his camp
 
 
 func setup(p_map: GameMap) -> void:
@@ -60,6 +64,15 @@ func setup(p_map: GameMap) -> void:
 	_theme = THEMES.get(map.id, THEMES.bridge)
 	_rand = Rng.new(77 + map.id.length())
 	_build_environment()
+	if map.id == GameMap.VALLEY_ID:  # an open valley, not an arena: its own ground and scenery
+		sun.directional_shadow_max_distance = 95.0
+		env.volumetric_fog_density = 0.0009
+		ValleyScenery.build(self)
+		_build_walls_and_gates()
+		_build_academy_plates()
+		_build_embers()
+		sync_state(false, 0.0, 0.0)
+		return
 	_build_terrain()
 	_build_walls_and_gates()
 	_build_statics()
@@ -306,6 +319,8 @@ func apply_quality(q: Dictionary) -> void:
 		if embers != null:
 			embers.amount = maxi(int(q.embers), 1)
 		return
+	if _grass != null:
+		_grass.multimesh.visible_instance_count = -1 if q.ssao else _grass.multimesh.instance_count / 3
 	env.glow_enabled = q.glow
 	env.ssao_enabled = q.ssao
 	env.ssr_enabled = q.ssr
@@ -682,7 +697,7 @@ func _build_academy_plates() -> void:
 		var mat := StandardMaterial3D.new()
 		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		ring.material_override = mat
-		ring.position = Vector3(p.x, 0.09, p.z)
+		ring.position = Vector3(p.x, h(p.x, p.z) + 0.09, p.z)
 		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		ring.visible = false
 		add_child(ring)

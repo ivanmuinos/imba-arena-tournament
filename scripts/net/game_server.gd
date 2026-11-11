@@ -70,7 +70,7 @@ func _init(p_cfg := {}) -> void:
 	cfg.diff = n.diff
 	cfg.map = GameMap.PRACTICE_ID if bool(cfg.get("practice", false)) else n.map
 	if str(cfg.lesson) != "":
-		cfg.map = GameMap.ACADEMY_ID
+		cfg.map = LessonScenarios.map_of(LessonScenarios.scenario(str(cfg.lesson)))
 	_step_ms = 1000.0 / GameData.C.SIM_HZ
 
 
@@ -460,11 +460,11 @@ func start_match(skip_ready := false) -> bool:
 		var p: Dictionary = players[peer]
 		game = ArenaMatch.new(2, PracticeYard.entries(p.name, p.cls, p.get("spec", ""), peer, p.get("talents", [])), sim_now, cfg.diff, map_id)
 	elif lesson != "":
-		map_id = GameMap.ACADEMY_ID
+		var sc := LessonScenarios.scenario(lesson)
+		map_id = LessonScenarios.map_of(sc)
 		resolved_map = map_id
 		var peer: int = players.keys()[0]
 		var p: Dictionary = players[peer]
-		var sc := LessonScenarios.scenario(lesson)
 		game = ArenaMatch.new(2, LessonScenarios.entries(sc, p.name, p.cls, p.get("spec", ""), peer, p.get("talents", [])), sim_now, cfg.diff, map_id)
 		game.journal = []
 		game.stage = LessonStage.new(sc)

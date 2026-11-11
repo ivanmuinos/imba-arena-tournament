@@ -3,6 +3,7 @@ extends RefCounted
 ## What each Academia lesson puts in the arena. Only the local host reads this: the client hears about doors and plates through
 ## the snapshot and about units through the roster.
 ##
+## `map`: "valley" plays it in the open valley instead of the hall of rooms.
 ## A scenario: {id, start: [x, z], doors: mask, active: [plate...], damp: bool, units: [...], triggers: [...]}.
 ## Plate numbers: room * 4 + 0 left, 1 right, 2 near the exit, 3 near the entrance (GameMap._build_academy).
 ## Unit kinds (all need key, x, z; `dormant` makes them wait for a ["spawn", key]):
@@ -107,6 +108,18 @@ const SCENARIOS := {
 		"id": "ground_1", "start": [0.0, -11.0], "doors": 8, "active": [18], "units": [],
 		"triggers": [{"on": "cue:1", "do": [["gem", "haste", -10.0, -31.0]]}],
 	},
+	"valley_free": {
+		"id": "valley_free", "map": "valley", "start": [0.0, 57.0], "doors": 0, "active": [],
+		"units": [
+			{"key": "t1", "kind": "target", "cls": "warrior", "name": "Muñeco", "x": -42.0, "z": 22.0},
+			{"key": "t2", "kind": "target", "cls": "warrior", "name": "Muñeco", "x": -36.0, "z": 21.0},
+			{"key": "t3", "kind": "target", "cls": "mage", "spec": "fire", "name": "Muñeco", "x": -39.0, "z": 31.0},
+			{"key": "c1", "kind": "crate", "x": -32.0, "z": 28.0, "hp": 45.0},
+			{"key": "c2", "kind": "crate", "x": -31.0, "z": 24.0, "hp": 45.0},
+			{"key": "c3", "kind": "crate", "x": -45.0, "z": 28.0, "hp": 45.0},
+		],
+		"triggers": [],
+	},
 	"duel_1": {
 		"id": "duel_1", "start": [0.0, -42.5], "doors": 0, "active": [],
 		"units": [{"key": "rival", "kind": "bot", "cls": "warrior", "name": "Brasa", "x": 0.0, "z": -51.5, "diff": "easy", "skill": 0.15, "hp_mult": 0.6, "dmg_mult": 0.6, "dormant": true}],
@@ -117,6 +130,11 @@ const SCENARIOS := {
 
 static func scenario(id: String) -> Dictionary:
 	return SCENARIOS.get(id, {})
+
+
+## The map a scenario is played on.
+static func map_of(sc: Dictionary) -> String:
+	return GameMap.VALLEY_ID if str(sc.get("map", "")) == GameMap.VALLEY_ID else GameMap.ACADEMY_ID
 
 
 ## Entries for ArenaMatch: the player first, then every unit of the scenario.

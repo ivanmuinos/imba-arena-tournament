@@ -16,6 +16,37 @@ const PRACTICE_ID := "yard"
 ## The Academia's arena: a line of rooms joined by doors (see _build_academy). Not in `IDS` nor in data/maps.json, so
 ## MatchConfig.normalize refuses it and only the local lesson branch of GameServer can start it.
 const ACADEMY_ID := "academy"
+## The Academia's valley: one open map with zones joined by paths, where lessons are given as quests. Like `academy`, it is
+## outside `IDS` and data/maps.json, so only the local lesson branch of GameServer can start it.
+const VALLEY_ID := "valley"
+const VALLEY_NAME := "Valle de Brasas"
+const VALLEY_H := 72.0
+const RIVER_Z := -18.0
+const RIVER_HZ := 3.0
+## The two fords of the lava river (x of their centres) and half their width.
+const FORDS := [-28.0, 28.0]
+const FORD_HW := 6.0
+const POND := Vector3(-46.0, -46.0, 7.5)  # x, z, radius
+## Places of the valley: flat ground, a name on the minimap and on screen when you walk in.
+const VALLEY_ZONES := [
+	{"id": "camp", "name": "Campamento de Tizón", "x": 0.0, "z": 54.0, "r": 13.0, "icon": "home"},
+	{"id": "yard", "name": "Patio de práctica", "x": -38.0, "z": 26.0, "r": 12.0, "icon": "dummy"},
+	{"id": "ruins", "name": "Ruinas de los pilares", "x": 38.0, "z": 14.0, "r": 13.0, "icon": "ruin"},
+	{"id": "river", "name": "Río de lava", "x": 0.0, "z": -18.0, "r": 9.0, "icon": "lava"},
+	{"id": "grove", "name": "Bosque viejo", "x": -44.0, "z": -36.0, "r": 11.0, "icon": "tree"},
+	{"id": "quarry", "name": "Cantera de cristal", "x": 48.0, "z": -44.0, "r": 12.0, "icon": "crystal"},
+	{"id": "arena", "name": "Arena del duelo", "x": 0.0, "z": -50.0, "r": 15.0, "icon": "swords"},
+]
+## Dirt paths, as lines of points [x, z].
+const VALLEY_PATHS := [
+	[[0, 56], [0, 34], [-20, 28], [-38, 26]],
+	[[0, 34], [20, 22], [38, 14]],
+	[[0, 34], [0, 8], [-28, -6], [-28, -28], [-8, -31], [0, -31]],
+	[[0, 8], [28, -6], [28, -28], [8, -31], [0, -31], [0, -50]],
+	[[-28, -28], [-46, -40]],
+	[[28, -28], [46, -40]],
+]
+const PATH_HW := 1.7
 const ACADEMY_HX := 18.0
 const ACADEMY_HZ := 54.0
 const ROOM_DEPTH := 18.0
@@ -54,6 +85,7 @@ var bushes: Array = []
 var power_spots: Array = []
 var doors: Array = []        # academy: door shapes, solid while their bit in door_mask is off
 var door_mask := 0
+var zones: Array = []        # valley: named places {id, name, x, z, r, icon}
 var plates: Array = []       # academy: floor plates {x, z, r}; the lesson stage decides which ones count
 var obstacles: Array = []
 var gates_open := false
@@ -74,6 +106,7 @@ static func create(map_id: String) -> GameMap:
 		"spire": m._build_spire()
 		"yard": m._build_yard()
 		"academy": m._build_academy()
+		"valley": m._build_valley()
 		_:
 			m.id = "test"
 			m._build_test()
@@ -239,6 +272,138 @@ func _build_academy() -> void:
 	spawns = {"red": [{"x": 0.0, "z": room_z(0) + 3.0}], "blue": [{"x": 0.0, "z": room_z(ROOM_COUNT - 1)}]}
 
 
+## Whether a map belongs to the Academia (lessons only, one local player).
+static func is_lesson_map(map_id: String) -> bool:
+	return map_id == ACADEMY_ID or map_id == VALLEY_ID
+
+
+## The valley: zones on flat ground, a river of lava with two fords, trees and rocks to walk around. The edge is the
+## map's own limit (half_x, half_z): the mountains beyond it are only drawn.
+func _build_valley() -> void:
+	name = VALLEY_NAME
+	half_x = VALLEY_H
+	half_z = VALLEY_H
+	zones = VALLEY_ZONES.duplicate(true)
+	spawns = {"red": [{"x": 0.0, "z": 57.0}], "blue": [{"x": 0.0, "z": -56.0}]}
+	# lava river, cut by the two fords
+	var edges: Array = [-VALLEY_H]
+	for f in FORDS:
+		edges.append(float(f) - FORD_HW)
+		edges.append(float(f) + FORD_HW)
+	edges.append(VALLEY_H)
+	var lava: Dictionary = GameData.maps.get("bridge", {}).get("pool", {"dps": 15, "hps": 0})
+	for i in range(0, edges.size(), 2):
+		var from := float(edges[i])
+		var to := float(edges[i + 1])
+		hazards.append(box((from + to) / 2.0, RIVER_Z, (to - from) / 2.0, RIVER_HZ, 0.0, {"dps": lava.dps, "hps": lava.hps}))
+	# camp: a broken wall behind the fire and four braziers
+	statics.append(box(0.0, 67.0, 9.0, 0.7, 0.0, {"wall": true}))
+	for sx in [-1.0, 1.0]:
+		statics.append(box(sx * 11.5, 62.0, 0.7, 3.0, 0.0, {"wall": true}))
+		statics.append(circle(sx * 7.0, 49.0, 0.5, {"art": "torch", "los": false}))
+		statics.append(circle(sx * 9.0, 60.0, 0.5, {"art": "torch", "los": false}))
+	statics.append(circle(0.0, 63.5, 1.4, {"art": "statue"}))
+	statics.append(circle(4.6, 51.0, 0.6, {"art": "torch", "los": false}))
+	# yard: corner posts
+	for c in [[-48.0, 17.0], [-28.0, 17.0], [-48.0, 35.0], [-28.0, 35.0]]:
+		statics.append(circle(c[0], c[1], 0.9, {"art": "broken_column"}))
+	# ruins: pillars to hide behind, and fallen stones
+	for c in [[32.0, 9.0], [44.0, 10.0], [42.0, 24.0], [31.0, 24.0], [46.0, 21.0]]:
+		statics.append(circle(c[0], c[1], 2.0, {"art": "pillar"}))
+	for c in [[36.0, 4.0], [48.0, 15.0], [27.0, 14.0]]:
+		statics.append(circle(c[0], c[1], 1.0, {"art": "broken_column"}))
+	# arena: a square of walls with a gap on each side, a pillar on each corner
+	var ax := 0.0
+	var az := -50.0
+	var half := 14.0
+	var gap := 4.0
+	var piece := (half - gap) / 2.0
+	for s in [-1.0, 1.0]:
+		for t in [-1.0, 1.0]:
+			statics.append(box(ax + t * (gap + piece), az + s * half, piece, 0.7, 0.0, {"wall": true}))
+			statics.append(box(ax + s * half, az + t * (gap + piece), 0.7, piece, 0.0, {"wall": true}))
+			statics.append(circle(ax + s * half, az + t * half, 1.5, {"art": "pillar"}))
+	# quarry: crystals and boulders
+	for c in [[51.0, -36.0, 1.2], [52.0, -42.0, 1.6], [47.0, -50.0, 1.3], [55.0, -50.0, 1.0], [41.0, -47.0, 0.9]]:
+		statics.append(circle(c[0], c[1], c[2], {"art": "crystal", "los": false}))
+	# trees and rocks everywhere else, the same on every machine
+	var r := Rng.new(20261)
+	var placed := 0
+	var tries := 0
+	while placed < 150 and tries < 4000:
+		tries += 1
+		var x := (r.next() * 2.0 - 1.0) * (VALLEY_H - 2.0)
+		var z := (r.next() * 2.0 - 1.0) * (VALLEY_H - 2.0)
+		var kind := r.next()
+		var size := 0.6 + r.next() * 0.5
+		var deep := Vector2(x - POND.x, z - POND.y).length() < 26.0  # the old forest is thick
+		if not deep and r.next() < 0.45 and maxf(absf(x), absf(z)) < VALLEY_H - 14.0:
+			continue  # open meadows in the middle, thicker toward the edges
+		if not _valley_free(x, z, size + 2.2):
+			continue
+		var art: String = (["tree_a", "tree_b", "tree_c"][int(kind * 3.0) % 3]) if kind < 0.74 or deep else (["rock_a", "rock_b", "rock_c"][int(kind * 30.0) % 3])
+		statics.append(circle(x, z, size if art.begins_with("tree") else size * 1.5, {"art": art, "sc": 0.85 + r.next() * 0.7, "rot": r.next() * TAU}))
+		placed += 1
+	# lesson plates: one in front of each zone's centre, toward the camp
+	for zn in zones:
+		plates.append({"x": float(zn.x), "z": float(zn.z) + (0.0 if str(zn.id) == "camp" else 4.0), "r": 2.2})
+
+
+## Room for something of that radius: off the paths, the zones, the river, the pond and what is already there.
+func _valley_free(x: float, z: float, r: float) -> bool:
+	if path_weight(x, z) > 0.0 or absf(z - RIVER_Z) < RIVER_HZ + 3.0 + r:
+		return false
+	if Vector2(x - POND.x, z - POND.y).length() < POND.z + r:
+		return false
+	for zn in VALLEY_ZONES:
+		if str(zn.id) != "grove" and Vector2(x - float(zn.x), z - float(zn.z)).length() < float(zn.r) + r:
+			return false
+	for o in statics:
+		if o.k == "c" and Vector2(x - o.x, z - o.z).length() < o.r + r:
+			return false
+	return true
+
+
+## 1 on a dirt path, fading to 0 at its edge. Only the valley has paths.
+func path_weight(x: float, z: float) -> float:
+	if id != VALLEY_ID:
+		return 0.0
+	var best := 1e9
+	var p := Vector2(x, z)
+	for line in VALLEY_PATHS:
+		for i in line.size() - 1:
+			var a := Vector2(line[i][0], line[i][1])
+			var b := Vector2(line[i + 1][0], line[i + 1][1])
+			var ab := b - a
+			var t := clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+			best = minf(best, p.distance_to(a + ab * t))
+	return clampf((PATH_HW + 1.2 - best) / 1.2, 0.0, 1.0)
+
+
+## The zone a point is in ({} outside all of them).
+func zone_at(x: float, z: float) -> Dictionary:
+	for zn in zones:
+		if Vector2(x - float(zn.x), z - float(zn.z)).length() <= float(zn.r):
+			return zn
+	return {}
+
+
+## What the ground is made of at a point, for the minimap and the terrain: lava, water, path, stone (a zone's floor) or grass.
+func ground_kind(x: float, z: float) -> String:
+	if not Rules.hazard_at(self, x, z).is_empty():
+		return "lava"
+	if id != VALLEY_ID:
+		return "stone"
+	if Vector2(x - POND.x, z - POND.y).length() < POND.z - 1.0:
+		return "water"
+	if path_weight(x, z) > 0.5:
+		return "path"
+	var zn := zone_at(x, z)
+	if not zn.is_empty() and str(zn.id) in ["camp", "arena", "yard"] and Vector2(x - float(zn.x), z - float(zn.z)).length() < float(zn.r) - 2.0:
+		return "stone"
+	return "grass"
+
+
 ## Opens exactly the doors whose bit is on. Maps without doors ignore it.
 func set_doors(mask: int) -> void:
 	if doors.is_empty():
@@ -338,7 +503,7 @@ static func _smooth_box(x: float, z: float, hx: float, hz: float, soft: float) -
 ## Floor height: units stand on it, fall to it and cannot climb its cliffs (see Rules.step_mover).
 ## Whether the floor has any height at all (flat maps skip the terrain checks).
 var relief: bool:
-	get: return id == "bridge" or id == "tomb"
+	get: return id == "bridge" or id == "tomb" or id == VALLEY_ID
 
 
 ## Gradient of the floor (rise per metre along x and z): its length is the steepness, it points uphill.
@@ -362,7 +527,25 @@ func height_at(x: float, z: float) -> float:
 			return h
 		"tomb":
 			return 0.7 * _bump(Vector2(x, z).length(), 8.5)
+		"valley":
+			return _valley_height(x, z)
 	return 0.0
+
+
+## Rolling meadows, flat where things happen (zones, the river banks), a channel for the lava and a hollow for the pond.
+func _valley_height(x: float, z: float) -> float:
+	var roll := 1.3 * sin(x * 0.071 + 1.3) * cos(z * 0.063 - 0.4) + 0.7 * sin((x + z) * 0.043 + 2.0)
+	var flat := clampf((RIVER_HZ + 9.0 - absf(z - RIVER_Z)) / 6.0, 0.0, 1.0)
+	for zn in VALLEY_ZONES:
+		flat = maxf(flat, clampf((float(zn.r) + 7.0 - Vector2(x - float(zn.x), z - float(zn.z)).length()) / 7.0, 0.0, 1.0))
+	flat = flat * flat * (3.0 - 2.0 * flat)
+	var hgt := roll * (1.0 - flat)
+	var channel := 0.0
+	for hz in hazards:
+		channel = maxf(channel, _smooth_box(x - hz.x, z - hz.z, hz.hx, hz.hz, 1.6))
+	hgt -= 0.9 * channel
+	hgt -= 0.8 * _bump(Vector2(x - POND.x, z - POND.y).length(), POND.z)
+	return hgt
 
 
 ## Chasm floor: below the cliffs, so cut off from the high ground (plateaus and bridge).
@@ -375,7 +558,7 @@ func is_low(x: float, z: float) -> bool:
 
 ## Cliff walls and bridge supports hide the high ground from anyone in the chasm (and vice versa).
 func level_los_blocked(ax: float, az: float, bx: float, bz: float) -> bool:
-	if hazards.is_empty() or id == ACADEMY_ID:  # the academy's lava is flat: nothing to climb out of
+	if hazards.is_empty() or is_lesson_map(id):  # the Academia's lava is shallow: nothing to climb out of
 		return false
 	return is_low(ax, az) != is_low(bx, bz)
 

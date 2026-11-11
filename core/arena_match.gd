@@ -78,7 +78,7 @@ func _init(p_mode: int, entries: Array, now: float, p_diff := "normal", map_id :
 	mode = p_mode
 	diff = p_diff
 	map = GameMap.create(map_id)
-	practice = map.id == GameMap.PRACTICE_ID or map.id == GameMap.ACADEMY_ID
+	practice = map.id == GameMap.PRACTICE_ID or GameMap.is_lesson_map(map.id)
 	for e in entries:
 		var u := ArenaUnit.new()
 		u.id = _next_id
