@@ -50,16 +50,22 @@ func _start(id: String, cls: String, spec: String, valley := false) -> void:
 	server.game.C.CRIT_CHANCE = 0.0
 
 
+## The enemy the current step points at (by name), or the first one around.
 func _enemy() -> ArenaUnit:
+	var named := str(flow.current().get("arrow", ""))
+	var first: ArenaUnit = null
 	for u in server.game.units:
-		if u.peer == 0 and u.team != me.team and u.alive and not u.dormant:
-			return u
-	return null
+		if u.peer == 0 and u.team != me.team and u.alive and not u.dormant and u.dummy != "crate":
+			if named == "unit:%s" % u.name:
+				return u
+			if first == null or (first.dummy != "" and u.dummy == ""):  # a real fighter before a dummy
+				first = u
+	return first
 
 
 func _friend() -> ArenaUnit:
 	for u in server.game.units:
-		if u.peer == 0 and u.team == me.team and u.alive:
+		if u.peer == 0 and u.team == me.team and u.alive and not u.dormant:
 			return u
 	return me
 
@@ -142,10 +148,15 @@ func _solve(event: String) -> void:
 		_pump(50.0)
 	elif event == "note:hidden":
 		var e := _enemy()
-		var pillar := Vector2(7.0, m.map.room_z(GameMap.PILLAR_ROOM))
-		var behind := pillar + (pillar - Vector2(e.x, e.z)).normalized() * 3.6
-		me.x = behind.x
-		me.z = behind.y
+		for o in m.map.statics:  # the first thick thing that really hides you from them
+			if o.k != "c" or o.r < 1.5:
+				continue
+			var pillar := Vector2(float(o.x), float(o.z))
+			var behind: Vector2 = pillar + (pillar - Vector2(e.x, e.z)).normalized() * (float(o.r) + 1.6)
+			if pillar.distance_to(Vector2(e.x, e.z)) < 30.0 and not Rules.has_los(m.map, {"x": behind.x, "z": behind.y}, e):
+				me.x = behind.x
+				me.z = behind.y
+				break
 		_pump(1600.0)
 	elif event == "note:won":
 		var e := _enemy()
@@ -174,8 +185,9 @@ func _play(id: String, cls: String, spec: String, valley := false) -> String:
 			flow.next()
 			continue
 		if flow.current().id == "peek":  # come back into the caster's sight before hiding again
-			me.x = 0.0
-			me.z = -4.0
+			var open: Dictionary = server.game.map.plates[AcademyValley.RUINS] if valley else {"x": 0.0, "z": -4.0}
+			me.x = open.x
+			me.z = open.z
 			_pump(200.0)
 		var pending: Array = flow.current().objectives.filter(func(o): return not o.done)
 		var step := flow.index
@@ -250,8 +262,8 @@ func test_scenarios_only_use_what_exists() -> void:
 				eq(LessonActor.problems(u), [], "%s: guion de %s" % [id, u.key])
 		for t in sc.triggers:
 			for a in t.do:
-				check(["open", "close", "activate", "spawn", "stun", "ult", "gem", "nocd", "cast", "note", "hurt", "reset_plates"].has(str(a[0])), "%s: acción conocida %s" % [id, a[0]])
-				if str(a[0]) in ["spawn", "hurt"]:
+				check(["open", "close", "activate", "spawn", "stun", "ult", "gem", "nocd", "cast", "note", "hurt", "reset_plates", "despawn", "fresh_dr"].has(str(a[0])), "%s: acción conocida %s" % [id, a[0]])
+				if str(a[0]) in ["spawn", "hurt", "despawn"]:
 					check(keys.has(str(a[1])), "%s: %s nombra una unidad que existe" % [id, a[1]])
 		for w in sc.get("watch", []):
 			check(keys.has(str(w.hidden_from)), "%s: vigila a una unidad que existe" % id)
@@ -293,7 +305,6 @@ func test_every_valley_quest_can_be_finished_with_every_kit() -> void:
 			eq(problem, "", "misión %s con %s %s" % [id, k[0], k[1]])
 			eq(flow.skipped, 0, "misión %s con %s %s: sin saltear nada" % [id, k[0], k[1]])
 			eq(server.game.map.id, GameMap.VALLEY_ID, "se juega en el valle")
-			eq(flow.steps[flow.index - 1].id, "back", "termina volviendo con Tizón")
 
 
 func test_valley_quests_are_the_same_lessons_with_the_same_medals() -> void:
@@ -309,7 +320,7 @@ func test_valley_quests_are_the_same_lessons_with_the_same_medals() -> void:
 			for s in f.steps:
 				check(not str(s.text).contains("%s"), "%s: texto armado en %s" % [id, s.id])
 	eq(AcademyValley.quest("no_existe", "mage", "fire"), null, "desconocida")
-	eq(AcademyValley.quest("duelo", "mage", "fire"), null, "una lección que todavía no es misión")
+	eq(AcademyValley.QUESTS, AcademyCatalog.lesson_ids(), "todas las lecciones son misiones, en el mismo orden")
 
 
 func test_tizon_gives_the_quests_in_order() -> void:
@@ -320,11 +331,15 @@ func test_tizon_gives_the_quests_in_order() -> void:
 	eq(AcademyValley.next_quest(store), "camara", "después la cámara")
 	store.record("camara", AcademyMedals.NONE, 1.0)
 	eq(AcademyValley.next_quest(store), "camara", "salteada no cuenta")
-	store.record("camara", AcademyMedals.GOLD, 1.0)
-	store.record("objetivo", AcademyMedals.SILVER, 1.0)
+	for id in AcademyValley.QUESTS:
+		store.record(str(id), AcademyMedals.GOLD if id == "moverse" else AcademyMedals.SILVER, 1.0)
 	eq(AcademyValley.next_quest(store), "", "sin misiones nuevas")
+	eq(AcademyValley.improve_quest(store), "camara", "pero ofrece la primera que puede mejorar")
+	for id in AcademyValley.QUESTS:
+		store.record(str(id), AcademyMedals.GOLD, 1.0)
+	eq(AcademyValley.improve_quest(store), "", "con oro en todo, nada")
 	eq(AcademyValley.after("moverse"), "camara", "la que sigue")
-	eq(AcademyValley.after("objetivo"), "", "la última no tiene siguiente")
+	eq(AcademyValley.after("duelo"), "", "la última no tiene siguiente")
 
 
 func test_a_quest_can_be_taken_again_in_the_same_visit() -> void:

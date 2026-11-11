@@ -5,8 +5,8 @@ extends MenuView
 
 const TILE := Vector2(256, 104)
 const TALK := {
-	"new": "¡Bienvenido! Soy Tizón, el más viejo de esta arena. Empezá por «%s» y en un rato estás peleando.",
-	"going": "Vas bien. Ahora te toca «%s».",
+	"new": "¡Bienvenido! Soy Tizón, el más viejo de esta arena. Te espero en el valle: tu primera misión es «%s».",
+	"going": "Vas bien. En el valle te espera «%s».",
 	"graduate": "Ya sabés todo lo que hay que saber. Te quedan %d medallas por subir a oro, por si te animás.",
 	"master": "No me queda nada que enseñarte. Andá a la arena y hacé que me sienta orgulloso.",
 }
@@ -29,16 +29,10 @@ var _scroll: ScrollContainer
 
 
 func _ready() -> void:
-	header("Academia", "De cero a tu primer duelo, con medallas en cada lección.")
+	header("Academia", "Entrá al Valle de Brasas y hacé las misiones de Tizón, o repasá una lección suelta.")
 	_build_coach()
 	_build_chapters()
-	valley_button = MButton.new("Explorar el valle", "secondary", "ui_play")
-	valley_button.position = Vector2(968, 96)
-	valley_button.custom_minimum_size = Vector2(240, 42)
-	valley_button.add_theme_font_size_override("font_size", 16)
-	valley_button.tooltip_text = "Adelanto: el mapa abierto donde vas a hacer las lecciones como misiones."
-	valley_button.pressed.connect(func(): menu.launch_valley())
-	add_child(valley_button)
+	valley_button = continue_button  # the way in is the valley: Tizón gives the next quest there
 
 
 func _build_coach() -> void:
@@ -83,7 +77,7 @@ func _build_coach() -> void:
 	continue_button = MButton.new("Empezar", "primary", "ui_play")
 	continue_button.custom_minimum_size = Vector2(0, 50)
 	continue_button.add_theme_font_size_override("font_size", 19)
-	continue_button.pressed.connect(func(): menu.launch_lesson(_suggested if _suggested != "" else str(AcademyCatalog.lesson_ids()[0])))
+	continue_button.pressed.connect(func(): menu.launch_valley())
 	col.add_child(continue_button)
 	reference_button = MButton.new("Controles y reglas", "secondary")
 	reference_button.custom_minimum_size = Vector2(0, 40)
@@ -223,7 +217,7 @@ func menu_enter() -> void:
 	_bar.animate_to(float(all.done) / maxf(1.0, float(all.total)), UiKit.GOLD)
 	_talk.text = coach_line(store)
 	_face.mood = "orgullosa" if int(all.gold) >= int(all.total) else "contenta" if int(all.done) > 0 else "neutral"
-	continue_button.text = "Empezar" if store.lessons.is_empty() else "Continuar" if _suggested != "" else "Repasar"
+	continue_button.text = "Entrar al valle" if store.lessons.is_empty() else "Volver al valle"
 	var cfg: Dictionary = menu._cfg()
 	_champion.text = "Las lecciones se adaptan a tu campeón: %s" % AcademyKit.new(str(cfg.get("cls", "mage")), str(cfg.get("spec", ""))).class_name_text()
 	if _tiles.has(_suggested):

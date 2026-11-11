@@ -384,10 +384,10 @@ func test_first_launch_offers_the_tutorial_once_and_it_can_be_skipped() -> void:
 	m3._input(_key(KEY_SPACE))
 	var hub3 := m3._views.hub as MHub
 	check(hub3.offer_visible(), "un jugador nuevo ve la oferta")
-	var launched := [""]
-	m3.start_lesson.connect(func(_cfg, id): launched[0] = id)
+	var launched := [0]
+	m3.start_valley.connect(func(_cfg): launched[0] += 1)
 	hub3.offer_button.pressed.emit()
-	eq(launched[0], str(AcademyCatalog.lesson_ids()[0]), "aceptarla abre la primera lección de la Academia")
+	eq(launched[0], 1, "aceptarla te lleva al valle, donde Tizón da la primera misión")
 	check(not hub3.offer_visible(), "y la tarjeta se va")
 	check(not AcademyStore.shared().offered, "empezar no la da por ofrecida: eso pasa al terminar la lección")
 	_drop(m3)

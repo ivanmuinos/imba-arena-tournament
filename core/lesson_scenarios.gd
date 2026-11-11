@@ -14,7 +14,7 @@ extends RefCounted
 ##   bot     a real fighter with the normal AI; cls, spec, name, skill, diff, hp_mult, dmg_mult
 ## Triggers (see LessonStage): {on: "plate:N" | "dead:key" | "dead:prefix*" | "cue:N" | "start", do: [[action, args...]...]}.
 ## A trigger with `again: true` fires every time (cues of quests that can be repeated).
-## Actions: reset_plates [n...] (not active nor stepped on), open/close door, activate plate, spawn key, stun ms, ult, gem kind x z, nocd bool, cast key ability,
+## Actions: despawn key, fresh_dr bool, reset_plates [n...] (not active nor stepped on), open/close door, activate plate, spawn key, stun ms, ult, gem kind x z, nocd bool, cast key ability,
 ## note name (tells the lesson "note:name"), hurt key fraction.
 ## `fresh_dr`: its units never build diminishing returns (a lesson that needs many tries at one control).
 ## `watch`: [{hidden_from: key, ms, note}] tells the lesson once the player hid from that unit for that long.
@@ -114,11 +114,23 @@ const SCENARIOS := {
 		"units": [
 			{"key": "t1", "kind": "target", "cls": "warrior", "name": "Muñeco", "x": -42.0, "z": 22.0},
 			{"key": "t2", "kind": "target", "cls": "warrior", "name": "Muñeco", "x": -36.0, "z": 21.0},
-			{"key": "t3", "kind": "target", "cls": "mage", "spec": "fire", "name": "Muñeco", "x": -39.0, "z": 31.0},
+			{"key": "t3", "kind": "target", "cls": "mage", "spec": "fire", "name": "Muñeco", "x": -44.0, "z": 32.0},
 			{"key": "c1", "kind": "crate", "x": -32.0, "z": 28.0, "hp": 45.0},
 			{"key": "c2", "kind": "crate", "x": -31.0, "z": 24.0, "hp": 45.0},
 			{"key": "c3", "kind": "crate", "x": -45.0, "z": 28.0, "hp": 45.0},
+			# who each quest brings in (all wait their turn, and leave with cue 60)
+			{"key": "a1", "kind": "ally", "cls": "warrior", "name": "Aliado herido", "x": -33.0, "z": 32.0, "hp": 600.0, "dormant": true},
+			{"key": "peg", "kind": "actor", "cls": "warrior", "name": "Pegador", "x": -30.0, "z": 20.0, "hp_mult": BIG, "dmg_mult": 0.2, "dormant": true, "script": [{"do": "chase_melee"}]},
+			{"key": "h1", "kind": "actor", "cls": "mage", "spec": "fire", "name": "Hechicero", "x": -47.0, "z": 22.0, "hp_mult": BIG, "dmg_mult": 0.15, "dormant": true,
+				"script": [{"do": "hold_position"}, {"do": "cast_loop", "ability": "pyro", "every": 2500.0}]},
+			{"key": "sp", "kind": "actor", "cls": "warrior", "name": "Sparring", "x": -38.0, "z": 24.0, "hp_mult": BIG, "dormant": true, "script": [{"do": "hold_position"}]},
+			{"key": "s1", "kind": "actor", "cls": "priest", "name": "Sanador", "x": -42.0, "z": 27.0, "hp_mult": BIG, "dormant": true, "script": [{"do": "hold_position"}]},
+			{"key": "g1", "kind": "actor", "cls": "warrior", "name": "Guerrero", "x": -34.0, "z": 26.0, "hp_mult": BIG, "dormant": true, "script": [{"do": "hold_position"}]},
+			{"key": "h2", "kind": "actor", "cls": "mage", "spec": "fire", "name": "Hechicero", "x": 39.0, "z": 6.0, "hp_mult": BIG, "dmg_mult": 0.6, "dormant": true,
+				"script": [{"do": "hold_position"}, {"do": "cast_loop", "ability": "fireball", "every": 1600.0}]},
+			{"key": "rival", "kind": "bot", "cls": "warrior", "name": "Brasa", "x": 0.0, "z": -57.0, "diff": "easy", "skill": 0.15, "hp_mult": 0.6, "dmg_mult": 0.6, "dormant": true},
 		],
+		"watch": [{"hidden_from": "h2", "ms": 1200.0, "note": "hidden"}],
 		# Cues of the valley's quests (AcademyValley). `again`: a quest can be repeated in the same visit.
 		"triggers": [
 			{"on": "cue:1", "again": true, "do": [["reset_plates", [7, 8, 9, 11]], ["activate", 7]]},
@@ -127,6 +139,28 @@ const SCENARIOS := {
 			{"on": "cue:4", "again": true, "do": [["activate", 11]]},
 			{"on": "cue:5", "again": true, "do": [["reset_plates", [10]], ["activate", 10]]},
 			{"on": "cue:6", "again": true, "do": [["reset_plates", [1]], ["activate", 1], ["spawn", "c1"], ["spawn", "c2"], ["spawn", "c3"]]},
+			{"on": "cue:7", "again": true, "do": [["reset_plates", [1]], ["activate", 1], ["spawn", "a1"], ["hurt", "a1", 0.4]]},
+			{"on": "cue:8", "again": true, "do": [["reset_plates", [1]], ["activate", 1]]},
+			{"on": "cue:9", "again": true, "do": [["spawn", "peg"]]},
+			{"on": "cue:10", "again": true, "do": [["spawn", "h1"]]},
+			{"on": "cue:11", "again": true, "do": [["reset_plates", [1]], ["activate", 1]]},
+			{"on": "cue:12", "again": true, "do": [["ult"], ["spawn", "a1"], ["hurt", "a1", 0.4]]},
+			{"on": "cue:13", "again": true, "do": [["reset_plates", [1]], ["activate", 1]]},
+			{"on": "cue:14", "again": true, "do": [["spawn", "sp"], ["nocd", true]]},
+			{"on": "cue:15", "again": true, "do": [["stun", 6000.0]]},
+			{"on": "cue:16", "again": true, "do": [["reset_plates", [1]], ["activate", 1]]},
+			{"on": "cue:17", "again": true, "do": [["spawn", "h1"], ["nocd", true], ["fresh_dr", true]]},
+			{"on": "cue:18", "again": true, "do": [["reset_plates", [2]], ["activate", 2]]},
+			{"on": "cue:19", "again": true, "do": [["spawn", "h2"]]},
+			{"on": "cue:20", "again": true, "do": [["reset_plates", [1]], ["activate", 1]]},
+			{"on": "cue:21", "again": true, "do": [["spawn", "s1"], ["spawn", "g1"]]},
+			{"on": "cue:22", "again": true, "do": [["reset_plates", [3, 6]], ["activate", 3]]},
+			{"on": "cue:23", "again": true, "do": [["activate", 6]]},
+			{"on": "cue:24", "again": true, "do": [["gem", "haste", 4.0, -40.0]]},
+			{"on": "cue:25", "again": true, "do": [["reset_plates", [6]], ["activate", 6]]},
+			{"on": "cue:26", "again": true, "do": [["spawn", "rival"]]},
+			{"on": "dead:rival", "do": [["note", "won"]]},
+			{"on": "cue:60", "again": true, "do": [["despawn", "a1"], ["despawn", "peg"], ["despawn", "h1"], ["despawn", "sp"], ["despawn", "s1"], ["despawn", "g1"], ["despawn", "h2"], ["despawn", "rival"], ["nocd", false], ["fresh_dr", false]]},
 		],
 	},
 	"duel_1": {

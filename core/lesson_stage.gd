@@ -10,6 +10,8 @@ var pressed := 0  # plates stepped on
 var active := 0   # plates that count right now
 ## Stopped by a failed attempt: triggers no longer fire.
 var halted := false
+## Its units never build diminishing returns (a lesson that needs many tries at one control).
+var fresh_dr := false
 var _fired := {}  # trigger index -> true
 var _by_key := {}  # unit key -> ArenaUnit
 var _actors := {}  # unit key -> LessonActor
@@ -20,6 +22,7 @@ var _last := -1.0
 func _init(p_scenario: Dictionary) -> void:
 	scenario = p_scenario
 	damp = bool(scenario.get("damp", false))
+	fresh_dr = bool(scenario.get("fresh_dr", false))
 
 
 func setup(m: ArenaMatch, now: float) -> void:
@@ -56,7 +59,7 @@ func step(m: ArenaMatch, now: float) -> void:
 	for key in _actors:
 		(_actors[key] as LessonActor).tick(m, player, now)
 	_watch(m, player, now, dt)
-	if bool(scenario.get("fresh_dr", false)):
+	if fresh_dr:
 		for key in _by_key:
 			(_by_key[key] as ArenaUnit).dr.clear()
 	for u in m.units:
@@ -146,6 +149,14 @@ func _action(m: ArenaMatch, a: Array, now: float) -> void:
 			m._ev("door", now, {"i": int(a[1]), "open": false})
 		"activate":
 			active |= 1 << int(a[1])
+		"despawn":
+			var gone: ArenaUnit = _by_key.get(str(a[1]))
+			if gone != null:
+				gone.dormant = true
+				gone.alive = false
+				gone.cast = {}
+		"fresh_dr":
+			fresh_dr = bool(a[1])
 		"reset_plates":
 			for p in a[1]:
 				active &= ~(1 << int(p))
@@ -183,6 +194,12 @@ func _spawn(m: ArenaMatch, key: String, now: float) -> void:
 	u.x = u.home.x
 	u.z = u.home.y
 	u.reset_effects()
+	u.dr.clear()
+	var triggers: Array = scenario.get("triggers", [])
+	for i in triggers.size():  # back in the fight: "when it falls" can happen again
+		var on := str(triggers[i].on)
+		if on.begins_with("dead:") and (on.substr(5) == key or (on.ends_with("*") and key.begins_with(on.substr(5).trim_suffix("*")))):
+			_fired.erase(i)
 	m._ev("spawn", now, {"key": key, "id": u.id})
 
 

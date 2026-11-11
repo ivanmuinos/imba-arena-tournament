@@ -72,11 +72,15 @@ func _offer(id: String) -> void:
 		offer.add_button("Aceptar", "primary", func(): accept(id))
 		offer.add_button("Ahora no", "ghost", _snooze)
 		return
-	offer.show_step("Tizón", "Por ahora, eso es todo", "No tengo más misiones todavía: pronto vas a tener trabajo por todo el valle. Mientras tanto podés repetir cualquiera para mejorar tu medalla.", [])
-	for q in AcademyValley.QUESTS:
-		var again := str(q)
-		offer.add_button(str(AcademyCatalog.info(again).get("title", again)).split(" ")[0], "secondary", func(): accept(again))
-	offer.add_button("Cerrar", "ghost", _snooze)
+	var better := AcademyValley.improve_quest(AcademyStore.shared())
+	if better == "":
+		offer.show_step("Tizón", "Maestro de la arena", "Oro en todo. No me queda nada que enseñarte: andá a la arena de verdad y hacé que me sienta orgulloso.", [])
+		offer.add_button("Cerrar", "primary", _snooze)
+		return
+	offer.show_step("Tizón · Para mejorar", str(AcademyCatalog.info(better).get("title", better)), "Ya hiciste todas mis misiones. Si querés el oro, esta es la primera que podés mejorar.", [])
+	offer.set_status("Tu medalla: %s" % str(AcademyMedals.NAMES[AcademyStore.shared().medal(better)]), UiKit.GOLD)
+	offer.add_button("Repetir", "primary", func(): accept(better))
+	offer.add_button("Ahora no", "ghost", _snooze)
 
 
 func _snooze() -> void:
@@ -107,6 +111,8 @@ func _on_finished(action: String) -> void:
 	var id := (overlay.flow as LessonFlow).id
 	overlay.close()
 	overlay = null
+	if mv.client != null:
+		mv.client.send_cue(AcademyValley.CLEANUP_CUE)
 	snoozed = true  # he does not talk over the result: walk away and back, or take the next one from the card
 	if action == "next" and AcademyValley.after(id) != "":
 		accept.call_deferred(AcademyValley.after(id))

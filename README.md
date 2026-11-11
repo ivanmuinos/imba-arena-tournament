@@ -279,11 +279,12 @@ Sexta clase, sin mascota: Descarga de sombras, Corrupción y Agonía (maldicione
 - Línea de comandos: `--lesson=<id>` (por ejemplo `--lesson=control --cls=warrior`).
 - Tests: `./run_tests.sh academy lesson` juega cada lección hasta el final con los 10 kits. Con entradas reales: `tools/playtest.sh lesson objetivo`.
 
-### Valle de Brasas (adelanto)
+### Valle de Brasas
 
-- **Academia > Explorar el valle** (o `--valley`): un mapa abierto de 144 × 144 m con zonas (campamento de Tizón, patio de práctica, ruinas, río de lava con dos vados, bosque con laguna, cantera y arena del duelo), senderos y **minimapa** redondo arriba a la derecha (la rueda del mouse sobre él acerca y aleja). Por ahora se recorre libre; las lecciones como misiones vienen después.
-- El mapa es `GameMap.VALLEY_ID` (`core/game_map.gd`): fuera del catálogo, solo en partidas locales. Lo dibuja `ValleyScenery`; el minimapa sale de `MinimapImage` y `Minimap`.
-- Tests: `./run_tests.sh valley`.
+- **Academia > Entrar al valle** (o `--valley`): un mapa abierto de 144 × 144 m con zonas (campamento de Tizón, patio de práctica, ruinas, río de lava con dos vados, bosque con laguna, cantera y arena del duelo), senderos y **minimapa** redondo arriba a la derecha (la rueda del mouse sobre él acerca y aleja).
+- **Misiones**: Tizón tiene un «!» sobre la cabeza cuando hay una para vos y la ofrece al acercarte. Son las 13 lecciones de la Academia (`AcademyValley`), con las mismas medallas: la tarjeta te acompaña por el mapa, el minimapa marca a dónde ir y al terminar podés seguir con la siguiente. Las tres primeras se entregan volviendo con él.
+- El mapa es `GameMap.VALLEY_ID` (`core/game_map.gd`): fuera del catálogo, solo en partidas locales. Lo dibuja `ValleyScenery`; el minimapa sale de `MinimapImage` y `Minimap`; las misiones, de `ValleyQuests` y `QuestOverlay`. Todo el valle es un solo escenario (`valley_free`) cuyos avisos traen y se llevan a los personajes de cada misión.
+- Tests: `./run_tests.sh valley academy_lessons` (cada misión, jugada con los 10 kits). Con clics reales: `tools/playtest.sh valley`.
 
 ## Cómo jugar y tutorial (0.6.0)
 

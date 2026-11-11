@@ -219,18 +219,18 @@ func _maybe_offer() -> void:
 		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		line.add_child(c)
 		c.add_child(UiKit.heading("¿Primera vez en la arena?", 22, UiKit.GOLD, 700, 1))
-		var t := UiKit.label("Soy Tizón. En la Academia te enseño a jugar de a poco, con tu campeón y jugando de verdad: %d lecciones cortas con medallas." % AcademyCatalog.total(), 14, UiKit.MUTED)
+		var t := UiKit.label("Soy Tizón. Te espero en el Valle de Brasas: %d misiones cortas con tu campeón, jugando de verdad, y una medalla en cada una." % AcademyCatalog.total(), 14, UiKit.MUTED)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		t.custom_minimum_size = Vector2(330, 0)
 		c.add_child(t)
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		c.add_child(row)
-		offer_button = MButton.new("Empezar la Academia", "accent")
+		offer_button = MButton.new("Ir al valle", "accent")
 		offer_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		offer_button.pressed.connect(func():
 			_offer.visible = false
-			menu.launch_lesson(str(AcademyCatalog.lesson_ids()[0])))
+			menu.launch_valley())
 		var no := MButton.new("Ya sé jugar", "ghost")
 		no.pressed.connect(dismiss_offer)
 		row.add_child(offer_button)
