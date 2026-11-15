@@ -1055,13 +1055,17 @@ static func spray_dir(from: Vector2, to: Vector2) -> Vector3:
 
 ## A weapon landing on a body: sparks sprayed out the far side, a short cut across the chest and a dull flash. Heavy
 ## blows (crits, finishers) spray more and leave a bigger cut. `school` tints it (a Paladin's hammer hits gold).
-func weapon_hit(x: float, z: float, from: Vector2, school: String, heavy: bool) -> void:
+## `cut` false is a shot (arrow, bullet, ball): the same spray out the far side, without the slash.
+func weapon_hit(x: float, z: float, from: Vector2, school: String, heavy: bool, cut := true) -> void:
 	var pal := SpellSchools.palette(school)
 	var pos := Vector3(x, _y(x, z) + 1.2 * UnitView.VS, z)
 	var dir := spray_dir(from, Vector2(x, z))
 	sparks(pos, 16 if heavy else 9, 11.0 if heavy else 8.0, pal.mid.lerp(pal.core, 0.4), 0.32, 4.0, 0.0, dir)
 	burst(pos + dir * 0.3, 10 if heavy else 5, 3.5, pal.mid, 0.3, 0.22, 4.0)
 	_light_flash(pos, pal.mid, 2.2 if heavy else 1.2, 0.18)
+	if not cut:
+		smoke(pos - dir * 0.2, 2 if heavy else 1, 0.35, Color(0.32, 0.28, 0.24), 0.45, 0.8, 0.8)  # a puff where it went in
+		return
 	if not _fancy:
 		return
 	var m := MeshInstance3D.new()

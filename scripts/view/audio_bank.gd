@@ -78,6 +78,10 @@ const LAYERS := {
 	"hitShadow": [["punch", 1.15, -9.0, 0.0], ["shadow_low", 1.3, -8.0, 0.0]],
 	"hitHoly": [["punch", 1.4, -11.0, 0.0], ["holy_chime", 1.5, -9.0, 0.0]],
 	# weapon on a body: the thud plus the edge biting in (a crit already has its own blade layer)
+	# shots landing: an arrow thunks into wood and cloth, a bullet smacks with a metallic snap, a ball thuds
+	"hitArrow": [["punch", 1.3, -7.0, 0.0], ["wood", 1.5, -9.0, 0.0]],
+	"hitBullet": [["punch", 1.5, -6.0, 0.0], ["metal", 1.9, -12.0, 0.0]],
+	"hitBall": [["punch", 0.9, -5.0, 0.0], ["cloth", 0.8, -8.0, 0.0]],
 	"hitBlade": [["punch", 1.0, -4.0, 0.0], ["blade", 1.25, -8.0, 0.0], ["metal", 1.5, -16.0, 0.01]],
 	"hitNature": [["punch", 1.3, -10.0, 0.0], ["wood", 1.3, -8.0, 0.0]],
 	"death": [["death", 1.0, -3.0, 0.0]],
@@ -227,6 +231,18 @@ func _exit_tree() -> void:
 ## A weapon blow (Golpe, Puñalada, Cruzado...) rather than a shot or a spell: it sounds and lands like steel.
 static func is_weapon(cls: String, ability: String, spec := "") -> bool:
 	return bool(GameData.find_ability(cls, ability, spec).get("melee", false))
+
+
+## Shots that land with their own sound and a spray out the far side (arrows, bullets, balls); "" for anything else.
+const SHOT_HIT := {
+	"shot": "hitArrow", "aimed": "hitArrow",
+	"rifle": "hitBullet", "headshot": "hitBullet", "awp": "hitBullet",
+	"pass": "hitBall", "chip": "hitBall", "golazo": "hitBall",
+}
+
+
+static func shot_hit(ability: String) -> String:
+	return SHOT_HIT.get(ability, "")
 
 
 static func spell_hit(school: String) -> String:
