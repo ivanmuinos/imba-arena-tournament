@@ -1617,11 +1617,18 @@ func _step_projectiles(now: float) -> void:
 		if _blocked_by_windwall(p.owner.team, p.x, p.z, nx, nz, now):
 			fx.append({"k": "absorb_wall", "x": nx, "z": nz})
 			continue
+		# A spell locked on its target always reaches it (WoW): nobody else soaks it up, and a wall only stops it once the
+		# target is hidden behind it, seen from the spell. Grazing a pillar's edge with the target in sight is not a miss.
+		var homing: ArenaUnit = p.target
 		var wall_t := Rules.obstacle_hit(map, p.x, p.z, nx, nz, spec.projR * 0.4)
+		if homing != null and wall_t >= 0 and Rules.has_los(map, p, homing):
+			wall_t = -1.0
 		var hit: ArenaUnit = null
 		var hit_t := INF
 		for u in units:
 			if not u.alive or u.team == p.owner.team or u.id in p.get("hits", []):
+				continue
+			if homing != null and u != homing:
 				continue
 			var t := Rules.segment_circle(p.x, p.z, nx, nz, u.x, u.z, Rules.PLAYER_R + spec.projR)
 			if t >= 0 and t < hit_t:
@@ -1642,7 +1649,8 @@ func _step_projectiles(now: float) -> void:
 			continue
 		p.x = nx
 		p.z = nz
-		p.left -= spec.projSpeed * _dt
+		if homing == null:
+			p.left -= spec.projSpeed * _dt  # chasing its target it never runs out of range: it is faster than anyone
 		if p.left > 0 and absf(p.x) < map.half_x and absf(p.z) < map.half_z:
 			keep.append(p)
 	projs = keep

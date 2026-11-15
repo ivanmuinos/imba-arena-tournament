@@ -345,6 +345,22 @@ func _on_state(s: Dictionary) -> void:
 		_last_prep_tick = sec
 	if not me.is_empty():
 		predictor.on_state(me, s.phase, now)
+	# A new projectile turns its caster toward where it flies, so it leaves the hand in front, not from behind the back
+	# (the body follows the camera; the shot goes to the target, which can be off to the side).
+	for p in s.projs:
+		if fx.has_proj(p.id):
+			continue
+		var caster: UnitView = null
+		var best := 2.5
+		var back := Vector2(p.vx, p.vz).normalized() * 0.6  # the server spawns it 0.6 m in front of its caster
+		for hid in views:
+			var cv: UnitView = views[hid]
+			var dd := Vector2(cv.position.x - (p.x - back.x), cv.position.z - (p.z - back.y)).length()
+			if cv.shown and cv.is_alive() and dd < best:
+				best = dd
+				caster = cv
+		if caster != null and Vector2(p.vx, p.vz).length() > 0.01:
+			caster.face_cast(atan2(p.vx, p.vz))
 	var hand_list: Array = []
 	for hid in views:
 		var hv: UnitView = views[hid]
@@ -467,6 +483,9 @@ func _one_fx(f: Dictionary) -> void:
 				# periodic damage: the number only (no flash, impact, shake or sound; those strobe on every tick)
 				if v != null and v.shown:
 					hud.float_text(Vector3(f.x, world.h(f.x, f.z) + 2.3 * UnitView.VS, f.z), "-%d" % f.amt, Color("#ff6b6b") if v.entry.team == my_team else Color("#ffd27a"))
+					# a soft puff of the school's colour with each tick: the burn visibly bites, without a flash
+					var pal := SpellSchools.palette(SpellSchools.school_of(str(f.get("ability", ""))))
+					fx.burst(Vector3(f.x, world.h(f.x, f.z) + 1.0 * UnitView.VS, f.z), 7, 2.2, pal.mid, 0.4, 0.38, -1.5)
 				return
 			if v != null:
 				v.flash()
@@ -1145,6 +1164,7 @@ func _apply_level(level: String) -> void:
 	_scale = _base_scale
 	world.apply_quality(q)
 	fx.apply_quality(q)
+	DotFx.particles = float(q.get("particles", 1.0))
 
 
 func _process(delta: float) -> void:

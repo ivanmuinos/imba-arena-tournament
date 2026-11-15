@@ -321,6 +321,10 @@ func _y(x: float, z: float) -> float:
 
 # ---------------------------------------------------------------- snapshot sync
 
+func has_proj(id) -> bool:
+	return _projs.has(id)
+
+
 func sync_projectiles(list: Array, now_s: float) -> void:
 	var seen := {}
 	for p in list:
@@ -338,6 +342,8 @@ func sync_projectiles(list: Array, now_s: float) -> void:
 				if d < best:
 					best = d
 					v.offset = (h as Vector3) - spawn
+			v.start = spawn + v.offset  # where it leaves the hand: the tail never reaches back past it
+			node.position = v.start
 			_projs[p.id] = v
 		v.x = p.x
 		v.z = p.z
@@ -423,6 +429,10 @@ func _make_proj(kind: String) -> Node3D:
 	tail.rotation.x = PI / 2  # axis along the flight direction, head at the origin, tail behind
 	tail.position.z = -length / 2.0
 	tail.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	tail.name = "tail"
+	tail.set_meta("length", length)
+	tail.scale.y = 0.001  # born at the hand with no tail: it grows as the spell flies (see _grow_tail)
+	tail.position.z = 0.0
 	g.add_child(tail)
 	if q.fx_lights:
 		var l := OmniLight3D.new()
@@ -445,6 +455,22 @@ func _make_proj(kind: String) -> Node3D:
 	trail.color = pal.mid
 	g.add_child(trail)  # starts emitting once in the tree (see _start_trails)
 	return g
+
+
+## Comet tail length follows the distance flown: a fresh spell has none, so its tail never pokes out behind the caster.
+## `flown` is in the projectile's own (unstretched) metres.
+static func tail_scale(flown: float, length: float) -> float:
+	return clampf(flown / maxf(length, 0.01), 0.001, 1.0)
+
+
+func _grow_tail(n: Node3D, flown: float) -> void:
+	var tail := n.get_node_or_null("tail") as Node3D
+	if tail == null:
+		return
+	var length: float = tail.get_meta("length")
+	var k := tail_scale(flown, length)
+	tail.scale.y = k
+	tail.position.z = -length * k / 2.0
 
 
 func _start_trails(n: Node) -> void:
@@ -1095,6 +1121,7 @@ func update(dt: float, now_s: float) -> void:
 		var st: Dictionary = PROJ_STYLE.get(v.kind, PROJ_STYLE.fireball)
 		if not st.arrow:
 			n.scale = Vector3(1, 1, 1.0 + Vector2(v.vx, v.vz).length() * 0.05)
+		_grow_tail(n, n.position.distance_to(v.start) / maxf(n.scale.z, 0.01))  # the stretch lengthens the tail too
 	for a in _aoes.values():
 		var left := maxf(0.0, a.left - (now_s - a.at) * 1000.0)
 		var t := 1.0 - left / maxf(1.0, a.total)
