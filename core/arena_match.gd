@@ -1313,7 +1313,7 @@ func _die(t: ArenaUnit, now: float) -> void:
 	else:
 		# the school of what killed it shapes the death effect (lava and other sourceless damage burns)
 		var by_lava := not Rules.hazard_at(map, t.x, t.z).is_empty() and now - t.last_hit_at > 600.0
-		fx.append({"k": "death", "id": t.id, "ability": "burn" if by_lava else t.last_hit_ability})
+		fx.append({"k": "death", "id": t.id, "by": -1 if by_lava else t.last_hit_by, "ability": "burn" if by_lava else t.last_hit_ability})
 	_ev("death", now, {"t": t.id})
 	for o in units:
 		if o.auto_target == t.id:

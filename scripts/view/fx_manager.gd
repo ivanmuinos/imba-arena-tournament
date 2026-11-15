@@ -1183,6 +1183,13 @@ func _flash_column(pos: Vector3, school: String, dur: float, scale: float, tint 
 
 # ---------------------------------------------------------------- per frame
 
+## Hit pause: every burst, spark and smoke puff in flight stops where it is.
+func freeze(on: bool) -> void:
+	for c in get_children():
+		if c is CPUParticles3D:
+			(c as CPUParticles3D).speed_scale = 0.0 if on else 1.0
+
+
 func update(dt: float, now_s: float) -> void:
 	for v in _projs.values():
 		var age := minf(0.12, now_s - v.at)

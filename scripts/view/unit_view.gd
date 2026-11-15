@@ -393,6 +393,15 @@ func companion_react(kind: String) -> void:
 		_companion.react(kind)
 
 
+## Hit pause: the body holds its pose and its particles (charge, burns, curses) hang in the air.
+func freeze(on: bool) -> void:
+	if _rig != null:
+		_rig.freeze(on)
+	for p in [_charge] + _dots.get_children():
+		if p is CPUParticles3D:
+			(p as CPUParticles3D).speed_scale = 0.0 if on else 1.0
+
+
 func swing(heavy: bool) -> void:
 	_swing_t = 0.42 if heavy else 0.25
 	_swing_heavy = heavy
