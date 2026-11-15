@@ -43,6 +43,7 @@ var _surface_cache := {}
 var _gate_t := 0.0
 var _gate_goal := 0.0
 var _gates: Array = []  # {left, right}
+const GATE_SWING_DEG := 95.0
 var _pillars: Array = []  # {node, ring, base_y, last_state}
 var _lights: Array = []  # {light, base, phase}
 var _fx_lights: Array = []
@@ -956,9 +957,11 @@ func update(dt: float, now_s: float) -> void:
 	_update_doors(dt)
 	_gate_t = move_toward(_gate_t, _gate_goal, dt / 1.6)
 	var e := _gate_t * _gate_t * (3.0 - 2.0 * _gate_t)
+	# The leaves swing back into the start room, away from the fight: they are only drawn (no collision), and open
+	# into the hall they stood there like walls that fleeing (feared) units ran straight through.
 	for g in _gates:
-		g.left.rotation.y = e * deg_to_rad(100.0)
-		g.right.rotation.y = -e * deg_to_rad(100.0)
+		g.left.rotation.y = -e * deg_to_rad(GATE_SWING_DEG)
+		g.right.rotation.y = e * deg_to_rad(GATE_SWING_DEG)
 	var ft := _local_ft + (now_s - _ft_at) * 1000.0 if _gates_open else 0.0
 	for i in _pillars.size():
 		var pv: Dictionary = _pillars[i]
