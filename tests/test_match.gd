@@ -163,6 +163,10 @@ func test_counterspell_interrupts_silences_and_locks() -> void:
 	check(blue.silence_until > now, "silenciado")
 	check(not m.cast_ability(blue, old(blue, 2), red.x, red.z, now), "silenciado no puede castear")
 	check(blue.cds[old(blue, 1)] >= now + 3900, "hechizo bloqueado 4 s")
+	var cut: Array = m.fx.filter(func(f): return f.k == "interrupt")
+	eq(cut.size(), 1, "el cliente se entera de la interrupción")
+	eq(int(cut[0].by), red.id, "y de quién la hizo")
+	eq(str(cut[0].ability), "pyro", "y qué hechizo cortó")
 
 
 func test_charge_closes_gap_and_stuns() -> void:

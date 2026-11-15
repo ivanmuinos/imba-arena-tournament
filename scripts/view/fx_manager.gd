@@ -1083,6 +1083,28 @@ func weapon_hit(x: float, z: float, from: Vector2, school: String, heavy: bool, 
 	_flashes.append({"mesh": m, "t": 0.0, "dur": 0.16, "grow": 0.0, "mat": mat, "kind": "slash"})
 
 
+## Shards of a broken casting circle: one direction per shard emitter, evenly round the ring, outward and up.
+static func shard_dirs(n: int) -> Array:
+	var out: Array = []
+	for i in n:
+		var a := TAU * i / float(n)
+		out.append(Vector3(cos(a), 0.6, sin(a)).normalized())
+	return out
+
+
+## A cast cut short: the casting circle shatters outward in the spell's colours, the gathered power at the hand
+## bursts, and a dull ring snaps out along the ground.
+func shatter_cast(x: float, z: float, school: String) -> void:
+	var pal := SpellSchools.palette(school)
+	var y := _y(x, z)
+	for d in shard_dirs(6):
+		var dir: Vector3 = d
+		sparks(Vector3(x + dir.x * 0.9, y + 0.25, z + dir.z * 0.9), 4, 7.0, pal.mid.lerp(pal.core, 0.3), 0.4, 9.0, 0.0, dir)
+	burst(Vector3(x, y + 1.3 * UnitView.VS, z), 14, 4.0, pal.mid, 0.35, 0.22, 6.0)
+	_shock(Vector3(x, y + 0.1, z), pal.mid, 1.8, 0.3)
+	_light_flash(Vector3(x, y + 1.0, z), pal.mid, 2.5, 0.2)
+
+
 ## Dust kicked up at the feet (landing from a jump, a dash).
 func dash(x: float, z: float) -> void:
 	smoke(Vector3(x, _y(x, z) + 0.25, z), 3, 0.6, Color(0.3, 0.26, 0.22), 0.7, 0.4, 1.4)

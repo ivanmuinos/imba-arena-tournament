@@ -804,7 +804,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 		"counter", "pummel", "kick", "bash", "upcut", "tackle":
 			if target != null and target.alive:
 				if not target.cast.is_empty():
-					_interrupt(target, now)
+					_interrupt(target, now, u)
 					_cc(target, "silence", spec.ccMs, now)
 				else:
 					_label(target, "SIN EFECTO", "#999999")
@@ -958,7 +958,7 @@ func _execute(u: ArenaUnit, slot: int, ax: float, az: float, target_id: int, now
 			if target != null:
 				_damage(target, spec.dmg, u, now, id)
 				if not target.cast.is_empty():
-					_interrupt(target, now)
+					_interrupt(target, now, u)
 					_cc(target, "silence", spec.ccMs, now)
 				var push := Vector2(target.x - u.x, target.z - u.z).normalized()
 				Rules.knock(target, push, 6.0, 0.5)
@@ -1373,9 +1373,11 @@ func _cc(t: ArenaUnit, cat: String, base_ms: float, now: float, incap_kind := "p
 	_label(t, lbl[0], lbl[1])
 
 
-func _interrupt(t: ArenaUnit, now: float) -> void:
+func _interrupt(t: ArenaUnit, now: float, src: ArenaUnit = null) -> void:
 	if t.cast.is_empty():
 		return
+	# the client shatters the casting circle in the spell's colours (and holds the frame if the kick was yours)
+	fx.append({"k": "interrupt", "id": t.id, "by": src.id if src != null else -1, "ability": str(t.ability(t.cast.slot).id)})
 	if t.dummy == "caster":
 		t.dummy_next = now + PracticeYard.INTERRUPT_GAP_MS
 	t.cds[t.cast.slot] = maxf(t.cds[t.cast.slot], now + INTERRUPT_LOCK_MS)
@@ -1691,7 +1693,7 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 		"fireball", "pyro":
 			fx.append({"k": "boom", "x": t.x, "z": t.z, "r": 1.6 if spec.id == "pyro" else 0.9, "kind": spec.id})
 		"silence", "disarm":
-			_interrupt(t, now)
+			_interrupt(t, now, p.owner)
 			_cc(t, "silence", spec.ccMs, now)
 		"stunbolt", "hammer":
 			_cc(t, "stun", spec.ccMs, now)
@@ -1731,7 +1733,7 @@ func _on_proj_hit(p: Dictionary, t: ArenaUnit, now: float) -> void:
 		"volley":
 			var v := Vector2(p.vx, p.vz).normalized()
 			Rules.knock(t, v, 1.44, 0.28)
-			if not t.cast.is_empty(): _interrupt(t, now)
+			if not t.cast.is_empty(): _interrupt(t, now, p.owner)
 	_damage(t, spec.get("dmg", 0.0), p.owner, now, spec.id)
 	if spec.has("burnDps") and t.alive:
 		t.burn_until = now + float(spec.burnMs)
