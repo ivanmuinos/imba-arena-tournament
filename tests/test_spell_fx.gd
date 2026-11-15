@@ -220,3 +220,16 @@ func test_a_control_landing_on_others_is_heard() -> void:
 	check(AudioBank.LAYERS.has("ccLand"), "suena cuando el control le cae a otro")
 	for layer in AudioBank.LAYERS["ccLand"]:
 		check(AudioBank.SAMPLE_GROUPS.has(layer[0]), "con grabaciones que existen")
+
+
+func test_an_interrupt_shatters_the_circle_and_pauses_only_for_the_kicker() -> void:
+	eq(MatchView.hit_pause_ms("interrupt", false, 1, 2, 1), 80.0, "mi interrupción frena la imagen")
+	eq(MatchView.hit_pause_ms("interrupt", false, 2, 1, 1), 0.0, "que me interrumpan no")
+	eq(MatchView.hit_pause_ms("interrupt", false, -1, 2, 1), 0.0, "un aturdimiento sin dueño tampoco")
+	var dirs := FxManager.shard_dirs(6)
+	eq(dirs.size(), 6, "seis tiras de esquirlas")
+	var sum := Vector3.ZERO
+	for d in dirs:
+		check(d.y > 0.0, "salen hacia arriba")
+		sum += d
+	check(absf(sum.x) < 0.01 and absf(sum.z) < 0.01, "repartidas alrededor del círculo")

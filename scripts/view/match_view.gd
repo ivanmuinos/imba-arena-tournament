@@ -310,6 +310,8 @@ static func hit_pause_ms(kind: String, crit: bool, by: int, target: int, me: int
 		return 0.0
 	if kind == "death":
 		return 110.0
+	if kind == "interrupt":
+		return 80.0 if by == me else 0.0  # your kick landed; being kicked yourself needs no extra sting
 	return 60.0 if crit else 0.0
 
 
@@ -590,6 +592,10 @@ func _one_fx(f: Dictionary) -> void:
 		"trap":
 			fx.trap(f.x, f.z)
 			audio.play("trapHit", Vector2(f.x, f.z))
+		"interrupt":
+			if v != null and v.shown:
+				fx.shatter_cast(pos.x, pos.z, SpellSchools.school_of(str(f.get("ability", ""))))
+			_hit_pause(hit_pause_ms("interrupt", false, int(f.get("by", -1)), int(f.id), my_id))
 		"label":
 			if v != null and v.shown:
 				hud.float_text(pos + Vector3(0, 3.1 * UnitView.VS, 0), f.text, Color(str(f.color)), true)
