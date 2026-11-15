@@ -597,8 +597,11 @@ func _one_fx(f: Dictionary) -> void:
 				audio.play("interrupt", p2)
 				if v != null and str(v.entry.get("dummy", "")) == "caster":
 					gameplay_event.emit("interrupt")
-			elif is_me and CC_WORDS.any(func(w): return f.text.contains(w)):
-				audio.play("ccMe")
+			elif CC_WORDS.any(func(w): return f.text.contains(w)):
+				if is_me:
+					audio.play("ccMe")
+				elif v != null and v.shown:
+					audio.play("ccLand", p2)  # you hear your stun, sheep or root land, not only the ones on you
 		"cast":
 			if is_me:
 				gameplay_event.emit("cast:%s" % str(f.ability))

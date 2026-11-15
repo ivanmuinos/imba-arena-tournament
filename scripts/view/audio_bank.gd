@@ -93,6 +93,7 @@ const LAYERS := {
 	"win": [["win_jingle", 1.0, -2.0, 0.0]], "lose": [["gong", 0.6, -4.0, 0.0], ["shadow_low", 0.7, -6.0, 0.12]],
 	"heal": [["heal", 1.0, -8.0, 0.0]], "healspell": [["holy_chime", 1.2, -6.0, 0.0], ["heal", 1.0, -7.0, 0.05]], "power": [["arc_bright", 1.0, -8.0, 0.0]], "absorb": [["holy_chime", 1.1, -9.0, 0.0]],
 	"interrupt": [["metal", 1.3, -7.0, 0.0]], "ccMe": [["shadow_low", 1.1, -8.0, 0.0]],
+	"ccLand": [["chain", 1.25, -11.0, 0.0], ["arc_seal", 1.4, -15.0, 0.0]],  # a control landing on someone else: a short clink
 	# fire
 	"fireball": [["fire_cast", 1.0, -3.0, 0.0], ["fire_whoosh", 0.9, -8.0, 0.05]],
 	"pyro": [["fire_big", 1.0, -3.0, 0.0], ["fire_whoosh", 0.7, -6.0, 0.1]],
