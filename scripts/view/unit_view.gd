@@ -23,6 +23,10 @@ var shown := false
 var near_camera := false
 ## Local player only: facing taken from the camera instead of the server.
 var facing_override := NAN
+## Facing toward a projectile this unit just fired, held for CAST_FACE_S so the shot leaves its front.
+var _cast_face := NAN
+var _cast_face_t := 0.0
+const CAST_FACE_S := 0.4
 
 var _world: ArenaWorld
 var _body := Node3D.new()
@@ -45,6 +49,7 @@ var _slow_ring: MeshInstance3D
 var _cast_school := ""
 var _cast_ring: MeshInstance3D
 var _cast_ring_mat: ShaderMaterial
+var _dots := DotFx.new()  # burn / poison / curses drawn on the body while they last
 const CAST_RING_R := 1.35
 var _aura_mat: ShaderMaterial
 var _bubble_mat: ShaderMaterial
@@ -246,6 +251,7 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 	_cast_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_cast_ring.visible = false
 	add_child(_cast_ring)
+	add_child(_dots)
 
 	# Red arrow over the selected target, drawn on top of everything.
 	var arrow := StandardMaterial3D.new()
@@ -383,6 +389,20 @@ func cast_gesture() -> void:
 		_rig.swing(Time.get_ticks_msec() / 1000.0, false, 1.3)
 
 
+## Turns the body toward a shot it just fired (facing `rot`, radians) for a moment; also used for the hand position.
+func face_cast(rot: float) -> void:
+	_cast_face = rot
+	_cast_face_t = CAST_FACE_S
+	_body.rotation.y = rot  # at once: the projectile is drawn from the hand this very frame
+
+
+## Where the body faces now: a fresh shot's direction, else the camera (local player) or the server.
+func facing() -> float:
+	if _cast_face_t > 0.0:
+		return _cast_face
+	return facing_override if not is_nan(facing_override) else _target_rot
+
+
 func flash() -> void:
 	_flash_t = 0.14
 	companion_react("hurt")
@@ -440,7 +460,7 @@ func is_alive() -> bool:
 
 func update(dt: float, now_s: float) -> void:
 	if _companion != null:
-		var face: float = facing_override if not is_nan(facing_override) else _target_rot
+		var face: float = facing()
 		_companion.track(dt, now_s, position, face, _vel, shown and not snap.is_empty(), snap.is_empty() or bool(snap.alive), maxf(_fade, 0.0))
 	if not shown or snap.is_empty():
 		return
@@ -451,7 +471,8 @@ func update(dt: float, now_s: float) -> void:
 		_vel = Vector2(position.x - _last_pos.x, position.z - _last_pos.y) / maxf(dt, 1e-4)
 		_speed = _vel.length()
 	_last_pos = Vector2(position.x, position.z)
-	var rot: float = facing_override if not is_nan(facing_override) else _target_rot
+	_cast_face_t = maxf(0.0, _cast_face_t - dt)
+	var rot: float = facing()
 	_body.rotation.y = lerp_angle(_body.rotation.y, rot, 1.0 - exp(-18.0 * dt))
 	_sheep.rotation.y = _body.rotation.y + sin(now_s * 3.0) * 0.3
 	if b.has("storm") and s.alive:
@@ -519,6 +540,8 @@ func update(dt: float, now_s: float) -> void:
 		var pulse := 1.25 * (1.0 + sin(now_s * 8.0) * 0.06)
 		_aura.scale = Vector3(pulse, 1, pulse)
 	_slow_ring.visible = cc.has("slow") and s.alive and live_params
+	# A stealthed unit shows no flames: they would give it away.
+	_dots.sync(cc, bool(s.alive) and live_params and not b.has("stealth"))
 	# Glow at the hand while casting, tinted by the spell's school and growing as the cast completes.
 	var casting_now: bool = s.cast != null and s.alive
 	_cast_orb.visible = casting_now and live_params

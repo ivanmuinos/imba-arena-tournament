@@ -66,3 +66,60 @@ func test_cast_circle_fades_in_and_tracks_the_cast() -> void:
 	near(UnitView.cast_circle(0.5, 600.0).alpha, 1.0, 1e-6, "pleno a los 0,25 s")
 	check(UnitView.cast_circle(0.0, 0.0).scale < UnitView.cast_circle(0.5, 600.0).scale, "se abre al aparecer")
 	near(UnitView.cast_circle(0.7, 900.0).progress, 0.7, 1e-6, "marca cuánto falta del casteo")
+
+
+func test_damage_over_time_shows_on_the_body_by_school() -> void:
+	var l := DotFx.layers_for({"burn": 3000})
+	check(l.burn > 0.0 and l.poison == 0.0 and l.curse == 0.0, "quemado: solo llamas")
+	l = DotFx.layers_for({"poison": 3000, "corruption": 8000})
+	check(l.poison > 0.0 and l.curse > 0.0, "veneno y maldición a la vez")
+	var one: float = DotFx.layers_for({"corruption": 8000}).curse
+	var three: float = DotFx.layers_for({"corruption": 8000, "agony": 8000, "soulrot": 8000}).curse
+	check(three > one, "cada maldición suma: la Putrefacción es la más densa")
+	check(three <= 2.0, "con un tope")
+	var dead := DotFx.layers_for({"burn": 3000, "agony": 8000}, false)
+	check(dead.burn == 0.0 and dead.curse == 0.0, "un muerto no arde")
+
+
+func test_dot_layers_scale_with_quality_but_never_vanish() -> void:
+	var alta := DotFx.amount_for("burn", 1.0, 1.0)
+	var baja := DotFx.amount_for("burn", 1.0, 0.3)
+	check(alta > baja, "menos partículas en calidad baja")
+	check(baja >= 2, "pero se siguen viendo")
+	eq(DotFx.amount_for("burn", 0.0, 1.0), 0, "apagada no emite")
+
+
+func test_dot_fx_turns_layers_on_and_off() -> void:
+	var d := DotFx.new()
+	tree.root.add_child(d)
+	d.sync({"burn": 3000}, true)
+	check(d.is_on("burn"), "arde mientras dura la quemadura")
+	check(not d.is_on("curse"), "sin maldiciones no hay sombras")
+	d.sync({}, true)
+	check(not d.is_on("burn"), "se apaga al terminar")
+	d.sync({"burn": 3000}, false)
+	check(not d.is_on("burn"), "ni al morir")
+	d.free()
+
+
+func test_a_shot_turns_its_caster_toward_where_it_flies() -> void:
+	var v := UnitView.new()
+	v.entry = {"cls": "mage"}
+	v.facing_override = 0.0  # looking where the camera looks
+	v.face_cast(PI / 2.0)
+	check(is_equal_approx(v.facing(), PI / 2.0), "mira hacia donde sale el disparo")
+	var hand := v.hand_position() - v.position
+	check(hand.x > 0.3, "la mano queda delante, del lado del disparo, no detrás")
+	v._cast_face_t = 0.0
+	check(is_equal_approx(v.facing(), 0.0), "después vuelve a seguir la cámara")
+	v.free()
+
+
+func test_a_fresh_spell_has_no_tail_behind_its_caster() -> void:
+	near(FxManager.tail_scale(0.0, 5.6), 0.001, 0.0001, "al salir de la mano no tiene cola")
+	near(FxManager.tail_scale(2.8, 5.6), 0.5, 0.001, "crece con lo que voló")
+	eq(FxManager.tail_scale(20.0, 5.6), 1.0, "y se queda en su largo")
+	# the drawn tail (length * scale * stretch) never reaches back past the hand
+	var stretch := 2.5
+	var flown_world := 3.0
+	check(5.6 * FxManager.tail_scale(flown_world / stretch, 5.6) * stretch <= flown_world + 0.001, "la cola no pasa la mano")
