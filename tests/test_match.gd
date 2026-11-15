@@ -722,3 +722,29 @@ func test_a_target_behind_a_pillar_dodges_the_spell() -> void:
 	t.x = 10.0; t.z = 16.0  # the pillar at (10, 8) is right between them
 	_fly(m, mage, t)
 	eq(t.hp, t.max_hp, "detrás de la columna lo esquiva")
+
+
+func test_a_death_says_what_killed_it() -> void:
+	var m := _lock_match()
+	var mage: ArenaUnit = m.units[0]
+	var t: ArenaUnit = m.units[2]
+	t.hp = 5.0
+	m._damage(t, 50.0, mage, 1000.0, "fireball")
+	var deaths: Array = m.fx.filter(func(f): return f.k == "death")
+	eq(deaths.size(), 1, "muere")
+	eq(str(deaths[0].ability), "fireball", "la muerte dice qué la mató")
+	eq(SpellSchools.school_of("burn"), "fire", "la quemadura es fuego: cenizas")
+
+
+func test_a_death_in_lava_burns() -> void:
+	var m := ArenaMatch.new(1, [
+		{"name": "M", "cls": "mage", "team": "red", "peer": 1},
+		{"name": "T", "cls": "priest", "team": "blue", "peer": 2}], 0, "hard", "bridge")
+	m.phase = "fight"
+	var t: ArenaUnit = m.units[1]
+	t.x = 11.0
+	t.z = 0.0  # in the lava pit
+	t.hp = 1.0
+	m._damage(t, 5.0, null, 5000.0)
+	var deaths: Array = m.fx.filter(func(f): return f.k == "death")
+	eq(str(deaths[0].ability), "burn", "la lava lo deja en cenizas")

@@ -69,6 +69,13 @@ var _squash_amp := 0.0
 var _flinch_dir := Vector2.ZERO
 var _body_scale := Vector3.ONE
 const SQUASH_S := 0.35
+## Corpse tint by what killed it (charred, frozen, withered); none for weapons and the rest.
+const CORPSE_TINT := {"fire": Color(0.08, 0.06, 0.05, 0.82), "frost": Color(0.62, 0.86, 1.0, 0.6), "shadow": Color(0.12, 0.05, 0.2, 0.7)}
+var _corpse_mat: StandardMaterial3D = null
+## Charge: motes of the spell's school drawn into the hand while a cast fills.
+var _charge: CPUParticles3D
+var _charge_ramp: Gradient
+var _charge_school := ""
 var _walk := 0.0
 var _cast_pose := 0.0
 var _death_t := 0.0
@@ -245,6 +252,8 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 	_cast_orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_cast_orb.visible = false
 	_body.add_child(_cast_orb)
+	_charge = _make_charge()
+	_body.add_child(_charge)
 	# Casting circle on the ground: runes in the spell's school colour, with an arc that fills as the cast completes.
 	_cast_ring = MeshInstance3D.new()
 	var ring_mesh := PlaneMesh.new()
@@ -336,6 +345,9 @@ func apply(sample: Dictionary) -> void:
 		_death_t = 0.001
 	if not snap.is_empty() and not snap.alive and s.alive:
 		_death_t = 0.0
+		_corpse_mat = null
+		snap = s
+		_refresh_overlay()
 	snap = s
 	if not predicted:
 		position.x = sample.x
@@ -410,6 +422,56 @@ func facing() -> float:
 	return facing_override if not is_nan(facing_override) else _target_rot
 
 
+func _make_charge() -> CPUParticles3D:
+	var p := CPUParticles3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.34, 0.34)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.albedo_texture = Textures.glow_dot()
+	mat.vertex_color_use_as_albedo = true
+	mat.disable_fog = true
+	quad.material = mat
+	p.mesh = quad
+	p.emitting = false
+	p.local_coords = true  # follows the hand
+	p.amount = 26
+	p.lifetime = 0.45
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE_SURFACE
+	p.emission_sphere_radius = 1.6  # wider than the body: seen from the camera behind
+	p.direction = Vector3.ZERO
+	p.spread = 180.0
+	p.initial_velocity_min = 0.0
+	p.initial_velocity_max = 0.0
+	p.gravity = Vector3.ZERO
+	p.radial_accel_min = -20.0  # pulled into the hand: they gather instead of flying out
+	p.radial_accel_max = -15.0
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_charge_ramp = Gradient.new()
+	_charge_ramp.offsets = PackedFloat32Array([0.0, 0.3, 1.0])
+	_charge_ramp.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0.9), Color(1, 1, 1, 1)])
+	p.color_ramp = _charge_ramp
+	var grow := Curve.new()  # small far away, bigger as they reach the hand
+	grow.add_point(Vector2(0.0, 0.5))
+	grow.add_point(Vector2(1.0, 1.0))
+	p.scale_amount_curve = grow
+	return p
+
+
+## The killing blow's school marks the corpse: charred by fire, frozen by frost, withered by shadow.
+func die_by(school: String) -> void:
+	_corpse_mat = null
+	if CORPSE_TINT.has(school):
+		_corpse_mat = StandardMaterial3D.new()
+		_corpse_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_corpse_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_corpse_mat.albedo_color = CORPSE_TINT[school]
+	_refresh_overlay()
+
+
 ## Squash of the body `t` seconds after a hit of strength `amp`: a quick flattening that bounces back (damped spring).
 ## Returns the (vertical, horizontal) scale factors; both are 1 once it has settled.
 static func squash(t: float, amp: float) -> Vector2:
@@ -454,7 +516,9 @@ func set_targeted(mode: String) -> void:
 
 func _refresh_overlay() -> void:
 	var o: Material = null
-	if _flash_t > 0.0:
+	if _corpse_mat != null and not snap.is_empty() and not snap.alive:
+		o = _corpse_mat
+	elif _flash_t > 0.0:
 		o = _flash_mat
 	elif _target_mode != "" and live_params:
 		o = _rim_mat
@@ -588,6 +652,10 @@ func update(dt: float, now_s: float) -> void:
 				_cast_ring_mat.set_shader_parameter("color", pal.mid)
 				_cast_ring_mat.set_shader_parameter("core", pal.core)
 		var prog: float = 1.0 - float(s.cast.left) / maxf(1.0, float(s.cast.total))
+		if _charge_school != _cast_school:
+			_charge_school = _cast_school
+			var cp := SpellSchools.palette(_cast_school)
+			_charge_ramp.colors = PackedColorArray([Color(cp.mid, 0.0), Color(cp.mid, 0.9), Color(cp.core, 1.0)])
 		var sz := 0.6 + prog * 1.1 + sin(now_s * 18.0) * 0.08
 		_cast_orb.scale = Vector3.ONE * sz
 		_cast_orb.position = Vector3(0.28, 1.35, 0.5)
@@ -597,6 +665,14 @@ func update(dt: float, now_s: float) -> void:
 			_cast_ring_mat.set_shader_parameter("progress", circle.progress)
 			_cast_ring_mat.set_shader_parameter("fade", circle.alpha * 0.8)
 	_cast_ring.visible = casting_now and live_params
+	var charging: bool = casting_now and live_params and float(s.cast.total) >= 400.0  # instant casts have nothing to gather
+	if charging:
+		_charge.position = _cast_orb.position
+		var want := maxi(6, int(round(26.0 * DotFx.particles)))
+		if _charge.amount != want:
+			_charge.amount = want
+	if _charge.emitting != charging:
+		_charge.emitting = charging
 
 	# See-through when stealthed, or when the camera is right on top of the unit.
 	var want := 0.82 if near_camera else (0.75 if b.has("stealth") else 0.0)

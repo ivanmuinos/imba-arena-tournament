@@ -1245,6 +1245,7 @@ func _damage(t: ArenaUnit, amount: float, src: ArenaUnit, now: float, ability :=
 		t.ult = minf(100, t.ult + amount * C.ULT_PER_DAMAGE_TAKEN)
 		t.last_hit_by = src.id
 		t.last_hit_at = now
+		t.last_hit_ability = ability
 		t.revealed_until = maxf(t.revealed_until, now + 1000)
 		fx.append({"k": "hit", "id": t.id, "amt": roundi(amount), "x": t.x, "z": t.z, "crit": crit, "by": src.id, "ability": ability, "dot": _dot_tick})
 		if practice and src.peer != 0 and t.dummy != "" and t.team != src.team:
@@ -1310,7 +1311,9 @@ func _die(t: ArenaUnit, now: float) -> void:
 		t.dormant = true  # gone: no corpse
 		fx.append({"k": "crate_break", "id": t.id, "x": t.x, "z": t.z})
 	else:
-		fx.append({"k": "death", "id": t.id})
+		# the school of what killed it shapes the death effect (lava and other sourceless damage burns)
+		var by_lava := not Rules.hazard_at(map, t.x, t.z).is_empty() and now - t.last_hit_at > 600.0
+		fx.append({"k": "death", "id": t.id, "ability": "burn" if by_lava else t.last_hit_ability})
 	_ev("death", now, {"t": t.id})
 	for o in units:
 		if o.auto_target == t.id:

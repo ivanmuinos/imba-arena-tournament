@@ -46,6 +46,12 @@ static func amount_for(layer: String, intensity: float, mult: float) -> int:
 	return maxi(2, int(round(float(LOOK[layer].n) * intensity * mult)))
 
 
+## Particle size of a layer at `intensity`: stacking adds wisps but thins each one, so three curses read as a denser
+## shroud without swallowing the character.
+static func size_for(layer: String, intensity: float) -> float:
+	return float(LOOK[layer].size) / pow(maxf(intensity, 1.0), 0.4)
+
+
 func _init() -> void:
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -123,6 +129,7 @@ func sync(cc: Dictionary, alive: bool) -> void:
 			_layers[layer] = p
 		if p.amount != n:
 			p.amount = n  # changing the amount restarts the emitter: only on a real change (a curse added, quality)
+			(p.mesh as QuadMesh).size = Vector2.ONE * size_for(layer, want[layer])
 		if not p.emitting:
 			p.emitting = true
 

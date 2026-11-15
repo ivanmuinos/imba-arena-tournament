@@ -740,6 +740,41 @@ func impact(school: String, pos: Vector3, scale := 1.0, ground_ring := true) -> 
 				smoke(pos, 2, 0.7 * scale, Color(0.3, 0.26, 0.22), 0.9, 0.6)  # dust
 
 
+## A unit's death, shaped by what killed it: burnt to ashes, shattered ice, a shadow that dissolves, a pillar of light,
+## a scatter of leaves, an arcane implosion, or a cloud of dust for a weapon.
+func death(x: float, z: float, school: String) -> void:
+	var y := _y(x, z)
+	var body := Vector3(x, y + 0.9, z)
+	var pal := SpellSchools.palette(school)
+	impact(school, body, 0.9, true)
+	match school:
+		"fire":
+			smoke(body, 7, 1.3, Color(0.09, 0.07, 0.06), 2.4, 1.4, 1.6)        # the ashes: thick dark smoke
+			burst(body, 40, 2.4, Color(0.35, 0.3, 0.27), 2.2, 0.22, -1.2)       # grey flakes drifting up
+			sparks(body, 26, 6.0, COL_HOT, 1.1, -2.0, 1.0)                      # embers rising
+			_scorch(Vector3(x, y, z), 1.6)
+		"frost":
+			sparks(body, 40, 8.0, Color("#eafaff"), 0.9, 14.0)                   # shards fly and fall
+			burst(body, 26, 5.0, pal.mid, 0.6, 0.35, 9.0)
+			smoke(body, 3, 1.2, Color(0.6, 0.72, 0.85), 1.6, 0.4)                # cold mist
+		"shadow":
+			smoke(body, 6, 1.4, Color(0.16, 0.06, 0.26), 2.2, 1.0, 0.8)
+			burst(body, 36, 1.6, pal.mid.lightened(0.35), 1.8, 0.5, -1.5)        # wisps rising
+		"holy":
+			_flash_column(Vector3(x, y, z), school, 0.9, 1.6)
+			sparks(body, 30, 3.5, pal.core, 1.4, -4.0, 1.0)                      # motes of light going up
+		"nature":
+			burst(body, 40, 4.0, Color("#9cff7a"), 1.6, 0.32, 2.5)              # leaves
+			burst(body, 14, 2.0, Color("#6fcf4a"), 2.0, 0.5, 1.0)
+		"arcane":
+			burst(body, 44, 6.0, pal.mid, 0.5, 0.35, 0.0)
+			_shock(Vector3(x, y + 0.12, z), pal.mid, 3.0, 0.5)
+		_:
+			smoke(Vector3(x, y + 0.4, z), 4, 1.1, Color(0.32, 0.27, 0.22), 1.4, 0.6, 1.8)  # dust as the body drops
+			sparks(body, 10, 5.0, Color("#ffe6c0"), 0.3, 12.0)
+	shake.emit(0.2, x, z)
+
+
 ## Small school-coloured flash where a spell lands on a unit.
 func hit_impact(x: float, z: float, ability: String, crit: bool) -> void:
 	var school := SpellSchools.school_of(ability)

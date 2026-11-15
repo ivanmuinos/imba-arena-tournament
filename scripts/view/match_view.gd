@@ -615,8 +615,12 @@ func _one_fx(f: Dictionary) -> void:
 		"death":
 			hud.mark_dead(int(f.id))
 			if v != null:
-				fx.boom(pos.x, pos.z, 0.6, "fireball")
+				var school := SpellSchools.school_of(str(f.get("ability", "")))
+				fx.death(pos.x, pos.z, school)
+				v.die_by(school)
 				audio.play("death", p2)
+				if school != "physical":
+					audio.play(AudioBank.spell_hit(school), p2)
 
 
 # ---------------------------------------------------------------- input (WoW style)

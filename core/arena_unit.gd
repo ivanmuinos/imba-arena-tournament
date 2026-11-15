@@ -86,6 +86,7 @@ var dr := {}
 var revealed_until := 0.0
 var last_hit_by := -1
 var last_hit_at := 0.0
+var last_hit_ability := ""  # what dealt the last blow (the death effect takes its school)
 
 var crit_until := 0.0
 var stealth_until := 0.0
@@ -198,6 +199,7 @@ func reset_effects() -> void:
 	dr = {}
 	revealed_until = 0.0
 	last_hit_by = -1
+	last_hit_ability = ""
 	crit_until = 0.0
 	stealth_until = 0.0
 	shield_until = 0.0
