@@ -109,6 +109,10 @@ func setup(p_world: ArenaWorld) -> void:
 	var spark_mat := mat.duplicate() as StandardMaterial3D
 	spark_mat.albedo_texture = Textures.spark()
 	spark_mat.albedo_color = Color(1.6, 1.6, 1.6, 1.0)
+	# Not billboarded: the particle's Y follows its velocity, so each streak lies along its flight. A billboarded spark
+	# (particles or fixed-Y) stands upright on screen whatever its direction, and a burst reads as falling rain.
+	spark_mat.billboard_mode = BaseMaterial3D.BILLBOARD_DISABLED
+	spark_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	spark_mesh.material = spark_mat
 	for i in SPARK_POOL:
 		var sp := _make_particles()
@@ -278,15 +282,15 @@ func burst(pos: Vector3, n: int, speed: float, color: Color, life: float, size: 
 
 
 ## Sparks: thin bright streaks thrown out fast that stretch along their flight and die quickly.
-func sparks(pos: Vector3, n: int, speed: float, color: Color, life: float, gravity := 9.0, up := 0.0) -> void:
+func sparks(pos: Vector3, n: int, speed: float, color: Color, life: float, gravity := 9.0, up := 0.0, dir := Vector3.ZERO) -> void:
 	var p: CPUParticles3D = _spark_pool[_spark_idx].node
 	_spark_idx = (_spark_idx + 1) % SPARK_POOL
 	p.emitting = false
 	p.position = pos
 	p.amount = maxi(1, int(round(n * q.particles)))
 	p.lifetime = life
-	p.direction = Vector3.UP
-	p.spread = 180.0 if up <= 0.0 else 55.0
+	p.direction = Vector3.UP if dir == Vector3.ZERO else dir.normalized()
+	p.spread = 30.0 if dir != Vector3.ZERO else (180.0 if up <= 0.0 else 55.0)
 	p.initial_velocity_min = speed * 0.45
 	p.initial_velocity_max = speed
 	p.gravity = Vector3(0, -gravity, 0)
@@ -1038,6 +1042,41 @@ func slash(x: float, z: float, rot: float, heavy: bool, side := 1.0) -> void:
 	m.rotation = Vector3(0.0, rot, side * (1.05 if not heavy else 0.2))  # diagonal slashes lean left/right; heavy ones come from above
 	add_child(m)
 	_flashes.append({"mesh": m, "t": 0.0, "dur": 0.2 if not heavy else 0.26, "grow": 0.0, "mat": mat, "kind": "slash"})
+
+
+## Direction a weapon hit throws its sparks: through the target, away from the attacker, slightly upward.
+static func spray_dir(from: Vector2, to: Vector2) -> Vector3:
+	var d := to - from
+	if d.length_squared() < 0.0001:
+		return Vector3.UP
+	d = d.normalized()
+	return Vector3(d.x, 0.35, d.y).normalized()
+
+
+## A weapon landing on a body: sparks sprayed out the far side, a short cut across the chest and a dull flash. Heavy
+## blows (crits, finishers) spray more and leave a bigger cut. `school` tints it (a Paladin's hammer hits gold).
+func weapon_hit(x: float, z: float, from: Vector2, school: String, heavy: bool) -> void:
+	var pal := SpellSchools.palette(school)
+	var pos := Vector3(x, _y(x, z) + 1.2 * UnitView.VS, z)
+	var dir := spray_dir(from, Vector2(x, z))
+	sparks(pos, 16 if heavy else 9, 11.0 if heavy else 8.0, pal.mid.lerp(pal.core, 0.4), 0.32, 4.0, 0.0, dir)
+	burst(pos + dir * 0.3, 10 if heavy else 5, 3.5, pal.mid, 0.3, 0.22, 4.0)
+	_light_flash(pos, pal.mid, 2.2 if heavy else 1.2, 0.18)
+	if not _fancy:
+		return
+	var m := MeshInstance3D.new()
+	var qm := QuadMesh.new()
+	qm.size = Vector2.ONE * (2.0 if heavy else 1.4)
+	m.mesh = qm
+	var mat := ShaderMaterial.new()
+	mat.shader = SLASH
+	mat.set_shader_parameter("color", pal.mid.lerp(pal.core, 0.5))
+	m.material_override = mat
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	m.position = pos
+	m.rotation = Vector3(0.0, atan2(dir.x, dir.z), randf_range(-1.1, 1.1))  # the cut crosses the body at a random angle
+	add_child(m)
+	_flashes.append({"mesh": m, "t": 0.0, "dur": 0.16, "grow": 0.0, "mat": mat, "kind": "slash"})
 
 
 ## Dust kicked up at the feet (landing from a jump, a dash).
