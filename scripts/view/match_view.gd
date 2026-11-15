@@ -313,6 +313,11 @@ static func hit_pause_ms(kind: String, crit: bool, by: int, target: int, me: int
 	return 60.0 if crit else 0.0
 
 
+## How much a heal matters (0..1): a quarter of the target's health or more is the full weight.
+static func heal_weight(amt: float, max_hp: float) -> float:
+	return clampf(amt / maxf(max_hp, 1.0) / 0.25, 0.0, 1.0)
+
+
 func _hit_pause(ms: float) -> void:
 	if ms > 0.0:
 		_pause_until = maxf(_pause_until, _now_ms() + ms)
@@ -542,7 +547,11 @@ func _one_fx(f: Dictionary) -> void:
 			if v != null and v.shown:
 				fx.heal(pos.x, pos.z)
 				v.companion_react("heal")
-				hud.float_text(pos + Vector3(0, 2.4 * UnitView.VS, 0), "+%d" % f.amt, Color("#5cff8a"), false, "heal")
+				var w := heal_weight(float(f.amt), GameData.entry_max_hp(v.entry))
+				# ticks of a heal over time stay small; a big heal pops like a crit
+				hud.float_text(pos + Vector3(0, 2.4 * UnitView.VS, 0), "+%d" % f.amt, Color("#5cff8a"), w < 0.15, "bigheal" if w >= 0.5 else "heal")
+				if is_me:
+					hud.heal_glow(w)
 				audio.play("heal", p2)
 		"power":
 			if v != null:

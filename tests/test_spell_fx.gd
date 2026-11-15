@@ -207,3 +207,10 @@ func test_shots_land_with_their_own_sound() -> void:
 		check(SpellSchools.school_of(ab) == "physical", "%s es físico: pega con chispas, no con magia" % ab)
 		for layer in AudioBank.LAYERS[ev]:
 			check(AudioBank.SAMPLE_GROUPS.has(layer[0]), "%s usa grabaciones que existen" % ev)
+
+
+func test_big_heals_weigh_more_than_ticks() -> void:
+	eq(MatchView.heal_weight(150.0, 600.0), 1.0, "un cuarto de la vida es una cura grande")
+	check(MatchView.heal_weight(20.0, 600.0) < 0.15, "un tic de renovar es chico")
+	eq(MatchView.heal_weight(900.0, 600.0), 1.0, "con tope")
+	eq(MatchView.heal_weight(10.0, 0.0), 1.0, "sin vida máxima no se rompe")

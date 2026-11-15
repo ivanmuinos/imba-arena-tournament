@@ -75,6 +75,8 @@ var _loc_name: Label
 var _loc_time: Label
 var _tint: ColorRect
 var _vignette: TextureRect
+var _heal_glow: TextureRect  # green edge pulse when a heal lands on me
+var _heal_glow_a := 0.0
 var _arrow: Polygon2D
 var _target_panel: VBoxContainer
 var _focus_panel: VBoxContainer
@@ -227,6 +229,23 @@ func _build() -> void:
 	_vignette.stretch_mode = TextureRect.STRETCH_SCALE
 	_vignette.modulate.a = 0.0
 	_full(_vignette)
+	var hg := Gradient.new()
+	hg.offsets = PackedFloat32Array([0.68, 1.0])
+	hg.colors = PackedColorArray([Color(0.35, 1.0, 0.5, 0.0), Color(0.35, 1.0, 0.5, 0.32)])
+	var hgt := GradientTexture2D.new()
+	hgt.gradient = hg
+	hgt.fill = GradientTexture2D.FILL_RADIAL
+	hgt.fill_from = Vector2(0.5, 0.5)
+	hgt.fill_to = Vector2(1.0, 0.5)
+	hgt.width = 128
+	hgt.height = 128
+	_heal_glow = TextureRect.new()
+	_heal_glow.texture = hgt
+	_heal_glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_heal_glow.stretch_mode = TextureRect.STRETCH_SCALE
+	_heal_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_heal_glow.modulate.a = 0.0
+	_full(_heal_glow)
 	_full(_plate_layer)
 	_full(_float_layer)
 	_arrow = Polygon2D.new()
@@ -999,7 +1018,15 @@ func _cls_of(id: int) -> String:
 
 
 ## Smooth per-frame cooldown sweep + fading texts.
+## A heal landed on me: the screen edges breathe green, stronger the bigger the heal (`weight` 0..1).
+func heal_glow(weight: float) -> void:
+	_heal_glow_a = maxf(_heal_glow_a, 0.25 + 0.75 * clampf(weight, 0.0, 1.0))
+
+
 func tick(now_ms: float, dt: float, cam: Camera3D) -> void:
+	if _heal_glow_a > 0.0:
+		_heal_glow_a = maxf(0.0, _heal_glow_a - dt * 1.8)
+	_heal_glow.modulate.a = _heal_glow_a
 	var abilities: Array = _my_abilities()
 	for i in _slots.size():
 		var a: Dictionary = abilities[i]
@@ -1154,7 +1181,7 @@ func hide_plate(id: int) -> void:
 
 ## Combat text that drifts up from a world position.
 func float_text(pos: Vector3, text: String, color: Color, small := false, kind := "") -> void:
-	var l := UiKit.heading(text, 24 if small else (46 if kind == "crit" else 32), color, 700, 1, HORIZONTAL_ALIGNMENT_CENTER)
+	var l := UiKit.heading(text, 24 if small else (46 if kind == "crit" else (40 if kind == "bigheal" else 32)), color, 700, 1, HORIZONTAL_ALIGNMENT_CENTER)
 	UiKit.outlined(l, 7)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	l.custom_minimum_size = Vector2(220, 0)
@@ -1179,6 +1206,7 @@ func _update_floats(dt: float, cam: Camera3D) -> void:
 		l.visible = true
 		l.position = screen_to_ui(cam.unproject_position(wp), ui_scale) - Vector2(l.size.x / 2.0, 14)
 		l.modulate.a = 1.0 if k < 0.6 else 1.0 - (k - 0.6) / 0.4
-		var sc := 1.0 + (0.7 * (1.0 - k * 3.0) if f.kind == "crit" and k < 0.33 else 0.0)
+		var pop := 0.7 if f.kind == "crit" else (0.4 if f.kind == "bigheal" else 0.0)
+		var sc := 1.0 + (pop * (1.0 - k * 3.0) if k < 0.33 else 0.0)
 		l.pivot_offset = l.size / 2.0
 		l.scale = Vector2(sc, sc)
