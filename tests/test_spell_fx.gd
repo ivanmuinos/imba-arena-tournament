@@ -214,3 +214,9 @@ func test_big_heals_weigh_more_than_ticks() -> void:
 	check(MatchView.heal_weight(20.0, 600.0) < 0.15, "un tic de renovar es chico")
 	eq(MatchView.heal_weight(900.0, 600.0), 1.0, "con tope")
 	eq(MatchView.heal_weight(10.0, 0.0), 1.0, "sin vida máxima no se rompe")
+
+
+func test_a_control_landing_on_others_is_heard() -> void:
+	check(AudioBank.LAYERS.has("ccLand"), "suena cuando el control le cae a otro")
+	for layer in AudioBank.LAYERS["ccLand"]:
+		check(AudioBank.SAMPLE_GROUPS.has(layer[0]), "con grabaciones que existen")

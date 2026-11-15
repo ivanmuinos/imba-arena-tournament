@@ -37,6 +37,7 @@ var _sheep: Node3D
 var _ice: MeshInstance3D
 var _stars := Node3D.new()
 var _spikes := Node3D.new()
+var _hush := Node3D.new()  # silenced: a violet seal over the head (a ring with a bar across it)
 var _ring: MeshInstance3D
 var _target_ring: MeshInstance3D
 var _bubble: MeshInstance3D
@@ -167,6 +168,17 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 		_spikes.add_child(c)
 	_spikes.visible = false
 	add_child(_spikes)
+	var seal := _flat_ring(0.38, 0.5, Color("#c77dff"), 0.95)
+	_hush.add_child(seal)
+	var bar := MeshInstance3D.new()
+	bar.mesh = MeshBuilder.box(Vector3(0.9, 0.02, 0.1))
+	bar.material_override = seal.material_override
+	bar.rotation.y = PI / 4.0
+	bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_hush.add_child(bar)
+	_hush.position.y = 2.75 * VS
+	_hush.visible = false
+	add_child(_hush)
 
 	_ring = _flat_ring(0.62, 0.8 if is_me else 0.72, Cosmetics.ring_color(Color("#ffd27a")) if is_me else team, 0.85)
 	_ring.position.y = 0.1
@@ -588,6 +600,10 @@ func update(dt: float, now_s: float) -> void:
 	_cyclone.visible = cc.has("incap") and cc.get("incapKind", "") == "cyclone" and s.alive
 	_cyclone.rotation.y = now_s * 9.0
 	_spikes.visible = cc.has("root") and s.alive
+	_hush.visible = cc.has("silence") and s.alive
+	if _hush.visible:
+		_hush.rotation = Vector3(0.5, now_s * 1.2, 0.0)  # tilted toward the high camera so the seal reads, turning slowly
+		_hush.scale = Vector3.ONE * (1.0 + 0.08 * sin(now_s * 6.0))
 	_ring.visible = s.alive
 	if _marker.visible:
 		_marker.position.y = 3.35 * VS + sin(now_s * 5.0) * 0.12
