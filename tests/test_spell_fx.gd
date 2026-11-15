@@ -77,6 +77,10 @@ func test_damage_over_time_shows_on_the_body_by_school() -> void:
 	var three: float = DotFx.layers_for({"corruption": 8000, "agony": 8000, "soulrot": 8000}).curse
 	check(three > one, "cada maldición suma: la Putrefacción es la más densa")
 	check(three <= 2.0, "con un tope")
+	var cover_one := DotFx.amount_for("curse", one, 1.0) * pow(DotFx.size_for("curse", one), 2.0)
+	var cover_three := DotFx.amount_for("curse", three, 1.0) * pow(DotFx.size_for("curse", three), 2.0)
+	check(DotFx.size_for("curse", three) < DotFx.size_for("curse", one), "apiladas, cada sombra es más chica")
+	check(cover_three < cover_one * 1.4, "y en total no tapan al personaje")
 	var dead := DotFx.layers_for({"burn": 3000, "agony": 8000}, false)
 	check(dead.burn == 0.0 and dead.curse == 0.0, "un muerto no arde")
 
