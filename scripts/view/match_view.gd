@@ -82,6 +82,8 @@ var _active := false
 var _last_prep_tick := -1
 var _auto := AutoQuality.new()
 var _fps_t := 0.0
+var _pause_until := 0.0  # ms: the view holds still until then (hit pause)
+var _paused := false
 var _fps_n := 0
 var _drive_cast_at := 0.0
 var _drive_tab_at := 0.0
@@ -301,6 +303,21 @@ func _face_enemy() -> void:
 
 # ---------------------------------------------------------------- network events
 
+## Hit pause (ms) for a blow: the frame holds on my crits and crits on me, longer on a kill I made or took. Other
+## people's crits do not stop the screen: in a 3v3 pile that would stutter all the time.
+static func hit_pause_ms(kind: String, crit: bool, by: int, target: int, me: int) -> float:
+	if me < 0 or (by != me and target != me):
+		return 0.0
+	if kind == "death":
+		return 110.0
+	return 60.0 if crit else 0.0
+
+
+func _hit_pause(ms: float) -> void:
+	if ms > 0.0:
+		_pause_until = maxf(_pause_until, _now_ms() + ms)
+
+
 func _now_ms() -> float:
 	return float(Time.get_ticks_msec())
 
@@ -506,6 +523,7 @@ func _one_fx(f: Dictionary) -> void:
 					fx.hit_impact(f.x, f.z, str(f.ability), f.crit)
 				if str(f.ability) == "soulrot" and f.amt >= 20:  # the opening hit, not the 8-point ticks
 					fx.soulrot_burst(f.x, f.z)
+			_hit_pause(hit_pause_ms("hit", f.crit, int(f.get("by", -1)), int(f.id) if f.has("id") else -1, my_id))
 			if int(f.get("by", -1)) == my_id and (f.crit or f.amt >= 40):
 				cam.add_shake(0.22 if f.crit else 0.12)  # only crits and big hits shake the camera
 			var school := SpellSchools.school_of(str(f.get("ability", "")))
@@ -619,6 +637,7 @@ func _one_fx(f: Dictionary) -> void:
 			audio.play("death", Vector2(f.x, f.z))
 		"death":
 			hud.mark_dead(int(f.id))
+			_hit_pause(hit_pause_ms("death", false, int(f.get("by", -1)), int(f.id), my_id))
 			if v != null:
 				var school := SpellSchools.school_of(str(f.get("ability", "")))
 				fx.death(pos.x, pos.z, school)
@@ -1287,13 +1306,21 @@ func _process(delta: float) -> void:
 		if not typing:
 			_macro_chain_poll(now)
 		_hud_frame(focus, now, dt)
+	# Hit pause: bodies, animations and effects hold for a few frames; the camera, HUD and positions keep going.
+	var paused := now < _pause_until
+	if paused != _paused:
+		_paused = paused
+		fx.freeze(paused)
+		for id in views:
+			views[id].freeze(paused)
+	var vdt := 0.0 if paused else dt
 	for id in views:
 		var v: UnitView = views[id]
 		v.near_camera = v.shown and (v.position + Vector3(0, 1.4, 0)).distance_to(cam.global_position) < 2.6  # measured from the head/hat, which is what fills the screen
-		v.update(dt, t)
+		v.update(vdt, t)
 		hud.update_plate(id, v, cam, id == controller.target, id == _hover)
-	_warlock_fx(dt, t)
-	fx.update(dt, t)
+	_warlock_fx(vdt, t)
+	fx.update(vdt, t)
 	world.update(dt, t)
 	hud.tick(now, AutoQuality.real_delta(delta, Engine.time_scale), cam)
 

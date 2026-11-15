@@ -733,6 +733,7 @@ func test_a_death_says_what_killed_it() -> void:
 	var deaths: Array = m.fx.filter(func(f): return f.k == "death")
 	eq(deaths.size(), 1, "muere")
 	eq(str(deaths[0].ability), "fireball", "la muerte dice qué la mató")
+	eq(int(deaths[0].by), mage.id, "y quién")
 	eq(SpellSchools.school_of("burn"), "fire", "la quemadura es fuego: cenizas")
 
 

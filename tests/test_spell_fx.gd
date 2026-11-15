@@ -168,3 +168,29 @@ func test_weapon_sparks_fly_out_the_far_side() -> void:
 	d = FxManager.spray_dir(Vector2(5, 0), Vector2(2, 0))
 	check(d.x < -0.8, "desde cualquier lado")
 	eq(FxManager.spray_dir(Vector2.ONE, Vector2.ONE), Vector3.UP, "encima del objetivo, hacia arriba")
+
+
+func test_hit_pause_only_for_blows_that_involve_me() -> void:
+	eq(MatchView.hit_pause_ms("hit", true, 1, 2, 1), 60.0, "mi crítico frena la imagen")
+	eq(MatchView.hit_pause_ms("hit", true, 2, 1, 1), 60.0, "un crítico que recibo también")
+	eq(MatchView.hit_pause_ms("hit", false, 1, 2, 1), 0.0, "un golpe común no")
+	eq(MatchView.hit_pause_ms("hit", true, 3, 4, 1), 0.0, "el crítico de otros no: en un 3v3 tartamudearía")
+	check(MatchView.hit_pause_ms("death", false, 1, 2, 1) > 60.0, "matar pesa más que un crítico")
+	check(MatchView.hit_pause_ms("death", false, 2, 1, 1) > 0.0, "morir también")
+	eq(MatchView.hit_pause_ms("death", false, 3, 4, 1), 0.0, "las muertes ajenas no")
+	eq(MatchView.hit_pause_ms("hit", true, 1, 2, -1), 0.0, "espectando sin unidad propia, nunca")
+
+
+func test_freezing_holds_particles_and_lets_them_go() -> void:
+	var v := UnitView.new()
+	v.entry = {"cls": "mage"}
+	tree.root.add_child(v)
+	v._dots.sync({"burn": 3000}, true)
+	check(not v._dots.get_children().is_empty(), "tiene partículas para congelar")
+	v.freeze(true)
+	for c in v._dots.get_children():
+		eq((c as CPUParticles3D).speed_scale, 0.0, "las partículas quedan quietas")
+	v.freeze(false)
+	for c in v._dots.get_children():
+		eq((c as CPUParticles3D).speed_scale, 1.0, "y siguen")
+	v.free()

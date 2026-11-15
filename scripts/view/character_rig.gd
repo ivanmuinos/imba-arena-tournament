@@ -820,6 +820,13 @@ func drive(now_s: float, alive: bool, stunned: bool, casting: bool, cast_total_m
 		_play("idle", 1.0, 0.2)
 
 
+## Hit pause: holds the pose where it is (the mixer stops advancing) until released.
+func freeze(on: bool) -> void:
+	var mixer: AnimationMixer = _tree if _tree != null else player
+	if mixer != null:
+		mixer.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if on else AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+
+
 ## Short one-shot animation ("attack", "hit") that takes over for its duration.
 func once(anim: String, now_s: float, speed := 1.0) -> void:
 	if _tree != null:
