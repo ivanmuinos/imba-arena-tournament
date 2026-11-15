@@ -653,3 +653,72 @@ func test_a_stalled_round_ends_by_time_limit_for_the_team_with_more_health() -> 
 	_advance(m2, 100)
 	eq(m2.score, {"red": 0, "blue": 0}, "con vida pareja la ronda es empate: nadie suma")
 	check(m2.phase != "fight", "y termina igual")
+
+
+# ---- a spell locked on its target always reaches it, unless the target hides behind a wall
+
+func _lock_match() -> ArenaMatch:
+	var m := ArenaMatch.new(2, [
+		{"name": "M", "cls": "mage", "team": "red", "peer": 1},
+		{"name": "A", "cls": "priest", "team": "red", "peer": 2},
+		{"name": "T", "cls": "priest", "team": "blue", "peer": 3},
+		{"name": "R", "cls": "warrior", "team": "blue", "peer": 4}], 0, "hard", "pillars")
+	m.phase = "fight"
+	m.map.apply_state(true, 0)
+	m.C = m.C.duplicate()
+	m.C.CRIT_CHANCE = 0.0
+	for u in m.units:
+		u.brain = null
+		u.input = Vector2.ZERO
+	m.units[1].x = -20.0  # the ally, out of the way
+	m.units[1].z = 0.0
+	return m
+
+
+func _fly(m: ArenaMatch, caster: ArenaUnit, target: ArenaUnit) -> void:
+	var spec: Dictionary = caster.ability(0)
+	var dir := Vector2(target.x - caster.x, target.z - caster.z).normalized()
+	m._spawn_proj(caster, spec, dir, target)
+	var now := 1000.0
+	for i in 120:
+		now += 1000.0 / 60.0
+		m.tick(now)
+		if m.projs.is_empty():
+			return
+
+
+func test_a_locked_spell_flies_past_other_enemies_to_its_target() -> void:
+	var m := _lock_match()
+	var mage: ArenaUnit = m.units[0]
+	var t: ArenaUnit = m.units[2]
+	var guard: ArenaUnit = m.units[3]
+	mage.x = 0.0; mage.z = -12.0
+	t.x = 0.0; t.z = 4.0
+	guard.x = 0.0; guard.z = -4.0  # standing right in the line
+	_fly(m, mage, t)
+	check(t.hp < t.max_hp, "le pega a su objetivo")
+	eq(guard.hp, guard.max_hp, "el que se cruza no se lo come")
+
+
+func test_grazing_a_pillar_with_the_target_in_sight_still_hits() -> void:
+	var m := _lock_match()
+	var mage: ArenaUnit = m.units[0]
+	var t: ArenaUnit = m.units[2]
+	m.units[3].x = 20.0
+	# a straight line that passes 2.7 m from a 2.6 m pillar at (10, 8): in sight, but the spell's body grazes the edge
+	mage.x = 7.3; mage.z = 0.0
+	t.x = 7.3; t.z = 16.0
+	check(Rules.has_los(m.map, mage, t), "se ven")
+	_fly(m, mage, t)
+	check(t.hp < t.max_hp, "rozar el borde no es fallar")
+
+
+func test_a_target_behind_a_pillar_dodges_the_spell() -> void:
+	var m := _lock_match()
+	var mage: ArenaUnit = m.units[0]
+	var t: ArenaUnit = m.units[2]
+	m.units[3].x = 20.0
+	mage.x = 10.0; mage.z = 0.0
+	t.x = 10.0; t.z = 16.0  # the pillar at (10, 8) is right between them
+	_fly(m, mage, t)
+	eq(t.hp, t.max_hp, "detrás de la columna lo esquiva")
