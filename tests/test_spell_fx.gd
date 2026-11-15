@@ -194,3 +194,16 @@ func test_freezing_holds_particles_and_lets_them_go() -> void:
 	for c in v._dots.get_children():
 		eq((c as CPUParticles3D).speed_scale, 1.0, "y siguen")
 	v.free()
+
+
+func test_shots_land_with_their_own_sound() -> void:
+	eq(AudioBank.shot_hit("shot"), "hitArrow", "la flecha del Cazador")
+	eq(AudioBank.shot_hit("awp"), "hitBullet", "la bala del CT")
+	eq(AudioBank.shot_hit("golazo"), "hitBall", "el pelotazo del Crack")
+	eq(AudioBank.shot_hit("fireball"), "", "un hechizo no es un disparo")
+	eq(AudioBank.shot_hit("strike"), "", "un golpe de arma tampoco")
+	for ab in AudioBank.SHOT_HIT:
+		var ev: String = AudioBank.SHOT_HIT[ab]
+		check(SpellSchools.school_of(ab) == "physical", "%s es físico: pega con chispas, no con magia" % ab)
+		for layer in AudioBank.LAYERS[ev]:
+			check(AudioBank.SAMPLE_GROUPS.has(layer[0]), "%s usa grabaciones que existen" % ev)
