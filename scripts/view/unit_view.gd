@@ -63,6 +63,12 @@ var _swing_t := 0.0
 var swing_count := 0
 var _swing_heavy := false
 var _flash_t := 0.0
+## Hit reaction: a squash-and-bounce of the body and a small lean away from the attacker (seconds since the hit).
+var _squash_t := 99.0
+var _squash_amp := 0.0
+var _flinch_dir := Vector2.ZERO
+var _body_scale := Vector3.ONE
+const SQUASH_S := 0.35
 var _walk := 0.0
 var _cast_pose := 0.0
 var _death_t := 0.0
@@ -100,6 +106,7 @@ func setup(p_entry: Dictionary, p_is_me: bool, p_world: ArenaWorld) -> void:
 		_body.scale = Vector3.ONE * 0.92 * VS
 		_collect_parts(_model.root)
 	add_child(_body)
+	_body_scale = _body.scale
 	var pet := CompanionView.def_for(entry.cls, str(entry.get("spec", ""))) if CompanionView.enabled() and not entry.has("dummy") else {}
 	if not pet.is_empty():
 		_companion = CompanionView.new()
@@ -403,7 +410,23 @@ func facing() -> float:
 	return facing_override if not is_nan(facing_override) else _target_rot
 
 
-func flash() -> void:
+## Squash of the body `t` seconds after a hit of strength `amp`: a quick flattening that bounces back (damped spring).
+## Returns the (vertical, horizontal) scale factors; both are 1 once it has settled.
+static func squash(t: float, amp: float) -> Vector2:
+	if t >= SQUASH_S or amp <= 0.0:
+		return Vector2.ONE
+	var s := amp * exp(-t * 11.0) * cos(t * 32.0)
+	return Vector2(1.0 - s, 1.0 + s * 0.5)
+
+
+func flash(crit := false, from := Vector2.INF) -> void:
+	_squash_t = 0.0
+	_squash_amp = 0.26 if crit else 0.15
+	_flinch_dir = Vector2.ZERO
+	if from != Vector2.INF:
+		var away := Vector2(position.x - from.x, position.z - from.y)
+		if away.length() > 0.01:
+			_flinch_dir = away.normalized() * (0.22 if crit else 0.12)
 	_flash_t = 0.14
 	companion_react("hurt")
 	if _rig != null and snap.get("cast") == null:
@@ -542,6 +565,12 @@ func update(dt: float, now_s: float) -> void:
 	_slow_ring.visible = cc.has("slow") and s.alive and live_params
 	# A stealthed unit shows no flames: they would give it away.
 	_dots.sync(cc, bool(s.alive) and live_params and not b.has("stealth"))
+	_squash_t += dt
+	var sq := squash(_squash_t, _squash_amp) if s.alive else Vector2.ONE
+	_body.scale = Vector3(_body_scale.x * sq.y, _body_scale.y * sq.x, _body_scale.z * sq.y)
+	var lean := _flinch_dir * exp(-_squash_t * 9.0) * minf(1.0, _squash_t * 25.0) if s.alive else Vector2.ZERO
+	_body.position.x = lean.x
+	_body.position.z = lean.y
 	# Glow at the hand while casting, tinted by the spell's school and growing as the cast completes.
 	var casting_now: bool = s.cast != null and s.alive
 	_cast_orb.visible = casting_now and live_params

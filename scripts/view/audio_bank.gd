@@ -71,6 +71,13 @@ const LAYERS := {
 	"hitSpell": [["punch", 1.4, -10.0, 0.0], ["arc_soft", 1.5, -14.0, 0.0]],
 	"hitMe": [["punch", 1.2, -8.0, 0.0], ["cloth", 1.0, -9.0, 0.0]],            # melee / arrow hit on you: short organic thud
 	"hitMeSpell": [["punch", 1.45, -11.0, 0.0], ["arc_soft", 1.6, -16.0, 0.0]],  # spell hit on you: softer, with a faint magical tail
+	# spell impacts by school: a soft body thump under the school's own crack (fire bursts, ice cracks, shadow thuds...)
+	"hitFire": [["punch", 1.3, -10.0, 0.0], ["fire_hit", 1.1, -5.0, 0.0]],
+	"hitFrost": [["punch", 1.4, -11.0, 0.0], ["frost_crack", 1.25, -6.0, 0.0]],
+	"hitArcane": [["punch", 1.4, -10.0, 0.0], ["arc_bright", 1.4, -10.0, 0.0]],
+	"hitShadow": [["punch", 1.15, -9.0, 0.0], ["shadow_low", 1.3, -8.0, 0.0]],
+	"hitHoly": [["punch", 1.4, -11.0, 0.0], ["holy_chime", 1.5, -9.0, 0.0]],
+	"hitNature": [["punch", 1.3, -10.0, 0.0], ["wood", 1.3, -8.0, 0.0]],
 	"death": [["death", 1.0, -3.0, 0.0]],
 	# movement: a footstep per stride, cloth on take-off, a heavier step and a thud on landing
 	"step": [["step", 1.0, -13.0, 0.0]], "jump": [["cloth", 1.15, -11.0, 0.0], ["swish", 0.7, -18.0, 0.0]],
@@ -88,7 +95,7 @@ const LAYERS := {
 	"boom": [["fire_hit", 0.8, -3.0, 0.0], ["stone", 0.8, -6.0, 0.03]],
 	"bigBoom": [["earth_big", 0.8, -2.0, 0.0], ["fire_big", 0.55, -4.0, 0.02], ["stone", 0.6, -4.0, 0.05]],
 	# frost
-	"frostbolt": [["frost_cast", 1.0, 0.0, 0.0], ["arc_soft", 1.5, -14.0, 0.0]],
+	"frostbolt": [["frost_cast", 1.0, 0.0, 0.0], ["arc_soft", 1.5, -14.0, 0.0], ["swish", 0.85, -10.0, 0.04]],
 	"icelance": [["frost_cast", 1.35, 0.0, 0.0], ["swish", 1.3, -9.0, 0.0]],
 	"blizzard": [["frost_big", 0.9, -4.0, 0.0], ["whoosh_long", 1.2, -12.0, 0.0]],
 	"nova": [["frost_crack", 1.0, 0.0, 0.0], ["frost_big", 1.0, -6.0, 0.05]],
@@ -105,7 +112,7 @@ const LAYERS := {
 	"charge": [["whoosh_long", 0.9, -5.0, 0.0], ["swish", 0.8, -6.0, 0.05]], "wall": [["metal", 0.7, -5.0, 0.0], ["stone", 0.9, -10.0, 0.0]],
 	"storm": [["swish", 0.6, -2.0, 0.0], ["swish", 0.7, -3.0, 0.12], ["whoosh_long", 1.0, -8.0, 0.0]],
 	# holy
-	"smite": [["holy_chime", 1.3, -6.0, 0.0], ["arc_bright", 1.2, -12.0, 0.03]], "shieldUp": [["holy_chime", 0.9, -6.0, 0.0]],
+	"smite": [["holy_chime", 1.3, -6.0, 0.0], ["arc_bright", 1.2, -12.0, 0.03], ["swish", 1.1, -11.0, 0.03]], "shieldUp": [["holy_chime", 0.9, -6.0, 0.0]],
 	"renew": [["heal", 1.1, -12.0, 0.0]], "dispel": [["arc_soft", 1.3, -6.0, 0.0], ["holy_chime", 1.4, -12.0, 0.0]],
 	"hymn": [["holy_choir", 1.0, -5.0, 0.0], ["holy_chime", 0.8, -12.0, 0.2]],
 	# ki fighter
@@ -114,7 +121,7 @@ const LAYERS := {
 	"awaken": [["earth_big", 1.4, -3.0, 0.0], ["holy_choir", 1.3, -6.0, 0.05], ["arc_bright", 0.7, -6.0, 0.1]],
 	"kiwave": [["whoosh_long", 0.6, -1.0, 0.0], ["arc_bright", 0.6, -2.0, 0.0], ["earth_big", 1.0, -3.0, 0.1]],
 	# wizard
-	"spark": [["arc_soft", 1.6, -6.0, 0.0]], "stunbolt": [["arc_bright", 1.0, -3.0, 0.0], ["fire_hit", 1.4, -8.0, 0.0]],
+	"spark": [["arc_soft", 1.6, -6.0, 0.0]], "stunbolt": [["arc_bright", 1.0, -3.0, 0.0], ["fire_hit", 1.4, -8.0, 0.0], ["swish", 1.2, -10.0, 0.02]],
 	"disarm": [["arc_bright", 1.3, -4.0, 0.0], ["swish", 1.5, -8.0, 0.0]], "wardshield": [["arc_seal", 1.0, -5.0, 0.0]],
 	"broom": [["whoosh_long", 1.2, -3.0, 0.0], ["cloth", 1.2, -8.0, 0.0]], "confuse": [["arc_soft", 0.8, -4.0, 0.0], ["arc_blink", 1.1, -8.0, 0.1]],
 	"guardian": [["holy_choir", 1.1, -3.0, 0.0], ["arc_bright", 0.8, -6.0, 0.1]],
@@ -214,6 +221,12 @@ func _exit_tree() -> void:
 
 
 ## pos: world (x, z) of the source; Vector2.INF = not positional.
+## Impact event of a spell of `school` ("hitFire", "hitFrost"...), or the generic magical hit for one without its own.
+static func spell_hit(school: String) -> String:
+	var ev := "hit" + school.capitalize()
+	return ev if LAYERS.has(ev) else "hitSpell"
+
+
 func play(sound: String, pos := Vector2.INF, max_dist := 70.0) -> void:
 	if muted or _players.is_empty() or not (LAYERS.has(sound) or R.has(sound)):
 		return
