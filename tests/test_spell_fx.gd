@@ -150,3 +150,21 @@ func test_every_magic_school_has_its_own_impact_sound() -> void:
 		for layer in AudioBank.LAYERS[ev]:
 			check(AudioBank.SAMPLE_GROUPS.has(layer[0]), "%s usa grabaciones que existen" % ev)
 	eq(AudioBank.spell_hit("physical"), "hitSpell", "una escuela sin sonido propio usa el genérico")
+
+
+func test_weapon_blows_are_told_apart_from_shots_and_spells() -> void:
+	check(AudioBank.is_weapon("warrior", "strike"), "el Golpe del Guerrero es un arma")
+	check(AudioBank.is_weapon("paladin", "crusader"), "el Cruzado del Paladín también, aunque sea sagrado")
+	check(not AudioBank.is_weapon("hunter", "shot"), "un disparo no")
+	check(not AudioBank.is_weapon("mage", "fireball"), "un hechizo no")
+	check(not AudioBank.is_weapon("warrior", "nada"), "lo desconocido no")
+	for layer in AudioBank.LAYERS["hitBlade"]:
+		check(AudioBank.SAMPLE_GROUPS.has(layer[0]), "el golpe de filo usa grabaciones que existen")
+
+
+func test_weapon_sparks_fly_out_the_far_side() -> void:
+	var d := FxManager.spray_dir(Vector2(0, 0), Vector2(0, 2))
+	check(d.z > 0.8 and d.y > 0.0, "salen para el lado opuesto al atacante y un poco hacia arriba")
+	d = FxManager.spray_dir(Vector2(5, 0), Vector2(2, 0))
+	check(d.x < -0.8, "desde cualquier lado")
+	eq(FxManager.spray_dir(Vector2.ONE, Vector2.ONE), Vector3.UP, "encima del objetivo, hacia arriba")

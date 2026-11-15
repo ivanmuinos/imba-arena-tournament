@@ -487,9 +487,11 @@ func _one_fx(f: Dictionary) -> void:
 					var pal := SpellSchools.palette(SpellSchools.school_of(str(f.get("ability", ""))))
 					fx.burst(Vector3(f.x, world.h(f.x, f.z) + 1.0 * UnitView.VS, f.z), 7, 2.2, pal.mid, 0.4, 0.38, -1.5)
 				return
+			var by: UnitView = views.get(int(f.get("by", -1)))
+			var from := Vector2(by.position.x, by.position.z) if by != null else Vector2.INF
+			var weapon := by != null and f.has("ability") and AudioBank.is_weapon(str(by.entry.cls), str(f.ability), str(by.entry.get("spec", "")))
 			if v != null:
-				var by: UnitView = views.get(int(f.get("by", -1)))
-				v.flash(f.crit, Vector2(by.position.x, by.position.z) if by != null else Vector2.INF)
+				v.flash(f.crit, from)
 			var ally: bool = v != null and v.entry.team == my_team
 			var color := Color("#ff6b6b") if ally else Color("#ffd27a")
 			var wp := Vector3(f.x, world.h(f.x, f.z) + 2.3 * UnitView.VS, f.z)
@@ -498,18 +500,21 @@ func _one_fx(f: Dictionary) -> void:
 			else:
 				hud.float_text(wp, "-%d" % f.amt, color)
 			if f.has("ability") and (v == null or v.shown):
-				fx.hit_impact(f.x, f.z, str(f.ability), f.crit)
+				if weapon:
+					fx.weapon_hit(f.x, f.z, from, SpellSchools.school_of(str(f.ability)), f.crit or f.amt >= 40)
+				else:
+					fx.hit_impact(f.x, f.z, str(f.ability), f.crit)
 				if str(f.ability) == "soulrot" and f.amt >= 20:  # the opening hit, not the 8-point ticks
 					fx.soulrot_burst(f.x, f.z)
 			if int(f.get("by", -1)) == my_id and (f.crit or f.amt >= 40):
 				cam.add_shake(0.22 if f.crit else 0.12)  # only crits and big hits shake the camera
 			var school := SpellSchools.school_of(str(f.get("ability", "")))
 			if is_me:
-				audio.play("hitMe" if school == "physical" else AudioBank.spell_hit(school))
+				audio.play("hitBlade" if weapon else ("hitMe" if school == "physical" else AudioBank.spell_hit(school)))
 				cam.add_shake(0.6 if f.crit else 0.3)
 				cam.kick(0.35 if f.crit else 0.12)
 			else:
-				audio.play("crit" if f.crit else ("hit" if school == "physical" else AudioBank.spell_hit(school)), Vector2(f.x, f.z))
+				audio.play("crit" if f.crit else ("hitBlade" if weapon else ("hit" if school == "physical" else AudioBank.spell_hit(school))), Vector2(f.x, f.z))
 		"healspell":
 			if v != null and v.shown:
 				fx.heal_spell(pos.x, pos.z, SpellSchools.school_of(str(f.get("ability", ""))))

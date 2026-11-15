@@ -77,6 +77,8 @@ const LAYERS := {
 	"hitArcane": [["punch", 1.4, -10.0, 0.0], ["arc_bright", 1.4, -10.0, 0.0]],
 	"hitShadow": [["punch", 1.15, -9.0, 0.0], ["shadow_low", 1.3, -8.0, 0.0]],
 	"hitHoly": [["punch", 1.4, -11.0, 0.0], ["holy_chime", 1.5, -9.0, 0.0]],
+	# weapon on a body: the thud plus the edge biting in (a crit already has its own blade layer)
+	"hitBlade": [["punch", 1.0, -4.0, 0.0], ["blade", 1.25, -8.0, 0.0], ["metal", 1.5, -16.0, 0.01]],
 	"hitNature": [["punch", 1.3, -10.0, 0.0], ["wood", 1.3, -8.0, 0.0]],
 	"death": [["death", 1.0, -3.0, 0.0]],
 	# movement: a footstep per stride, cloth on take-off, a heavier step and a thud on landing
@@ -222,6 +224,11 @@ func _exit_tree() -> void:
 
 ## pos: world (x, z) of the source; Vector2.INF = not positional.
 ## Impact event of a spell of `school` ("hitFire", "hitFrost"...), or the generic magical hit for one without its own.
+## A weapon blow (Golpe, Puñalada, Cruzado...) rather than a shot or a spell: it sounds and lands like steel.
+static func is_weapon(cls: String, ability: String, spec := "") -> bool:
+	return bool(GameData.find_ability(cls, ability, spec).get("melee", false))
+
+
 static func spell_hit(school: String) -> String:
 	var ev := "hit" + school.capitalize()
 	return ev if LAYERS.has(ev) else "hitSpell"
