@@ -123,3 +123,26 @@ func test_a_fresh_spell_has_no_tail_behind_its_caster() -> void:
 	var stretch := 2.5
 	var flown_world := 3.0
 	check(5.6 * FxManager.tail_scale(flown_world / stretch, 5.6) * stretch <= flown_world + 0.001, "la cola no pasa la mano")
+
+
+func test_a_hit_squashes_the_body_and_it_bounces_back() -> void:
+	var s0 := UnitView.squash(0.0, 0.15)
+	check(s0.x < 1.0 and s0.y > 1.0, "al golpe se aplasta y se ensancha")
+	check(UnitView.squash(0.0, 0.26).x < s0.x, "un crítico aplasta más")
+	var bounced := false
+	var t := 0.0
+	while t < UnitView.SQUASH_S:
+		if UnitView.squash(t, 0.15).x > 1.0:
+			bounced = true
+		t += 0.01
+	check(bounced, "rebota: se estira un poco después de aplastarse")
+	eq(UnitView.squash(UnitView.SQUASH_S, 0.15), Vector2.ONE, "y vuelve a su forma")
+
+
+func test_every_magic_school_has_its_own_impact_sound() -> void:
+	for school in ["fire", "frost", "arcane", "shadow", "holy", "nature"]:
+		var ev := AudioBank.spell_hit(school)
+		check(ev != "hitSpell" and AudioBank.LAYERS.has(ev), "%s suena distinto al golpear" % school)
+		for layer in AudioBank.LAYERS[ev]:
+			check(AudioBank.SAMPLE_GROUPS.has(layer[0]), "%s usa grabaciones que existen" % ev)
+	eq(AudioBank.spell_hit("physical"), "hitSpell", "una escuela sin sonido propio usa el genérico")
